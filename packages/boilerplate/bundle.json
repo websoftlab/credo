@@ -1,0 +1,8 @@
+{
+	"src": [
+		{
+			"target": "node",
+			"output": "."
+		}
+	]
+}
