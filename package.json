@@ -36,6 +36,7 @@
     "deepmerge": "^4.2.2"
   },
   "devDependencies": {
-    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.4"
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.4",
+    "mobx-react-lite": "^3.3.0"
   }
 }
