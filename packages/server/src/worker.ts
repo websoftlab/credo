@@ -69,7 +69,7 @@ export function masterProcess(processes: Worker.Cluster[]) {
 
 		idn[String(worker.process.pid)] = part;
 
-		worker.send(JSON.stringify({id, cid, part: workerPart, mode, numberOfRestarts}), (err) => {
+		worker.send(JSON.stringify({id, cid, part: workerPart, mode, numberOfRestarts}), undefined, (err: Error | null) => {
 			if(err) {
 				debug.error("Send worker error", err);
 			}

@@ -5,8 +5,16 @@ import {isMainThread} from "worker_threads";
 import createCmd from "./createCmd";
 import {createCredoJS, BootMgr} from "../credo";
 
+function isPrimaryCluster(cls: any): boolean {
+	if("isPrimary" in cls) {
+		return cls.isPrimary;
+	} else {
+		return cls.isMaster;
+	}
+}
+
 export default async function cmdService(options: Server.Options = {}) {
-	if(!isMainThread || !cluster.isPrimary) {
+	if(!isMainThread || !isPrimaryCluster(cluster)) {
 		throw new Error("Command line not available in cluster worker mode");
 	}
 
