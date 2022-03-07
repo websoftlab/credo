@@ -1,7 +1,7 @@
 {
 	"name": "@credo-js/utils",
 	"version": "1.0.0",
-	"author": "gosha@rozaverta.com",
+	"author": "credo@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/build.js",
