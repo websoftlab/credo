@@ -1,0 +1,41 @@
+{
+	"name": "@credo-js/loadable",
+	"version": "1.0.0",
+	"author": "credo@websoftlab.com",
+	"license": "MIT",
+	"scripts": {
+		"build": "node ../../scripts/build.js",
+		"build:i": "node ../../scripts/build.js --increment-version",
+		"build:i-major": "node ../../scripts/build.js --increment-version=major",
+		"build:i-minor": "node ../../scripts/build.js --increment-version=minor",
+		"release:local": "npm publish build --registry http://localhost:4873"
+	},
+	"dependencies": {
+		"is-plain-object": "^5.0.0"
+	},
+	"devDependencies": {
+		"@types/react": "^17.0.16"
+	},
+	"peerDependencies": {
+		"react": "^17.0.2"
+	},
+	"exports": {
+		"./": "./src/"
+	},
+	"types": "build/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"build/index.d.ts": ["src/index.ts"],
+			"*": ["src/*"]
+		}
+	},
+	"_bundle": {
+		"remove": [
+			"scripts",
+			"bin",
+			"exports",
+			"types",
+			"typesVersions"
+		]
+	}
+}
