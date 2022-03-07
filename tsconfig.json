@@ -1,0 +1,67 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"alwaysStrict": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"isolatedModules": true,
+		"jsx": "preserve",
+		"lib": [
+			"dom",
+			"es2019"
+		],
+		"module": "esnext",
+		"moduleResolution": "node",
+		"noEmit": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "esnext",
+		"baseUrl": "./",
+		"paths": {
+			"@credo-js/compiler": ["./packages/compiler/src"],
+			"@credo-js/compiler/*": ["./packages/compiler/src/*"],
+			"@credo-js/extra": ["./packages/extra/src"],
+			"@credo-js/extra/*": ["./packages/extra/src/*"],
+			"@credo-js/head": ["./packages/head/src"],
+			"@credo-js/head/*": ["./packages/head/src/*"],
+			"@credo-js/lexicon": ["./packages/lexicon/src"],
+			"@credo-js/lexicon/*": ["./packages/lexicon/src/*"],
+			"@credo-js/loadable": ["./packages/loadable/src"],
+			"@credo-js/loadable/*": ["./packages/loadable/src/*"],
+			"@credo-js/make-url": ["./packages/make-url/src"],
+			"@credo-js/make-url/*": ["./packages/make-url/src/*"],
+			"@credo-js/path-to-pattern": ["./packages/path-to-pattern/src"],
+			"@credo-js/path-to-pattern/*": ["./packages/path-to-pattern/src/*"],
+			"@credo-js/plugin-auth": ["./packages/plugin-auth/src"],
+			"@credo-js/plugin-auth/*": ["./packages/plugin-auth/src/*"],
+			"@credo-js/plugin-orm": ["./packages/plugin-orm/src"],
+			"@credo-js/plugin-orm/*": ["./packages/plugin-orm/src/*"],
+			"@credo-js/responder-json": ["./packages/responder-json/src"],
+			"@credo-js/responder-json/*": ["./packages/responder-json/src/*"],
+			"@credo-js/responder-page": ["./packages/responder-page/src"],
+			"@credo-js/responder-page/*": ["./packages/responder-page/src/*"],
+			"@credo-js/responder-static": ["./packages/responder-static/src"],
+			"@credo-js/responder-static/*": ["./packages/responder-static/src/*"],
+			"@credo-js/responder-text": ["./packages/responder-text/src"],
+			"@credo-js/responder-text/*": ["./packages/responder-text/src/*"],
+			"@credo-js/utils": ["./packages/utils/src"],
+			"@credo-js/utils/*": ["./packages/utils/src/*"],
+			"@credo-js/server": ["./packages/server/src"],
+			"@credo-js/server/*": ["./packages/server/src/*"]
+		},
+		// Otherwise we get react-native typings which conflict with dom.lib.
+		"types": [
+			"node",
+			"react"
+		]
+	},
+	"exclude": [
+		"**/.*/",
+		"**/build",
+		"**/node_modules"
+	]
+}
