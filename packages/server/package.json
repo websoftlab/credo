@@ -1,0 +1,65 @@
+{
+	"name": "@credo-js/server",
+	"version": "1.0.0",
+	"author": "credo@websoftlab.com",
+	"license": "MIT",
+	"scripts": {
+		"build": "node ../../scripts/build.js",
+		"build:i": "node ../../scripts/build.js --increment-version",
+		"build:i-major": "node ../../scripts/build.js --increment-version=major",
+		"build:i-minor": "node ../../scripts/build.js --increment-version=minor",
+		"release:local": "npm publish build --registry http://localhost:4873"
+	},
+	"dependencies": {
+		"@credo-js/utils": "*",
+		"@credo-js/responder-static": "*",
+		"@credo-js/responder-text": "*",
+		"@credo-js/responder-json": "*",
+		"@credo-js/lexicon": "*",
+		"@credo-js/make-url": "*",
+		"@credo-js/path-to-pattern": "*",
+		"vary": "^1.1.2",
+		"koa": "^2.13.4",
+		"koa-bodyparser": "^4.3.0",
+		"koa-session": "^6.2.0",
+		"mobx": "^6.3.2",
+		"redis": "^4.0.4",
+		"node-schedule": "^2.1.0",
+		"deepmerge": "^4.2.2",
+		"pretty-ms": "^7.0.1",
+		"http-errors": "^1.7.3"
+	},
+	"devDependencies": {
+		"@types/koa": "^2.13.4",
+		"@types/koa-bodyparser": "^4.3.6",
+		"@types/koa-static": "^4.0.2",
+		"@types/koa-session": "^5.10.6",
+		"@types/vary": "^1.1.0",
+		"@types/redis": "^4.0.11",
+		"@types/node-schedule": "^1.3.2",
+		"@types/http-errors": "^1.6.3"
+	},
+	"peerDependencies": {
+		"@credo-js/responder-page": "*",
+		"credo": "*"
+	},
+	"exports": {
+		"./": "./build/"
+	},
+	"types": "build/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"build/index.d.ts": ["src/index.ts"],
+			"*": ["src/*"]
+		}
+	},
+	"_bundle": {
+		"remove": [
+			"scripts",
+			"bin",
+			"exports",
+			"types",
+			"typesVersions"
+		]
+	}
+}

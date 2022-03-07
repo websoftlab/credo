@@ -1,0 +1,20 @@
+{
+	"src": [
+		{
+			"target": "node",
+			"output": "."
+		},
+		{
+			"target": "types",
+			"output": ".",
+			"package.json": {
+				"types": "./index.d.ts"
+			},
+			"options": {
+				"merge": [
+					"types"
+				]
+			}
+		}
+	]
+}
