@@ -140,11 +140,14 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 	hooks.once("boot", () => { boot = true; });
 
 	// local store
-	let {dataPath = "./data"} = config("config");
+	let {dataPath} = config("config");
 	if(typeof dataPath === "object" && dataPath != null) {
 		dataPath = dataPath[envMode as EnvMode];
 	}
-	const store = await createLocalStore(dataPath || "./data");
+	if(!dataPath) {
+		dataPath = proc?.id ? `./data/data-${proc.id}` : "./data";
+	}
+	const store = await createLocalStore(dataPath);
 
 	// check languages
 	if (!languages.includes(language)) {
