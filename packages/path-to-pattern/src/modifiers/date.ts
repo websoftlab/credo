@@ -10,35 +10,35 @@ function minMax(data: any, name: string, val: number, min: number, max: number, 
 
 const dates: Record<string, {r: string, f?: Function, d(val: any, data: any): boolean}> = {};
 
-// День месяца, 2 цифры с ведущим нулём от 01 до 31
+// Day of the month, 2 digits with leading zeros. 01 to 31
 dates.d = {
 	r: "(\\d{2})",
 	f: parseInt,
 	d(val: number, data: any) { return minMax(data, "d", val, 1, 31); },
 };
 
-// День месяца без ведущего нуля от 1 до 31
+// Day of the month without leading zeros. 1 to 31
 dates.j = {
 	r: "(\\d{1,2})",
 	f: parseInt,
 	d: dates.d.d,
 };
 
-// Порядковый номер месяца с ведущим нулём	от 01 до 12
+// Numeric representation of a month, with leading zeros. 01 through 12
 dates.m = {
 	r: "(\\d{2})",
 	f: parseInt,
 	d(val: number, data: any) { return minMax(data, "m", val, 1, 12); }
 };
 
-// Порядковый номер месяца без ведущего нуля	от 1 до 12
+// Numeric representation of a month, without leading zeros. 1 through 12
 dates.n = {
 	r: "(\\d{1,2})",
 	f: parseInt,
 	d: dates.m.d
 };
 
-// Порядковый номер года, 4 цифры	Примеры: 1999, 2003
+// A full numeric representation of a year, 4 digits. Examples: 1999 or 2003
 dates.Y = {
 	r: "(\\d{4})",
 	f: parseInt,
@@ -48,7 +48,7 @@ dates.Y = {
 	}
 };
 
-// Номер года, 2 цифры	Примеры: 99, 03
+// A two digit representation of a year. Examples: 99 or 03
 dates.y = {
 	r: "(\\d{2})",
 	f: parseInt,
@@ -58,7 +58,7 @@ dates.y = {
 	}
 };
 
-// Ante meridiem (лат. "до полудня") или Post meridiem (лат. "после полудня") в нижнем регистре	am или pm
+// Lowercase Ante meridiem and Post meridiem. am or pm
 dates.a = {
 	r: "(am|pm)",
 	f: (val: string) => {
@@ -70,7 +70,7 @@ dates.a = {
 	}
 };
 
-// Ante meridiem или Post meridiem в верхнем регистре	AM или PM
+// Uppercase Ante meridiem and Post meridiem. AM or PM
 dates.A = {
 	r: "(AM|PM)",
 	f: (val: string) => {
@@ -79,51 +79,49 @@ dates.A = {
 	d: dates.a.d,
 };
 
-// Часы в 12-часовом формате без ведущего нуля	от 1 до 12
+// 12-hour format of an hour without leading zeros. 1 through 12
 dates.g = {
 	r: "(\\d{1,2})",
 	f: parseInt,
 	d(val: number, data: any) { return minMax(data, "g", val, 1, 12); }
 };
 
-// Часы в 24-часовом формате без ведущего нуля	от 0 до 23
+// 24-hour format of an hour without leading zeros. 0 through 23
 dates.G = {
 	r: "(\\d{1,2})",
 	f: parseInt,
 	d(val: number, data: any) { return minMax(data, "H", val, 0, 23); }
 };
 
-// Часы в 12-часовом формате с ведущим нулём	от 01 до 12
+// 12-hour format of an hour with leading zeros. 01 through 12
 dates.h = {
 	r: "(\\d{2})",
 	f: parseInt,
 	d: dates.g.d,
 };
 
-// Часы в 24-часовом формате с ведущим нулём	от 00 до 23
+// 24-hour format of an hour with leading zeros. 00 through 23
 dates.H = {
 	r: "(\\d{2})",
 	f: parseInt,
 	d: dates.G.d,
 };
 
-// Минуты с ведущим нулём	от 00 до 59
+// Minutes with leading zeros. 00 to 59
 dates.i = {
 	r: "(\\d{2})",
 	f: parseInt,
 	d(val: number, data: any) { return minMax(data, "i", val, 0, 59); }
 };
 
-// Секунды с ведущим нулём	от 00 до 59
+// Seconds with leading zeros. 00 through 59
 dates.s = {
 	r: "(\\d{2})",
 	f: parseInt,
 	d(val: number, data: any) { return minMax(data, "s", val, 0, 59); }
 };
 
-// Микросекунды. Учтите, что date() всегда будет возвращать 000000,
-// т.к. она принимает целочисленный (int) параметр,
-// тогда как DateTime::format() поддерживает микросекунды, если DateTime создан с ними.	Например: 654321
+// Microseconds. Example: 654321
 dates.u = {
 	r: "(\\d{6})",
 	f: parseInt,
@@ -133,7 +131,7 @@ dates.u = {
 	}
 };
 
-// Миллисекунды. Замечание такое же как и для u.	Пример: 654
+// Milliseconds. Example: 654
 dates.v = {
 	r: "(\\d{3})",
 	f: parseInt,
@@ -143,7 +141,7 @@ dates.v = {
 	}
 };
 
-// Разница с временем по Гринвичу без двоеточия между часами и минутами	Например: +0200
+// Difference to Greenwich time (GMT) without colon between hours and minutes. Example: +0200
 dates.O = {
 	r: "(\\+\\d{4})",
 	d(val: string, data: any) {
@@ -151,7 +149,7 @@ dates.O = {
 	}
 };
 
-// Разница с временем по Гринвичу с двоеточием между часами и минутами	Например: +02:00
+// Difference to Greenwich time (GMT) with colon between hours and minutes. Example +02:00
 dates.P = { // +12:12
 	r: "(Z|\\+\\d{2}:\\d{2})",
 	d(val: string, data: any) {
@@ -285,12 +283,14 @@ export default {
 		}
 		const first = args[0] || "dmYHi";
 		if(args.length === 1) {
+			// ISO 8601 date (2004-02-12T15:19:21+00:00)
 			if(first === "c") return createISO();
+			// Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT)
 			if(first === "U") return createUnix();
 		}
 		const tm = {z1: 0, z2: 0};
 		if(args[1]) {
-			const t = args[1].match(/^+(\d{2}):?(\d{2})$/);
+			const t = args[1].match(/^\+(\d{2}):?(\d{2})$/);
 			if(!t || !timeOffset(t[1], t[2], tm)) {
 				throw new Error("Invalid time zone offset argument");
 			}
