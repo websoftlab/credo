@@ -1,26 +1,35 @@
 import {Render} from "./types";
+import HtmlDriverPrototype from "./HtmlDriverPrototype";
 
-export default async function getRenderDriver(name: Render.HTMLDriver, page: Render.PageFound | Render.PageNotFound): Promise<Render.HtmlDocumentInterface<any>> {
+const baseDriver: string[] = [
+	"react"
+];
+
+export default async function getRenderDriver(name: Render.HTMLDriver, page: Render.PageFound | Render.PageNotFound): Promise<Render.HtmlDriverInterface<any>> {
 
 	// system drivers
-	switch(name) {
-		case "react": return new (await import("./react/server")).HtmlDocument(page);
+	if(baseDriver.includes(name)) {
+		name = `@credo-js/render-driver-${name}`;
 	}
 
-	let driver: any;
+	let HtmlDriver: any;
 	try {
-		driver = await import(name);
+		HtmlDriver = await import((`${name}/server`));
 	} catch(err) {
-		throw new Error(`Render driver [${name}] not found`);
+		throw new Error(`Render driver {${name}/server} not found`);
 	}
 
-	if(typeof driver.HtmlDocument === "function") {
-		driver = driver.HtmlDocument;
-	} else if(typeof driver.default === "function") {
-		driver = driver.default;
-	} else if(typeof driver !== "function") {
-		throw new Error(`Unknown render driver [${name}]`);
+	if(typeof HtmlDriver.HtmlDriver === "function") {
+		HtmlDriver = HtmlDriver.HtmlDriver;
+	} else if(typeof HtmlDriver.default === "function") {
+		HtmlDriver = HtmlDriver.default;
+	} else if(typeof HtmlDriver !== "function") {
+		throw new Error(`Unknown render driver {${name}/server}`);
 	}
 
-	return new driver(page);
+	if(!HtmlDriverPrototype.isPrototypeOf(HtmlDriver)) {
+		throw new Error(`The {${name}/server} driver is not an HtmlDriverPrototype prototype`);
+	}
+
+	return new HtmlDriver(page);
 }

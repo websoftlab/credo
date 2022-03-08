@@ -1,14 +1,13 @@
 import React from "react";
 import {Router} from "react-router-dom";
 import {observe} from "mobx";
-import Loader from "../app/Loader";
-import {Head} from "@credo-js/html-head/react/index";
-import {ApiContext} from "../app/context";
+import {Head} from "../head";
+import {ApiContext, Loader} from "../app";
 import type {MutableRefObject, ElementType} from "react";
 import type {Action, History, Location} from "history";
 import type {Lambda} from "mobx";
-import type {API} from "../../types";
-import type {OnAppMountHook, OnLocationChangeHook, OnPageHook, OnPageTitleHook} from "../app/types";
+import type {API} from "@credo-js/responder-page";
+import type {OnAppMountHook, OnLocationChangeHook, OnPageHook, OnPageTitleHook} from "../app";
 
 const initialId: symbol = Symbol();
 

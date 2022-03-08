@@ -1,7 +1,7 @@
-import Api from "./app/Api";
+import Api from "./api/Api";
 import HtmlNode from "./HtmlNode";
-import createHttpJsonService from "./app/createHttpJsonService";
-import PageStore from "./app/PageStore";
+import createHttpJsonService from "./api/createHttpJsonService";
+import PageStore from "./api/PageStore";
 import type {Context} from "koa";
 import type {Render, API} from "./types";
 
@@ -10,7 +10,7 @@ const RENDER_DRIVER_KEY = Symbol();
 
 type HtmlDocumentListener<T extends {type: string}> = (event: T) => (void | Promise<void>);
 
-function drv(document: HtmlDocument): Render.HtmlDocumentInterface<any> {
+function drv(document: HtmlDocument): Render.HtmlDriverInterface<any> {
 	return document[RENDER_DRIVER_KEY];
 }
 
@@ -41,9 +41,9 @@ export default class HtmlDocument {
 	set styles(value: string[]) { drv(this).styles = value; }
 
 	[LISTENER_KEY]: Array<HtmlDocumentListener<any>> = [];
-	[RENDER_DRIVER_KEY]: Render.HtmlDocumentInterface<any>;
+	[RENDER_DRIVER_KEY]: Render.HtmlDriverInterface<any>;
 
-	constructor(driver: Render.HtmlDocumentInterface<any>) {
+	constructor(driver: Render.HtmlDriverInterface<any>) {
 		this[RENDER_DRIVER_KEY] = driver;
 	}
 

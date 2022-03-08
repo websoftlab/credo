@@ -79,7 +79,7 @@ export namespace Render {
 		message: string;
 	}
 
-	export interface HtmlDocumentInterface<Type> {
+	export interface HtmlDriverInterface<Type> {
 
 		name: HTMLDriver;
 		ssr: boolean;
@@ -98,7 +98,6 @@ export namespace Render {
 		injectHead(source: string | HtmlNode): void;
 		injectBody(source: string | HtmlNode): void;
 		toHTML(ctx: Context, api: API.ApiInterface<Type> | null, emit: <T extends {type: string} = any>(event: T) => Promise<T>): Promise<string>;
-		createPageStore(http: AxiosInstance): Page.StoreInterface<Type>;
 	}
 }
 
@@ -149,6 +148,12 @@ export namespace API {
 }
 
 export namespace Page {
+
+	export type ClientRenderHandler<ComponentType> = (node: HTMLElement, options?: ClientOptions<ComponentType>) => Promise<void>
+
+	export type ClientOptions<ComponentType> = {
+		bootloader?: ((api: API.ApiInterface<ComponentType>) => void)[]
+	}
 
 	export interface ComponentResponse<ComponentType, Data = any, Props = any> {
 		Component: ComponentType;

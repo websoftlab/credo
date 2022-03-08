@@ -1,52 +1,21 @@
 import type {ReactElement, ElementType} from "react";
 import type {Context} from "koa";
-import type {AxiosInstance} from "axios";
 import type {HeadTag} from "@credo-js/html-head";
-import type {API, Page, Render} from "../../types";
+import type {API} from "@credo-js/responder-page";
 import {createElement} from "react";
-import HtmlNode from "../../HtmlNode";
 import ReactDOMServer from "react-dom/server";
 import createError from "http-errors";
-import escape from "../../utils/escape";
-import isPageFound from "../../isPageFound";
-import {renderToString} from "@credo-js/html-head/react/index";
-import App from "./App";
-import {loaded, load, component} from "@credo-js/loadable/react";
+import {htmlEscape} from "@credo-js/utils";
 import {debug} from "@credo-js/utils/srv/index";
-import {default as createPageStore} from "../app/createPageStore";
+import {isPageFound, HtmlNode, HtmlDriverPrototype} from "@credo-js/responder-page";
+import App from "./App";
+import {renderToString} from "../head";
+import {loaded, load, component} from "../lodable";
 
-function element(source: string | HtmlNode): ReactElement | string {
-	if(typeof source === "string") {
-		return source;
-	}
-	const {attributes = {}, html} = source;
-	if(html) {
-		attributes.dangerouslySetInnerHTML = {__html: html};
-	}
-	return createElement(source.name, attributes);
-}
+export default class HtmlDriverReact extends HtmlDriverPrototype<ElementType, ReactElement> {
 
-export default class HtmlDocumentRenderReact implements Render.HtmlDocumentInterface<ElementType> {
-
-	public headSource: (string | ReactElement)[] = [];
-	public bodySource: (string | ReactElement)[] = [];
-
-	public name: Render.HTMLDriver = "react";
-	public ssr: boolean = true;
-	public doctype: string = "html";
-	public title: string = "Document";
-	public language: string | null = null;
-	public charset: string | null = "utf-8";
-	public htmlAttributes: any = {};
-	public noscriptBanner: string | null = null;
-	public getQueryId: string = "query";
-	public baseUrl: string = "/";
-	public scripts: string[] = [];
-	public styles: string[] = [];
-
-	public loader: Page.Loader<ElementType> = {loaded, load, component};
-
-	constructor(public page: Render.PageFound | Render.PageNotFound) {}
+	public name = "react";
+	public loader = {loaded, load, component};
 
 	async toHTML(
 		ctx: Context,
@@ -110,7 +79,7 @@ export default class HtmlDocumentRenderReact implements Render.HtmlDocumentInter
 				rootDiv += renderEvn.html;
 			} catch(err) {
 				debug.error("server render failure", err);
-				html += `<!-- server render error: ${escape((err as Error).message || "Unknown error")} -->`;
+				html += `<!-- server render error: ${htmlEscape((err as Error).message || "Unknown error")} -->`;
 				this.ssr = false;
 			}
 
@@ -231,15 +200,14 @@ export default class HtmlDocumentRenderReact implements Render.HtmlDocumentInter
 		return html;
 	}
 
-	injectBody(source: string | HtmlNode): void {
-		this.headSource.push(element(source));
-	}
-
-	injectHead(source: string | HtmlNode): void {
-		this.headSource.push(element(source));
-	}
-
-	createPageStore(http: AxiosInstance): Page.StoreInterface<ElementType> {
-		return createPageStore(http);
+	protected prepareHtmlNode(source: string | HtmlNode): string | ReactElement {
+		if(typeof source === "string") {
+			return source;
+		}
+		const {attributes = {}, html} = source;
+		if(html) {
+			attributes.dangerouslySetInnerHTML = {__html: html};
+		}
+		return createElement(source.name, attributes);
 	}
 }

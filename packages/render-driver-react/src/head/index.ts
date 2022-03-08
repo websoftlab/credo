@@ -8,7 +8,6 @@ export {default as Charset} from "./Charset";
 export {default as Viewport} from "./Viewport";
 export {default as renderToString} from "./renderToString";
 
-export {default as HeadManager} from "../HeadManager";
 export {useHeadContext} from "./context";
 
 export type {BaseProps} from "./Base";

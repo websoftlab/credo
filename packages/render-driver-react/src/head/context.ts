@@ -1,5 +1,5 @@
 import React from "react";
-import type HeadManager from "../HeadManager";
+import type {HeadManager} from "@credo-js/html-head";
 
 const Context = React.createContext<HeadManager | null>(null);
 

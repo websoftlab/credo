@@ -1,9 +1,8 @@
 import type {ReactNode} from "react";
-import type {HeadTag} from "../types";
+import type {HeadTag} from "@credo-js/html-head";
 import {useLayoutEffect} from "react";
 import {Provider, useHeadContext} from "./context";
-import HeadManager from "../HeadManager";
-import clearHeadDOMTags from "../clearHeadDOMTags";
+import {HeadManager, clearHeadDOMTags} from "@credo-js/html-head";
 
 export interface HeadProps {
 	children: ReactNode | ReactNode[];

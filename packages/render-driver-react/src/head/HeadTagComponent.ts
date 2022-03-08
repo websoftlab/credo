@@ -1,8 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Consumer } from './context';
-import type HeadManager from "../HeadManager";
-import type {HeadTagName} from "../types";
+import {Consumer} from './context';
+import type {HeadManager, HeadTagName} from "@credo-js/html-head";
 
 function createHeadTag(headTag: HeadTagComponent) {
 	const {singleton, tagName, typeName, props} =  headTag;

@@ -1,10 +1,9 @@
 import React from "react";
 import {StaticRouter} from "react-router-dom";
-import {Head} from "@credo-js/html-head/react/index";
-import Loader from "../app/Loader";
-import {ApiContext} from "../app/context";
-import {CaptureContext} from "@credo-js/loadable/react";
-import type {API} from "../../types";
+import {Head} from "../head";
+import {ApiContext, Loader} from "../app";
+import {CaptureContext} from "../lodable";
+import type {API} from "@credo-js/responder-page";
 import type {HeadTag} from "@credo-js/html-head";
 import type {ElementType} from "react";
 

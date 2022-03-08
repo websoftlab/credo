@@ -1,5 +1,5 @@
 import type {ElementType} from "react";
-import type {HeadTagName} from "../types";
+import type {HeadTagName} from "@credo-js/html-head";
 import {createElement} from "react";
 import HeadTagComponent from "./HeadTagComponent";
 

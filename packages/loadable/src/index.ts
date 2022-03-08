@@ -1,3 +1,6 @@
+export {default as createLoadable} from "./createLoadable";
+export {default as TimeoutError} from "./TimeoutError";
+
 export type {
 	CreateLoadableOptions,
 	Loadable,
@@ -8,5 +11,3 @@ export type {
 	FallbackHandler,
 	RenderHandler
 } from "./types";
-
-export type {ReactFallbackProps} from "./react";

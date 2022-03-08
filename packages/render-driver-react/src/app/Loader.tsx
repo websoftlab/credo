@@ -1,8 +1,8 @@
 import React from "react";
 import {useLocation} from "react-router-dom";
 import {observer} from "mobx-react-lite";
-import {component, defined} from "./component";
-import type {Page} from "../../types";
+import {component, defined} from "../component";
+import type {Page} from "@credo-js/responder-page";
 import type {CSSProperties, ElementType, ReactNode} from "react";
 
 const errorStyle: CSSProperties = {

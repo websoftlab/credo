@@ -6,7 +6,7 @@ import type {
 import type {CredoJS, Route} from "@credo-js/server";
 import type {Context} from "koa";
 import {isHttpStatus, isRedirectCode} from "./utils/status";
-import escape from "./utils/escape";
+import {htmlEscape} from "@credo-js/utils";
 import HtmlDocument from "./HtmlDocument";
 import {loadManifest} from "./utils/manifest";
 import HttpRedirect from "./HttpRedirect";
@@ -36,7 +36,11 @@ export default (function (credo: CredoJS, name: string, config: ResponderPageCto
 		throw new Error("CredoJS not starting in application mode");
 	}
 
-	const renderHTMLDriver = credo.renderHTMLDriver as "react";
+	if(!credo.renderHTMLDriver) {
+		throw new Error("CredoJS.renderHTMLDriver is not defined");
+	}
+
+	const renderHTMLDriver = credo.renderHTMLDriver;
 	const options = credo.config<ResponderPageOptions>(`responder/${name}`);
 
 	const manifestOptions = {
@@ -124,7 +128,7 @@ export default (function (credo: CredoJS, name: string, config: ResponderPageCto
 				ctx.status = code;
 			}
 			ctx.type = "text/html; charset=utf-8";
-			ctx.body = `<html lang="${escape(ctx.language)}"><head><title>Redirect...</title><meta http-equiv="refresh" content="0; url=${escape(location)}" /></head></html>`;
+			ctx.body = `<html lang="${htmlEscape(ctx.language)}"><head><title>Redirect...</title><meta http-equiv="refresh" content="0; url=${htmlEscape(location)}" /></head></html>`;
 		}
 	}
 

@@ -1,4 +1,4 @@
-import type {Page} from "../../types";
+import type {Page} from "@credo-js/responder-page";
 import type {Action, History, Location} from "history";
 import type {ElementType} from "react";
 import type {Lexicon} from "@credo-js/lexicon";

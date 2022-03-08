@@ -1,7 +1,6 @@
-import createLoadable from "./createLoadable";
+import {createLoadable, TimeoutError} from "@credo-js/loadable";
 import {createContext, useContext, createElement, useState, useRef, useCallback, useEffect} from "react";
-import TimeoutError from "./TimeoutError";
-import type {ObserverOptions} from "./types";
+import type {ObserverOptions} from "@credo-js/loadable";
 
 function resolve<Type>(obj: any): Type {
 	return obj && obj.__esModule ? obj.default : obj;

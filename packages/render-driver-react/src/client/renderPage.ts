@@ -1,16 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {createBrowserHistory} from "history";
+import {Api, createHttpJsonService, PageStore} from "@credo-js/responder-page/api/index";
 import App from "./App";
-import Api from "../../app/Api";
 import loadDocument from "./loadDocument";
-import {load} from "@credo-js/loadable/react";
-import createPageStore from "../app/createPageStore";
-import createHttpJsonService from "../../app/createHttpJsonService";
+import {load, loaded, component} from "../lodable";
 import {AppStore} from "@credo-js/lexicon";
 import type {ReactElement, ElementType} from "react";
-import type {ClientOptions} from "./types";
-import type {Page} from "../../types";
+import type {Page} from "@credo-js/responder-page";
 
 type React15Root = { render: Function };
 
@@ -26,7 +23,7 @@ function isReact18(obj: any): obj is {
 	);
 }
 
-export default async function renderPage(node: HTMLElement, options: ClientOptions = {}) {
+const renderPage: Page.ClientRenderHandler<ElementType> = async function renderPage(node: HTMLElement, options = {}) {
 	const data: Page.DocumentAppOptions = loadDocument("app-page");
 	const {
 		bootloader = []
@@ -53,7 +50,10 @@ export default async function renderPage(node: HTMLElement, options: ClientOptio
 	});
 
 	const app = new AppStore(state);
-	const page = createPageStore(http);
+	const page = new PageStore({
+		http,
+		loader: {load, loaded, component}
+	});
 	const api = new Api<ElementType>("client", app, page, {
 		http,
 		translator: app.translator,
@@ -166,4 +166,6 @@ export default async function renderPage(node: HTMLElement, options: ClientOptio
 	} else {
 		error(message || err2(), code);
 	}
-}
+};
+
+export default renderPage;

@@ -1,4 +1,4 @@
-import type {API} from "../../types";
+import type {API} from "@credo-js/responder-page";
 import type {ElementType} from "react";
 import {createContext, useContext} from "react";
 
