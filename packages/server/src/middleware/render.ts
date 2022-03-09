@@ -17,7 +17,7 @@ function create404(): Route.Context {
 		name: "404",
 		controller: {
 			name: Symbol(),
-			handler: (ctx: Context) => (createError(ctx.store.translate("system.page.notFound", "Page not found"), 404)),
+			handler: (ctx: Context) => (createError(404, ctx.store.translate("system.page.notFound", "Page not found"))),
 		},
 		responder: {
 			name: "text",

@@ -4,7 +4,7 @@ import {createBrowserHistory} from "history";
 import {Api, createHttpJsonService, PageStore} from "@credo-js/responder-page/api/index";
 import App from "./App";
 import loadDocument from "./loadDocument";
-import {load, loaded, component} from "../lodable";
+import {load, loaded, component} from "../loadable";
 import {AppStore} from "@credo-js/lexicon";
 import type {ReactElement, ElementType} from "react";
 import type {Page} from "@credo-js/responder-page";

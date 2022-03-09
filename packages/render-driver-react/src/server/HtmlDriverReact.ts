@@ -10,7 +10,7 @@ import {debug} from "@credo-js/utils/srv/index";
 import {isPageFound, HtmlNode, HtmlDriverPrototype} from "@credo-js/responder-page";
 import App from "./App";
 import {renderToString} from "../head";
-import {loaded, load, component} from "../lodable";
+import {loaded, load, component} from "../loadable";
 
 export default class HtmlDriverReact extends HtmlDriverPrototype<ElementType, ReactElement> {
 

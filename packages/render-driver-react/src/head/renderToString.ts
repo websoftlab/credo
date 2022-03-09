@@ -1,4 +1,4 @@
-import type {HeadTag} from "../types";
+import type {HeadTag} from "@credo-js/html-head";
 import {createElement} from "react";
 import {renderToStaticMarkup} from "react-dom/server";
 

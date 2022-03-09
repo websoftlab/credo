@@ -50,7 +50,6 @@ export function middleware(credo: CredoJS, options: {
 		Object.defineProperty(ctx, "language", {
 			enumerable: true,
 			configurable: false,
-			writable: false,
 			get() {
 				return ctxLanguage;
 			},

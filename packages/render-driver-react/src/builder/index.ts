@@ -1,7 +1,7 @@
 import type {BuildConfigure, CredoPluginRenderDriver} from "credo";
 import {babelLoader} from "credo/webpack/rules/use-loader-rule-items";
 
-export default <CredoPluginRenderDriver>{
+export default <Omit<CredoPluginRenderDriver, "modulePath">>{
 	name: "react",
 	extensions: {
 		all: [".ts", ".tsx", ".js", ".jsx"],

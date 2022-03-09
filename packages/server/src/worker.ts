@@ -6,11 +6,14 @@ import type {Worker, Server} from "./types";
 
 const cpuCount = cpus().length;
 
-if(process.env.ENV_MODE !== "production") {
-	throw new Error("Run worker only production mode");
+function productionOnly() {
+	if(process.env.ENV_MODE !== "production") {
+		throw new Error("Run worker only production mode");
+	}
 }
 
 export function masterProcess(processes: Worker.Cluster[]) {
+	productionOnly();
 	if(!processes || !Array.isArray(processes) || processes.length < 1) {
 		throw new Error("Processes list is empty")
 	}
@@ -132,6 +135,7 @@ export function masterProcess(processes: Worker.Cluster[]) {
 }
 
 export function childProcess(options: Server.Options) {
+	productionOnly();
 	process.once('message', (data: string) => {
 		const workerData: Worker.Data = JSON.parse(data);
 		const {process: proc} = options;
