@@ -85,12 +85,13 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 	} = options;
 
 	const {
-		publicPath,
 		process: proc,
 		configLoaders,
 		workerData,
+		renderHTMLDriver,
 
 		// exclude system vars
+		publicPath,
 		cmd,
 		middleware,
 		services,
@@ -188,6 +189,10 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 	if(isCluster && cluster.isWorker && cluster.worker && workerData?.cid === proc?.cid) {
 		def("worker", cluster.worker);
 		def("workerData", workerData);
+	}
+
+	if(mode === "app") {
+		def("renderHTMLDriver", renderHTMLDriver || null);
 	}
 
 	["mode", "envMode", "store", "loaded", "define", "isApp", "isCron", "isCmd", "config", "hooks", "debug"].forEach(key => {
