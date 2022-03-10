@@ -30,7 +30,7 @@ function createRoute(result: any, name: string): Route.Context {
 	};
 }
 
-export default (function (credo: CredoJS, name: string, config: ResponderPageCtorConfig = {}) {
+export default (function responder(credo: CredoJS, name: string, config: ResponderPageCtorConfig = {}) {
 
 	if(!credo.isApp()) {
 		throw new Error("CredoJS not starting in application mode");
