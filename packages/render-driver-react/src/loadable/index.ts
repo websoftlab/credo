@@ -57,7 +57,7 @@ function observer(options: ObserverOptions<JSX.Element, ReactFallbackProps>) {
 			}
 		}, []);
 
-		if(!__SSR__) {
+		if(__WEB__) {
 			useEffect(() => {
 				if(isDone() || typeof window === "undefined") {
 					return;

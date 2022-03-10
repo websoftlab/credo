@@ -28,7 +28,7 @@ function Loader(props: {page: Page.StoreInterface<ElementType>, onMount: () => v
 	const url = pathname + search;
 	const {response: Rs} = page;
 
-	if(!__SSR__) {
+	if(__WEB__) {
 		React.useEffect(() => {
 			if (page.url !== url || page.key !== key) {
 				page.load(url, key);

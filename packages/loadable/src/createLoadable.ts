@@ -156,7 +156,7 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 				}
 
 				// for server side
-				if(__SSR__ && promise == null) {
+				if(__SRV__ && promise == null) {
 					init().then(() => {
 						console.log(`Warning, use loadAll() function for server side rendering. Component "${name}" is not loaded.`)
 					});

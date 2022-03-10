@@ -14,7 +14,7 @@ export default function Head(props: HeadProps) {
 	const parent = useHeadContext();
 	const ctx: HeadManager = parent || new HeadManager(headTags);
 
-	if(!__SSR__) {
+	if(__WEB__) {
 		useLayoutEffect(() => {
 			if(!parent) {
 				clearHeadDOMTags();
