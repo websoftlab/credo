@@ -1,6 +1,6 @@
 import type {ReactNode} from "react";
 import type {HeadTag} from "@credo-js/html-head";
-import {useLayoutEffect} from "react";
+import {useLayoutEffect, createElement, Fragment} from "react";
 import {Provider, useHeadContext} from "./context";
 import {HeadManager, clearHeadDOMTags} from "@credo-js/html-head";
 
@@ -23,16 +23,8 @@ export default function Head(props: HeadProps) {
 	}
 
 	if(parent) {
-		return (
-			<>
-				children
-			</>
-		);
+		return createElement(Fragment, null, children);
 	}
 
-	return (
-		<Provider value={ctx}>
-			{children}
-		</Provider>
-	)
+	return createElement(Provider, {value: ctx}, children);
 }
