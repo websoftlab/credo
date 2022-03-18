@@ -1,7 +1,7 @@
 import type {LocalStore} from "./types";
 import {mkdir, access, lstat, readdir, unlink, rmdir, opendir, writeFile, readFile} from "fs/promises";
 import {dirname, sep, join as joinPath, resolve} from "path";
-import {asyncResult} from "@credo-js/utils";
+import asyncResult from "@credo-js/utils/asyncResult";
 
 const pathType = Symbol();
 

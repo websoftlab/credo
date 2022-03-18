@@ -1,7 +1,7 @@
 import type {CredoJS, CredoJSGlobal, Route, EnvMode, Server} from "./types";
 import type {Cmd} from "./cmd/types";
-import {asyncResult} from "@credo-js/utils";
-import {debug, debugSubscribe} from "@credo-js/utils/srv/index";
+import asyncResult from "@credo-js/utils/asyncResult";
+import {debug, debugSubscribe} from "@credo-js/cli-debug";
 import {cmdBuild, preventBuildListener} from "./cmd/builder";
 import Koa from "koa";
 import {config, loadTree} from "./config";

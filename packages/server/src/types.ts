@@ -3,7 +3,7 @@ import type Koa from "koa";
 import type {Options as KoaBodyparserOptions} from "koa-bodyparser";
 import type {RedisClientOptions} from "redis";
 import type {opts as KoaSessionOptions} from "koa-session";
-import type {Debugger} from "@credo-js/utils/srv/index";
+import type {Debugger} from "@credo-js/cli-debug";
 import type {URL} from "@credo-js/make-url";
 import type {PatternInterface} from "@credo-js/path-to-pattern";
 import type {Worker as WorkerThreads} from "worker_threads";

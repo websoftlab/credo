@@ -1,6 +1,6 @@
 import cluster from "cluster";
 import server from "./server";
-import {debug} from "@credo-js/utils/srv/index";
+import {debug} from "@credo-js/cli-debug";
 import {cpus} from "os";
 import type {Worker, Server} from "./types";
 

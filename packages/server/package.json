@@ -18,6 +18,7 @@
 		"@credo-js/lexicon": "*",
 		"@credo-js/make-url": "*",
 		"@credo-js/path-to-pattern": "*",
+		"@credo-js/cli-debug": "*",
 		"vary": "^1.1.2",
 		"koa": "^2.13.4",
 		"koa-bodyparser": "^4.3.0",

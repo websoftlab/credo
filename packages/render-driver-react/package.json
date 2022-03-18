@@ -15,6 +15,7 @@
 		"@credo-js/loadable": "*",
 		"@credo-js/responder-page": "*",
 		"@credo-js/utils": "*",
+		"@credo-js/cli-debug": "*",
 		"mobx": "^6.3.2",
 		"mobx-react-lite": "^3.3.0",
 		"react": "^17.0.2",

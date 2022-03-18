@@ -6,13 +6,12 @@ import type {
 import type {CredoJS, Route} from "@credo-js/server";
 import type {Context} from "koa";
 import {isHttpStatus, isRedirectCode} from "./utils/status";
-import {htmlEscape} from "@credo-js/utils";
+import {htmlEscape, clonePlainObject} from "@credo-js/utils";
 import HtmlDocument from "./HtmlDocument";
 import {loadManifest} from "./utils/manifest";
 import HttpRedirect from "./HttpRedirect";
 import HttpPage from "./HttpPage";
 import createHttpError from "http-errors";
-import {clonePlainObject} from "@credo-js/utils";
 import {OnAppStateHook} from "./types";
 import {buildQuery} from "@credo-js/make-url";
 import getRenderDriver from "./getRenderDriver";

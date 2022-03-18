@@ -1,6 +1,6 @@
 import type {Server} from "./types";
 import type {Evn} from "@credo-js/utils/events";
-import {debug} from "@credo-js/utils/srv/index";
+import {debug} from "@credo-js/cli-debug";
 import {createPlainEvent, subscribe, has} from "@credo-js/utils/events";
 
 type ListenersData = Record<Server.HookName, Evn[]>;

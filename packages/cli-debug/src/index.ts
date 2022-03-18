@@ -1,6 +1,6 @@
 import createDebug from "debug";
-import {color} from "./color";
-import asyncResult from "../asyncResult";
+import {replace} from "@credo-js/cli-color";
+import asyncResult from "@credo-js/utils/asyncResult";
 import type {DebugEvent, DebugListener, Debugger} from "./types";
 
 const app = createDebug(`credo:app`);
@@ -19,7 +19,7 @@ createDebug.formatArgs = function formatArgs(args) {
 	const {namespace} = this;
 	const timestamp: number = Date.now();
 	if(typeof args[0] === "string") {
-		args[0] = color(args[0]);
+		args[0] = replace(args[0]);
 	}
 	formatArgsOrigin.call(this, args);
 	if(!argsPrevent) {
@@ -39,7 +39,7 @@ createDebug.formatArgs = function formatArgs(args) {
 const log = function log(formatter: any, ...args: any[]) { return app(formatter, ... args); } as Debugger;
 log.app = app;
 
-const debug: Debugger = new Proxy<Debugger>(log, {
+export const debug: Debugger = new Proxy<Debugger>(log, {
 	get(target, name: string) {
 		if(name in target) {
 			return target[name];
@@ -50,7 +50,7 @@ const debug: Debugger = new Proxy<Debugger>(log, {
 	}
 });
 
-function debugSubscribe(handler: DebugListener) {
+export function debugSubscribe(handler: DebugListener) {
 	if(typeof handler !== "function") {
 		return () => {};
 	}
@@ -65,4 +65,4 @@ function debugSubscribe(handler: DebugListener) {
 	}
 }
 
-export {debug, debugSubscribe};
+export type {Debugger, DebugEvent, DebugListener} from "./types";

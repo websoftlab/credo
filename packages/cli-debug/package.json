@@ -1,0 +1,42 @@
+{
+	"name": "@credo-js/cli-debug",
+	"version": "1.0.0",
+	"author": "credo@websoftlab.com",
+	"license": "MIT",
+	"scripts": {
+		"build": "node ../../scripts/build.js",
+		"build:i": "node ../../scripts/build.js --increment-version",
+		"build:i-major": "node ../../scripts/build.js --increment-version=major",
+		"build:i-minor": "node ../../scripts/build.js --increment-version=minor",
+		"release:local": "npm publish build --registry http://localhost:4873"
+	},
+	"dependencies": {
+		"debug": "^4.3.2",
+		"@credo-js/cli-color": "*",
+		"@credo-js/utils": "*"
+	},
+	"devDependencies": {
+		"@types/debug": "^4.1.7",
+		"@types/node": "^14.14.31"
+	},
+	"peerDependencies": {},
+	"exports": {
+		"./": "./build/"
+	},
+	"types": "build/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"build/index.d.ts": ["src/index.ts"],
+			"*": ["src/*"]
+		}
+	},
+	"_bundle": {
+		"remove": [
+			"scripts",
+			"bin",
+			"exports",
+			"types",
+			"typesVersions"
+		]
+	}
+}

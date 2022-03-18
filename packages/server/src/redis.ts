@@ -1,5 +1,5 @@
 import redis from "redis";
-import {debug} from "@credo-js/utils/srv/index";
+import {debug} from "@credo-js/cli-debug";
 import type {RedisClientType, RedisClientOptions} from "redis";
 
 // redis://alice:foobared@awesome.redis.server:6380
