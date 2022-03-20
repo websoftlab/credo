@@ -1,3 +1,5 @@
+/// <reference path="../packages/credo/types/eastasianwidth.d.ts" />
+
 import type {CredoJS, Config, Route, Worker as WorkerFJS} from "@credo-js/server";
 import type {AxiosRequestConfig} from "axios";
 import type {Lexicon} from "@credo-js/lexicon";

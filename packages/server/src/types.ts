@@ -46,6 +46,7 @@ export interface CredoJSGlobal {
 
 export interface CredoJS extends CredoJSGlobal {
 	readonly mode: "app";
+	readonly ssr: boolean;
 	app: Koa;
 	renderHTMLDriver: string | null;
 	routes: Route.Point[];
@@ -222,6 +223,7 @@ export namespace Server {
 		configLoaders?: Record<string, <T>(file: string) => T>;
 		workerData?: Worker.Data;
 		renderHTMLDriver?: string | null;
+		ssr?: boolean;
 	}
 }
 

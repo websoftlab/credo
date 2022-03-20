@@ -193,6 +193,7 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 
 	if(mode === "app") {
 		def("renderHTMLDriver", renderHTMLDriver || null);
+		def("ssr", renderHTMLDriver ? server.ssr !== false : false);
 	}
 
 	["mode", "envMode", "store", "loaded", "define", "isApp", "isCron", "isCmd", "config", "hooks", "debug"].forEach(key => {

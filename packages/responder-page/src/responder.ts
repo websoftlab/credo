@@ -148,7 +148,7 @@ export default (function responder(credo: CredoJS, name: string, config: Respond
 
 		document.language = ctx.language;
 		document.getQueryId = getQueryId;
-		document.ssr = typeof ssrProp === "boolean" ? ssrProp : ssr;
+		document.ssr = credo.ssr ? (typeof ssrProp === "boolean" ? ssrProp : ssr) : false;
 		document.baseUrl = baseUrl;
 		document.styles = manifest.styles.slice();
 		document.scripts = manifest.scripts.slice();
