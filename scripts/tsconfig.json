@@ -4,14 +4,14 @@
 		"alwaysStrict": true,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
-		"isolatedModules": true,
+		"isolatedModules": false,
 		"jsx": "preserve",
 		"lib": [
-			"dom",
 			"es2019"
 		],
-		"module": "esnext",
+		"module": "commonjs",
 		"moduleResolution": "node",
+		"noEmit": false,
 		"noFallthroughCasesInSwitch": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
@@ -19,16 +19,20 @@
 		"skipLibCheck": true,
 		"strict": true,
 		"target": "esnext",
-		"noEmit": true,
+		"baseUrl": "./",
+		"rootDir": "./src",
+		"outDir": "./lib",
+		"paths": {},
 		"types": [
-			"node",
-			"react"
+			"node"
 		]
 	},
+	"include": [
+		"./src/**/*"
+	],
 	"exclude": [
 		"**/.*/",
 		"**/build",
-		"**/build-tmp",
 		"**/node_modules"
 	]
 }

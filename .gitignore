@@ -20,5 +20,8 @@ report.*.json
 # project
 /build
 /packages/*/build/
+/packages/*/build-tmp/
 /packages/*/node_modules/
 /packages/*/bundle-version.json
+/scripts/lib
+/credo-build.conf.json

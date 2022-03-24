@@ -1,8 +1,5 @@
 {
 	"compilerOptions": {
-		"declaration": true,
-		"noEmit": false,
-		"emitDeclarationOnly": true,
 		"allowJs": true,
 		"alwaysStrict": true,
 		"esModuleInterop": true,
@@ -15,18 +12,22 @@
 		],
 		"module": "esnext",
 		"moduleResolution": "node",
-		"noEmitOnError": true,
 		"noFallthroughCasesInSwitch": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"strict": true,
-		"target": "esnext"
+		"target": "esnext",
+		"noEmit": false,
+		"noEmitOnError": true,
+		"declaration": true,
+		"emitDeclarationOnly": true
 	},
 	"exclude": [
 		"**/.*/",
 		"**/build",
+		"**/build-tmp",
 		"**/node_modules"
 	]
 }

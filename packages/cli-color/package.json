@@ -4,11 +4,7 @@
 	"author": "credo@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
-		"build": "node ../../scripts/build.js",
-		"build:i": "node ../../scripts/build.js --increment-version",
-		"build:i-major": "node ../../scripts/build.js --increment-version=major",
-		"build:i-minor": "node ../../scripts/build.js --increment-version=minor",
-		"release:local": "npm publish build --registry http://localhost:4873"
+		"build": "node ../../scripts/lib/build.js"
 	},
 	"dependencies": {},
 	"devDependencies": {
@@ -24,14 +20,5 @@
 			"build/index.d.ts": ["src/index.ts"],
 			"*": ["src/*"]
 		}
-	},
-	"_bundle": {
-		"remove": [
-			"scripts",
-			"bin",
-			"exports",
-			"types",
-			"typesVersions"
-		]
 	}
 }
