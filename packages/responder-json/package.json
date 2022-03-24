@@ -8,15 +8,14 @@
 	},
 	"dependencies": {
 		"http-errors": "^1.7.3",
-		"@credo-js/utils": "*"
+		"@credo-js/utils": "*",
+		"@credo-js/server": "*"
 	},
 	"devDependencies": {
 		"@types/koa": "^2.13.3",
 		"@types/http-errors": "^1.6.3"
 	},
-	"peerDependencies": {
-		"@credo-js/server": "*"
-	},
+	"peerDependencies": {},
 	"exports": {
 		"./": "./src/"
 	},

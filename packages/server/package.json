@@ -8,9 +8,6 @@
 	},
 	"dependencies": {
 		"@credo-js/utils": "*",
-		"@credo-js/responder-static": "*",
-		"@credo-js/responder-text": "*",
-		"@credo-js/responder-json": "*",
 		"@credo-js/lexicon": "*",
 		"@credo-js/make-url": "*",
 		"@credo-js/path-to-pattern": "*",
@@ -38,6 +35,9 @@
 	},
 	"peerDependencies": {
 		"@credo-js/responder-page": "*",
+		"@credo-js/responder-static": "*",
+		"@credo-js/responder-text": "*",
+		"@credo-js/responder-json": "*",
 		"credo": "*"
 	},
 	"exports": {
