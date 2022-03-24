@@ -7,7 +7,6 @@
   "scripts": {
     "build": "lerna run build",
     "bootstrap": "lerna bootstrap",
-    "legacy": "lerna run legacy",
     "prebuild:scripts": "rimraf ./scripts/lib",
     "build:scripts": "tsc -p ./scripts/tsconfig.json",
     "build:increment": "node ./scripts/lib/build-increment.js",
