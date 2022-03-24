@@ -1,0 +1,9 @@
+{
+  "index.d.ts": {
+    "target": "copy",
+    "output": "index.d.ts",
+    "package.json": {
+      "types": "./index.d.ts"
+    }
+  }
+}

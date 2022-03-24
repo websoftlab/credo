@@ -1,16 +1,9 @@
-import type {CredoJS, Route, Worker as WorkerCJS} from "../src/types";
+import type {CredoJS, Route, Worker as WorkerCJS} from "@credo-js/server/types";
 import type {Lexicon} from "@credo-js/lexicon";
 import type {URL} from "@credo-js/make-url";
 
 declare global {
 	export var credo: CredoJS;
-	export var __DEV__: boolean;
-	export var __DEV_SERVER__: boolean;
-	export var __PROD__: boolean;
-	export var __BUNDLE__: string;
-	export var __SSR__: boolean;
-	export var __SRV__: boolean;
-	export var __WEB__: boolean;
 }
 
 declare module 'cluster' {

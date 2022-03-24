@@ -9,12 +9,11 @@
 			"output": ".",
 			"package.json": {
 				"types": "./index.d.ts"
-			},
-			"options": {
-				"merge": [
-					"types"
-				]
 			}
 		}
-	]
+	],
+	"types": {
+		"target": "copy",
+		"output": "."
+	}
 }

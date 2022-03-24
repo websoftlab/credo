@@ -2,13 +2,9 @@
 	"extends": "../../tsconfig.build.json",
 	"compilerOptions": {
 		"outDir": "./build",
-		"rootDir": "./src",
-		"types": [
-			"react"
-		]
+		"rootDir": "./src"
 	},
 	"include": [
-		"./src/**/*",
-		"../../types/global.d.ts"
+		"./src/**/*"
 	]
 }
