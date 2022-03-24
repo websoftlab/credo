@@ -1,5 +1,5 @@
 import createDebug from "debug";
-import {replace} from "@credo-js/cli-color";
+import {format} from "@credo-js/cli-color";
 import asyncResult from "@credo-js/utils/asyncResult";
 import type {DebugEvent, DebugListener, Debugger} from "./types";
 
@@ -19,7 +19,7 @@ createDebug.formatArgs = function formatArgs(args) {
 	const {namespace} = this;
 	const timestamp: number = Date.now();
 	if(typeof args[0] === "string") {
-		args[0] = replace(args[0]);
+		args[0] = format(args[0]);
 	}
 	formatArgsOrigin.call(this, args);
 	if(!argsPrevent) {

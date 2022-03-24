@@ -1,7 +1,7 @@
-import type {Mixed, ColorName, ModifierColorName} from "./types";
+import {format as utilFormat} from "util";
+import type {Palette, Mixed, ColorName, ModifierColorName} from "./types";
 
 const regColor = /{([a-zA-Z.]+) (.+?)}/g;
-const regVar = /%s/g;
 
 const colorReset = "\x1b[0m";
 const colors: Partial<Record<ModifierColorName, string>> = {
@@ -21,25 +21,25 @@ const set = (name: ModifierColorName, code: number) => {
 	colors[name] = sgr(code);
 };
 
-const setMx = (color: ModifierColorName, index: number) => {
-	set(color, 30 + index);
-	set("bg" + color[0].toUpperCase() + color.slice(1) as ModifierColorName, 40 + index);
-	set("bg" + color[0].toUpperCase() + color.slice(1) + "Bright" as ModifierColorName, 100 + index);
+const setMx = (name: ModifierColorName, index: number) => {
+	set(name, 30 + index);
+	set("bg" + name[0].toUpperCase() + name.slice(1) as ModifierColorName, 40 + index);
+	set("bg" + name[0].toUpperCase() + name.slice(1) + "Bright" as ModifierColorName, 100 + index);
 };
 
 const clr1: ColorName[] = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "gray"];
 const clr2: ColorName[] = ["darkGray", "lightRed", "lightGreen", "lightYellow", "lightBlue", "lightMagenta", "lightCyan", "white"];
 
-clr1.forEach((color, index) => {
-	setMx(color, index);
-	if(color === "gray") {
+clr1.forEach((name, index) => {
+	setMx(name, index);
+	if(name === "gray") {
 		setMx("grey", index);
 	}
 });
 
-clr2.forEach((color, index) => {
-	set(color, 90 + index);
-	if(color === "darkGray") {
+clr2.forEach((name, index) => {
+	set(name, 90 + index);
+	if(name === "darkGray") {
 		set("darkGrey", 90 + index);
 	}
 });
@@ -56,8 +56,8 @@ function colorMap(list: ModifierColorName[], text: string) {
 		return text;
 	}
 	let prefix = "";
-	for(const color of list) {
-		prefix += colors[color];
+	for(const name of list) {
+		prefix += colors[name];
 	}
 	return prefix + text + colorReset;
 }
@@ -66,23 +66,20 @@ function colorRs(full: string, a: string, b: string) {
 	let n = 0;
 	let text = "";
 	const repeat: string[] = [];
-	a.split(".").forEach(color => {
-		if(isModifierColorName(color) && !repeat.includes(color)) {
+	a.split(".").forEach(name => {
+		if(isModifierColorName(name) && !repeat.includes(name)) {
 			n ++;
-			if(process.stdout.isTTY) {
-				text += colors[color];
-			}
-			repeat.push(color);
+			text += colors[name];
+			repeat.push(name);
 		}
 	});
 	if(n < 1) {
 		return full;
 	}
-	text += b;
-	if(process.stdout.isTTY) {
-		text += colorReset;
+	if(!process.stdout.isTTY) {
+		return b;
 	}
-	return text;
+	return text.concat(b).concat(colorReset);
 }
 
 function createProxy<T extends object = {}>(target?: T, colors: ModifierColorName[] = []): T {
@@ -99,29 +96,36 @@ function createProxy<T extends object = {}>(target?: T, colors: ModifierColorNam
 	});
 }
 
-export const mixed = createProxy<Mixed>();
+export const mixed: Mixed = createProxy<Mixed>();
 
-export function color(name: string, text: string) {
+export const color: Palette = function color(name: string, text: string) {
 	return isModifierColorName(name) ? (colors[name] + text + colorReset) : text;
-}
+} as Palette;
+
+(Object.keys(colors) as ModifierColorName[]).forEach((name) => {
+	Object.defineProperty(color, name, {
+		value(text: string) {
+			return colors[name] + text + colorReset;
+		}
+	});
+});
 
 export function newError(message: string, ... args: (string | number)[] | [(string | number)[]]): Error {
-	return new Error( replace(message, ... args) );
+	return new Error( format(message, ... args) );
 }
 
-// ex. color("text {red text}")
-// ex. color("text {bgWhite.red.bold %s}", ["text"]);
+// ex. format("text {red text}")
+// ex. format("text {bgWhite.red.bold %s}", ["text"]);
 
-export function replace(message: string, ... args: (string | number)[] | [(string | number)[]]) {
+export function format(message: string, ... args: any[]) {
 	message = message.replace(regColor, colorRs);
 	if(args.length) {
 		if(args.length === 1 && Array.isArray(args[0])) {
 			args = args[0];
 		}
-		let i = 0;
-		message = message.replace(regVar, () => String(args[i++]));
+		message = utilFormat(message, ... args);
 	}
 	return message;
 }
 
-export type {ModifierColorName, ModifierName, ColorName, Mixed} from "./types";
+export type {ModifierColorName, ModifierName, ColorName, Mixed, Palette} from "./types";

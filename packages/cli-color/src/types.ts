@@ -22,6 +22,10 @@ export type ColorName =
 
 export type ModifierColorName = ModifierName | ColorName;
 
+export interface Palette extends Record<ModifierColorName, (text: string) => string> {
+	(name: ModifierColorName, text: string): string;
+}
+
 export interface Mixed extends Record<ModifierColorName, Mixed> {
 	(text: string): string;
 }
