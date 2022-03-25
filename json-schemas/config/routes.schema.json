@@ -1,0 +1,327 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "JSON schema for CredoJS routes.json config files",
+	"description": "Routing configuration",
+	"type": "object",
+	"definitions": {
+		"FunctionNameAndOptionalProperty": {
+			"description": "Callback function name (or path name) with an optional argument",
+			"oneOf": [
+				{
+					"description": "Only name",
+					"type": "string"
+				},
+				{
+					"description": "Name with argument",
+					"type": "array",
+					"minLength": 1,
+					"maxLength": 2,
+					"items": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "object"
+						}
+					]
+				}
+			]
+		},
+		"Method": {
+			"description": "HTTP Method(s) (GET, POST, etc.)",
+			"oneOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			]
+		},
+		"ExtraMiddlewareType": {
+			"oneOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "array",
+					"minLength": 2,
+					"maxLength": 2,
+					"items": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "object"
+						}
+					]
+				},
+				{
+					"type": "array",
+					"minLength": 2,
+					"maxLength": 2,
+					"items": [
+						{
+							"type": "null"
+						},
+						{
+							"type": "string"
+						}
+					]
+				}
+			]
+		},
+		"Cache": {
+			"oneOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "number"
+				},
+				{
+					"type": "string",
+					"enum": [
+						"body",
+						"controller"
+					]
+				},
+				{
+					"type": "object",
+					"properties": {
+						"ttl": {
+							"type": "number"
+						},
+						"mode": {
+							"type": "string",
+							"enum": [
+								"body",
+								"controller"
+							]
+						}
+					}
+				}
+			]
+		},
+		"NRPCObjectType": {
+			"type": "object",
+			"properties": {
+				"method": {
+					"$ref": "#/definitions/Method"
+				},
+				"name": {
+					"description": "Route name prefix",
+					"type": "string"
+				},
+				"responder": {
+					"description": "Responder callback name and/or callback name prefix",
+					"$ref": "#/definitions/FunctionNameAndOptionalProperty"
+				},
+				"path": {
+					"description": "Route path and/or path prefix",
+					"type": "string"
+				},
+				"controller": {
+					"description": "Controller callback name and/or callback name prefix",
+					"$ref": "#/definitions/FunctionNameAndOptionalProperty"
+				}
+			}
+		},
+		"NRPCType": {
+			"description": "A short string for Name-Responder-Path-Controller. String pattern: [method:]name@responder[|path|controller]",
+			"oneOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "array",
+					"minLength": 1,
+					"maxLength": 4,
+					"items": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "object"
+						},
+						{
+							"type": "object"
+						},
+						{
+							"type": "object"
+						}
+					]
+				}
+			]
+		},
+		"Routes": {
+			"description": "Routes list",
+			"type": "object",
+			"properties": {
+				"routes": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/Route"
+					}
+				}
+			}
+		},
+		"RouteBase": {
+			"type": "object",
+			"properties": {
+				"cache": {
+					"$ref": "#/definitions/Cache"
+				},
+				"details": {
+					"type": "object"
+				},
+				"middleware": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/ExtraMiddlewareType"
+					}
+				}
+			}
+		},
+		"Route": {
+			"description": "Route Item or Group",
+			"oneOf": [
+				{
+					"$ref": "#/definitions/NRPCType"
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"allOf": [
+						{
+							"$ref": "#/definitions/RouteBase"
+						},
+						{
+							"$ref": "#/definitions/Routes"
+						},
+						{
+							"$ref": "#/definitions/NRPCObjectType"
+						}
+					]
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"allOf": [
+						{
+							"$ref": "#/definitions/RouteBase"
+						},
+						{
+							"$ref": "#/definitions/Routes"
+						},
+						{
+							"type": "object",
+							"properties": {
+								"nrpc": {
+									"$ref": "#/definitions/NRPCType"
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		"EmptyRoute": {
+			"description": "Route without path",
+			"oneOf": [
+				{
+					"$ref": "#/definitions/NRPCType"
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"allOf": [
+						{
+							"$ref": "#/definitions/RouteBase"
+						},
+						{
+							"$ref": "#/definitions/NRPCObjectType"
+						}
+					]
+				},
+				{
+					"type": "object",
+					"additionalProperties": false,
+					"allOf": [
+						{
+							"$ref": "#/definitions/RouteBase"
+						},
+						{
+							"type": "object",
+							"properties": {
+								"nrpc": {
+									"$ref": "#/definitions/NRPCType"
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	},
+	"properties": {
+		"routes": {
+			"description": "Routes list",
+			"type": "array",
+			"items": {
+				"$ref": "#/definitions/Route"
+			}
+		},
+		"host": {
+			"description": "Allowed Host(s)",
+			"oneOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			]
+		},
+		"name": {
+			"description": "Route name prefix",
+			"type": "string"
+		},
+		"responder": {
+			"description": "Responder callback name and/or callback name prefix",
+			"type": "string"
+		},
+		"path": {
+			"description": "Route path and/or path prefix",
+			"type": "string"
+		},
+		"controller": {
+			"description": "Controller callback name and/or callback name prefix",
+			"type": "string"
+		},
+		"details": {
+			"description": "Any advanced options",
+			"type": "object"
+		},
+		"middleware": {
+			"description": "List of Koa extra-middleware",
+			"type": "array",
+			"items": {
+				"$ref": "#/definitions/ExtraMiddlewareType"
+			}
+		},
+		"route404": {
+			"description": "Route for 404 page",
+			"$ref": "#/definitions/EmptyRoute"
+		}
+	},
+	"required": [
+		"routes"
+	]
+}

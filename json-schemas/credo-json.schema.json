@@ -70,7 +70,8 @@
 				},
 				"count": {
 					"description": "Number of threads",
-					"type": "number"
+					"type": "number",
+					"minimum": 1
 				},
 				"ssr": {
 					"$ref": "#/definitions/SSRProperty"
@@ -83,7 +84,7 @@
 					"$ref": "#/definitions/BootloaderProperty"
 				},
 				"bootstrap": {
-					"$ref": "#/definitions/BootloaderProperty"
+					"$ref": "#/definitions/BootstrapProperty"
 				},
 				"env": {
 					"description": "Environment Variables",

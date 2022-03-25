@@ -1,0 +1,52 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "JSON schema for CredoJS config.json config files",
+	"description": "Basic service options",
+	"type": "object",
+	"properties": {
+		"secret": {
+			"description": "Secret hash strings",
+			"oneOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			]
+		},
+		"store": {
+			"description": "Web-service global store",
+			"type": "object"
+		},
+		"dataPath": {
+			"description": "Local store path",
+			"oneOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "object",
+					"properties": {
+						"development": {
+							"type": "string"
+						},
+						"production": {
+							"type": "string"
+						}
+					}
+				}
+			]
+		},
+		"buildTimeout": {
+			"description": "Waiting time for bootstrap functions",
+			"type": "number"
+		}
+	},
+	"required": [
+		"secret"
+	]
+}

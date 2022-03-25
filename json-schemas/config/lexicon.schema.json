@@ -1,0 +1,26 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "JSON schema for CredoJS lexicon.json config files",
+	"description": "Language options",
+	"type": "object",
+	"properties": {
+		"language": {
+			"description": "Default language",
+			"type": "string"
+		},
+		"languages": {
+			"description": "List of available language packs",
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"multilingual": {
+			"description": "Multilingual service",
+			"type": "boolean"
+		}
+	},
+	"required": [
+		"language"
+	]
+}
