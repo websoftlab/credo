@@ -16,7 +16,6 @@ export type {
 
 	CtxHook,
 	OnAppStateHook,
-	OnMakeURLHook,
 	OnMakeURLServerHook,
 	OnResponseCompleteHook,
 	OnResponseControllerHook,

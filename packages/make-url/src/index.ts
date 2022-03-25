@@ -1,7 +1,7 @@
 import {pathToPattern} from "@credo-js/path-to-pattern";
-import type {URL} from "./types";
+import type {URL, OnMakeURLHook} from "./types";
 
-export type {URL};
+export type {URL, OnMakeURLHook};
 
 function builder(object: any, prefix: string, depth: number, options: URL.QueryOptions) {
 	if(object == null) {

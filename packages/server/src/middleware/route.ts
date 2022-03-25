@@ -231,8 +231,6 @@ function createRegHost(prop: { host: string, port: string }) {
 }
 
 type LoadRoutesType = {
-	baseUrl: string,
-	getQueryId: string,
 	isHost: (ctx: Context) => boolean,
 	routes: Route.Point[],
 	route404?: Route.EmptyPoint,
@@ -241,8 +239,6 @@ type LoadRoutesType = {
 export function loadRoutes(credo: CredoJSGlobal): LoadRoutesType {
 	const conf = credo.config("routes");
 	const {
-		baseUrl = "/",
-		getQueryId = "query",
 		host = "*",
 		routes = [],
 		route404,
@@ -293,8 +289,6 @@ export function loadRoutes(credo: CredoJSGlobal): LoadRoutesType {
 
 	const parent = {... otherConf, middleware: createMiddleware(middleware)};
 	const load: LoadRoutesType = {
-		baseUrl,
-		getQueryId,
 		isHost,
 		routes: configRoute(routes, [], parent),
 	};

@@ -1,7 +1,7 @@
 import {makeUrl} from "@credo-js/make-url";
 import {createPlainEvent, subscribe, has} from "@credo-js/utils/events";
 import type {API, Page} from "../types";
-import type {URL} from "@credo-js/make-url";
+import type {URL, OnMakeURLHook} from "@credo-js/make-url";
 import type {Lexicon} from "@credo-js/lexicon";
 import type {Evn} from "@credo-js/utils/events";
 
@@ -40,8 +40,9 @@ export default class Api<ComponentType, Store = any> implements API.ApiInterface
 		if(typeof url === "string" || Array.isArray(url)) {
 			url = {path: url};
 		}
-		this.emit("onMakeURL", {url});
-		return makeUrl(url);
+		const event = {url};
+		this.emit<OnMakeURLHook>("onMakeURL", event);
+		return makeUrl(event.url);
 	};
 
 	has(action: API.HookName, listener?: API.HookListener): boolean {

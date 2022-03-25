@@ -19,3 +19,6 @@ export namespace URL {
 	export type Handler = (url: string | string[] | Options) => string;
 	export type AsyncHandler = (url: string | string[] | Options) => Promise<string>;
 }
+
+// Hooks
+export interface OnMakeURLHook { url: URL.Options }

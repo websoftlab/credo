@@ -13,11 +13,9 @@ export type {
 	ResponderPageOptions,
 	ResponderPageResultNotFound,
 	ResponderPageResultRedirect,
-	ResponderPageCtorConfig,
 	HttpJsonServiceOptions,
 	OnPageHTMLBeforeRenderHook,
 	OnPageJSONBeforeRenderHook,
-	OnAppStateHook,
 	API,
 	Page,
 	Render

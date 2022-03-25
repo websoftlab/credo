@@ -4,7 +4,7 @@ import type {Options as KoaBodyparserOptions} from "koa-bodyparser";
 import type {RedisClientOptions} from "redis";
 import type {opts as KoaSessionOptions} from "koa-session";
 import type {Debugger} from "@credo-js/cli-debug";
-import type {URL} from "@credo-js/make-url";
+import type {OnMakeURLHook} from "@credo-js/make-url";
 import type {PatternInterface} from "@credo-js/path-to-pattern";
 import type {Worker as WorkerThreads} from "worker_threads";
 import type {Worker as WorkerCluster} from "cluster";
@@ -123,8 +123,6 @@ export namespace Config {
 
 	export interface Route {
 		host?: string | string[];
-		baseUrl?: string;
-		getQueryId?: string;
 		name?: string;
 		responder?: string;
 		path?: string;
@@ -449,7 +447,6 @@ export namespace LocalStore {
 // hooks
 export interface CtxHook { ctx: Koa.Context }
 
-export interface OnMakeURLHook { url: URL.Options }
 export interface OnMakeURLServerHook extends OnMakeURLHook, CtxHook {}
 export interface OnAppStateHook<State = any> extends CtxHook { ctx: Koa.Context, state: State }
 export interface OnResponseHook extends CtxHook {}

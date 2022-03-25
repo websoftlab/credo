@@ -1,18 +1,17 @@
 import type {
 	OnPageHTMLBeforeRenderHook,
-	OnPageJSONBeforeRenderHook, ResponderPageCtorConfig, ResponderPageHandlerProps,
+	OnPageJSONBeforeRenderHook, ResponderPageHandlerProps,
 	ResponderPageOptions, ResponderPageResult, ResponderPageResultFound
 } from "./types";
 import type {CredoJS, Route} from "@credo-js/server";
 import type {Context} from "koa";
 import {isHttpStatus, isRedirectCode} from "./utils/status";
-import {htmlEscape, clonePlainObject} from "@credo-js/utils";
+import {htmlEscape} from "@credo-js/utils";
 import HtmlDocument from "./HtmlDocument";
 import {loadManifest} from "./utils/manifest";
 import HttpRedirect from "./HttpRedirect";
 import HttpPage from "./HttpPage";
 import createHttpError from "http-errors";
-import {OnAppStateHook} from "./types";
 import {buildQuery} from "@credo-js/make-url";
 import getRenderDriver from "./getRenderDriver";
 
@@ -29,7 +28,7 @@ function createRoute(result: any, name: string): Route.Context {
 	};
 }
 
-export default (function responder(credo: CredoJS, name: string, config: ResponderPageCtorConfig = {}) {
+export default (function responder(credo: CredoJS, name: string) {
 
 	if(!credo.isApp()) {
 		throw new Error("CredoJS not starting in application mode");
@@ -49,13 +48,9 @@ export default (function responder(credo: CredoJS, name: string, config: Respond
 	};
 
 	const {
+		ssr = true,
 		getQueryId = "query",
 		baseUrl = "/",
-	} = config;
-
-	const {
-		ssr = true,
-		state: originState = {},
 	} = options;
 
 	credo.hooks.subscribe("onResponse", (evn) => {
@@ -132,16 +127,6 @@ export default (function responder(credo: CredoJS, name: string, config: Respond
 	}
 
 	async function sendHtml(ctx: Context, data: any, ssrProp?: boolean) {
-		const state = typeof originState === "function" ? await originState(ctx) : clonePlainObject(originState);
-		await credo.hooks.emit<OnAppStateHook>("onAppState", {ctx, state});
-
-		// set ctx.state
-		Object.defineProperty(ctx, "state", {
-			get() { return state; },
-			enumerable: true,
-			configurable: false,
-		});
-
 		const code = data.code;
 		const document = new HtmlDocument(await getRenderDriver(renderHTMLDriver, data));
 		const manifest = await loadManifest(manifestOptions);
@@ -315,4 +300,4 @@ export default (function responder(credo: CredoJS, name: string, config: Respond
 			}
 		}
 	}
-}) as Route.ResponderCtor<ResponderPageCtorConfig>;
+}) as Route.ResponderCtor;

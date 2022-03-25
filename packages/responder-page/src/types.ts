@@ -3,15 +3,10 @@ import type HtmlDocument from "./HtmlDocument";
 import type {default as HtmlNode} from "./HtmlNode";
 import type {AxiosInstance} from "axios";
 import type {Lexicon} from "@credo-js/lexicon";
-import type {CtxHook, OnMakeURLHook} from "@credo-js/server";
-import type {URL} from "@credo-js/make-url";
+import type {CtxHook} from "@credo-js/server";
+import type {URL, OnMakeURLHook} from "@credo-js/make-url";
 
 type OkCode = 200 | 201 | 202 | 203 | 205 | 206 | 207 | 208 | 226;
-
-export type ResponderPageCtorConfig = {
-	getQueryId?: string;
-	baseUrl?: string;
-};
 
 export type ResponderPageResultFound<Data = any, Props = any> = {
 	code: OkCode;
@@ -51,7 +46,7 @@ export type ResponderPageHandlerProps<Props = any> = {
 export type ResponderPageOptions = {
 	ssr?: boolean;
 	baseUrl?: string;
-	state?: any;
+	getQueryId?: string;
 }
 
 // Render
@@ -222,8 +217,6 @@ export interface HttpJsonServiceOptions {
 }
 
 // hooks
-
-export interface OnAppStateHook<State = any> extends CtxHook { state: State }
 
 export interface OnPageHTMLBeforeRenderHook extends CtxHook { document: HtmlDocument; }
 

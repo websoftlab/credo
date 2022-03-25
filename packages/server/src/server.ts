@@ -55,17 +55,14 @@ export default async function server(options: Server.Options = {}) {
 
 	const routeConfig = loadRoutes(credo);
 	const {
-		baseUrl,
 		routes,
 		isHost,
 		route404,
-		getQueryId = "query",
 	} = routeConfig;
 
 	Object.defineProperty(credo, "routes", { get() { return routes; }, enumerable: true, configurable: false });
 
 	registrar.option("responders", "static", createStaticOptions(publicPath, options.process?.id));
-	registrar.option("responders", "page", {baseUrl, getQueryId});
 
 	const {
 		env,
