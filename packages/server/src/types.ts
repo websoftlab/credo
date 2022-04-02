@@ -11,11 +11,16 @@ import type {Worker as WorkerCluster} from "cluster";
 import type {BootMgr} from "./credo";
 import type {LocalStoreData} from "./store";
 import type {Stats} from "fs";
-import type {CredoJSCmd, OnBuildHook} from "./cmd/types";
+import type {CredoJSCmd, OnBuildHook, CommanderCtor} from "./cmd/types";
 
 export type EnvMode = "development" | "production";
 
-export {CredoJSCmd, OnBuildHook};
+export {CredoJSCmd, OnBuildHook, CommanderCtor};
+
+interface PType {
+	id: string;
+	mid: number;
+}
 
 export interface CredoJSGlobal {
 	readonly mode: string;
@@ -24,6 +29,7 @@ export interface CredoJSGlobal {
 	store: LocalStoreData;
 	config: ConfigHandler;
 	define(name: string, value: any): void;
+	define(name: string, value: Function | Function[], getterAndSetter: true): void;
 	hooks: Server.HooksInterface;
 	debug: Debugger;
 	language: string;
@@ -34,10 +40,7 @@ export interface CredoJSGlobal {
 	cache?: any;
 	worker?: WorkerCluster;
 	workerData?: Worker.Data;
-	process?: {
-		id: number;
-		cid: string;
-	}
+	process?: PType;
 	isApp(this: CredoJSGlobal): this is CredoJS;
 	isCron(this: CredoJSGlobal): this is CredoJSCron;
 	isCmd(this: CredoJSGlobal): this is CredoJSCmd;
@@ -112,7 +115,6 @@ export namespace Config {
 		secret: string | string[];
 		store?: any;
 		dataPath?: string | Record<EnvMode, string>;
-		buildTimeout?: number;
 	}
 
 	export interface Lexicon {
@@ -130,6 +132,7 @@ export namespace Config {
 		details?: any;
 		middleware?: Route.ExtraMiddlewareType[];
 		route404?: Route.EmptyRoute;
+		sort?: "native" | "pattern";
 		routes: Route.Route[];
 	}
 
@@ -207,10 +210,7 @@ export namespace Server {
 	}
 
 	export interface Options extends Record<string, any> {
-		process?: {
-			id: number;
-			cid: string;
-		}
+		process?: PType;
 		publicPath?: string[];
 		host?: string;
 		port?: string | number;
@@ -218,7 +218,6 @@ export namespace Server {
 		mode?: EnvMode;
 		cronMode?: Cron.Mode;
 		registrar?: BootMgr;
-		configLoaders?: Record<string, <T>(file: string) => T>;
 		workerData?: Worker.Data;
 		renderHTMLDriver?: string | null;
 		ssr?: boolean;
@@ -228,17 +227,14 @@ export namespace Server {
 // Workers
 export namespace Worker {
 
-	export interface Cluster {
-		id: number,
-		cid: string,
+	export interface Cluster extends PType {
 		mode: "cron" | "app",
 		count: number,
 		env?: Record<string, string>,
 	}
 
-	export interface Data {
-		id: number;
-		cid: string;
+	export interface Data extends PType {
+		pid: number;
 		part: number;
 		mode: "app" | "cron";
 		numberOfRestarts: number;

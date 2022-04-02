@@ -1,21 +1,32 @@
 import isWindows from "is-windows";
 import envGlobal from "./env";
-import {join as joinPath, sep} from "path";
+import {access} from "fs/promises";
+import {constants} from "fs";
+import cluster from "cluster";
+import {isMainThread} from "worker_threads";
 import type {EnvMode} from "./types";
 
-export function createStaticOptions(publicPath: string[] = [], id: undefined | number = undefined) {
-	const clientPath: string = joinPath(process.cwd(), `${__BUNDLE__}/client`);
-	const clientPrivate: string = clientPath + sep + ".";
-	const clientManifest: string = joinPath(clientPath, id ? `/manifest-${id}.json` : `/manifest.json`);
-	return {
-		publicPath: publicPath.length > 0 ? [clientPath].concat(publicPath) : [clientPath],
-		exclude: [
-			(path: string) => (path === clientManifest || path.startsWith(clientPrivate)),
-		],
-	};
+// server options
+
+export async function exists(file: string): Promise<boolean> {
+	try {
+		await access(file, constants.F_OK);
+	} catch(err) {
+		return false;
+	}
+	return true;
 }
 
-// server options
+export function isMainProcess(): boolean {
+	if(!isMainThread) {
+		return false;
+	}
+	const isPrimary = "isPrimary" in cluster ? (cluster as any).isPrimary : (cluster as any).isMaster;
+	if(!isPrimary) {
+		return false;
+	}
+	return typeof process.send !== "function";
+}
 
 interface EnvConfig extends Record<string, any> {
 	mode: EnvMode;

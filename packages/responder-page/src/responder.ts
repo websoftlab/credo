@@ -1,7 +1,8 @@
 import type {
 	OnPageHTMLBeforeRenderHook,
 	OnPageJSONBeforeRenderHook, ResponderPageHandlerProps,
-	ResponderPageOptions, ResponderPageResult, ResponderPageResultFound
+	ResponderPageOptions, ResponderPageResult, ResponderPageResultFound,
+	LoadManifestOptions
 } from "./types";
 import type {CredoJS, Route} from "@credo-js/server";
 import type {Context} from "koa";
@@ -41,11 +42,15 @@ export default (function responder(credo: CredoJS, name: string) {
 	const renderHTMLDriver = credo.renderHTMLDriver;
 	const options = credo.config<ResponderPageOptions>(`responder/${name}`);
 
-	const manifestOptions = {
+	const manifestOptions: LoadManifestOptions = {
 		envMode: credo.envMode,
 		devServerHost: credo.env.get("devServerHost").value,
 		devServerPort: credo.env.get("devServerPort").value,
 	};
+
+	if(credo.process) {
+		manifestOptions.mid = credo.process.mid;
+	}
 
 	const {
 		ssr = true,

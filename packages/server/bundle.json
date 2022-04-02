@@ -2,7 +2,12 @@
 	"src": [
 		{
 			"target": "node",
-			"output": "."
+			"output": ".",
+			"package.json": {
+				"bin": {
+					"credo-serv": "./bin/index.js"
+				}
+			}
 		},
 		{
 			"target": "types",

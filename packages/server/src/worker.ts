@@ -2,27 +2,32 @@ import cluster from "cluster";
 import server from "./server";
 import {debug} from "@credo-js/cli-debug";
 import {cpus} from "os";
+import daemon from "./daemon";
 import type {Worker, Server} from "./types";
 
 const cpuCount = cpus().length;
 
 function productionOnly() {
-	if(process.env.ENV_MODE !== "production") {
+	if(process.env.NODE_ENV !== "production") {
 		throw new Error("Run worker only production mode");
 	}
 }
 
-export function masterProcess(processes: Worker.Cluster[]) {
+export async function masterProcess(processes: Worker.Cluster[]) {
 	productionOnly();
 	if(!processes || !Array.isArray(processes) || processes.length < 1) {
 		throw new Error("Processes list is empty")
 	}
 
+	const dmn = daemon();
+
+	dmn.init(true);
+
 	debug.worker(`Master process {blue %s} is running`, process.pid);
 
 	type Part = {
-		id: number;
-		cid: string;
+		id: string;
+		mid: number;
 		numberOfRestarts: number;
 		part: number;
 		mode: "app" | "cron";
@@ -33,6 +38,14 @@ export function masterProcess(processes: Worker.Cluster[]) {
 	const parts: Part[] = [];
 	const idn: Record<string, number> = {};
 
+	function pidToPart(pid: number | string) {
+		const id = String(pid);
+		if(!idn.hasOwnProperty(id)) {
+			throw new Error("Fatal worker error, PID data lost");
+		}
+		return parts[idn[id]];
+	}
+
 	const fork = (data?: number | string | Part, failure: boolean = false) => {
 		if(data == null) {
 			throw new Error("Fatal worker error, PID is null");
@@ -40,10 +53,7 @@ export function masterProcess(processes: Worker.Cluster[]) {
 
 		if(typeof data === "number" || typeof data === "string") {
 			const pid = String(data);
-			if(!idn.hasOwnProperty(pid)) {
-				throw new Error("Fatal worker error, PID data lost");
-			}
-			data = parts[idn[pid]];
+			data = pidToPart(pid);
 			delete idn[pid];
 		}
 
@@ -52,8 +62,8 @@ export function masterProcess(processes: Worker.Cluster[]) {
 		}
 
 		const {
+			mid,
 			id,
-			cid,
 			mode,
 			numberOfRestarts,
 			part,
@@ -61,18 +71,27 @@ export function masterProcess(processes: Worker.Cluster[]) {
 			workerPart,
 		} = data;
 
-		debug.worker(`Forking process number {blue %s}...`, workerPart);
+		debug.worker(`Forking process {cyan %s} mode {blue %s}, part {blue %s}, number {blue %s}...`, id, mode, part, workerPart);
 
 		const worker = cluster.fork({
 			... env,
 			NODE_ENV: "production",
 			APP_MODE: "cluster",
-			APP_CID: cid,
+			APP_ID: id,
 		});
 
 		idn[String(worker.process.pid)] = part;
 
-		worker.send(JSON.stringify({id, cid, part: workerPart, mode, numberOfRestarts}), undefined, (err: Error | null) => {
+		const workerData: Worker.Data = {
+			id,
+			mid,
+			pid: process.pid,
+			part: workerPart,
+			mode,
+			numberOfRestarts,
+		};
+
+		worker.send(workerData, undefined, (err: Error | null) => {
 			if(err) {
 				debug.error("Send worker error", err);
 			}
@@ -86,8 +105,8 @@ export function masterProcess(processes: Worker.Cluster[]) {
 		let {
 			env = {},
 			count = 1,
+			mid,
 			id,
-			cid,
 			mode,
 		} = item;
 
@@ -108,8 +127,8 @@ export function masterProcess(processes: Worker.Cluster[]) {
 			const part = parts.length;
 			parts.push({
 				env,
+				mid,
 				id,
-				cid,
 				mode,
 				part,
 				workerPart: i + 1,
@@ -124,9 +143,34 @@ export function masterProcess(processes: Worker.Cluster[]) {
 
 	cluster.on("exit", (worker, code, signal) => {
 		const pid = worker.process.pid;
+		const wdt = pidToPart(pid);
 		debug.error('Worker pid {blue %d} died ({red %s}). Restarting...', pid, signal || code);
 		fork(pid, true);
+
+		// add restart count
+		dmn.send({
+			type: "restart",
+			id: wdt.id,
+			pid: dmn.pid,
+			cid: pid,
+			part: wdt.workerPart,
+		});
 	});
+
+	function isV16Cluster(cluster: any): cluster is {isPrimary: boolean, setupPrimary: Function} {
+		return "setupPrimary" in cluster && typeof cluster.setupPrimary === "function";
+	}
+
+	// hide windows
+	const sett: any = {
+		windowsHide: true,
+	};
+
+	if(isV16Cluster(cluster)) {
+		cluster.setupPrimary(sett);
+	} else {
+		cluster.setupMaster(sett);
+	}
 
 	// fork workers.
 	parts.forEach(part => {
@@ -136,21 +180,24 @@ export function masterProcess(processes: Worker.Cluster[]) {
 
 export function childProcess(options: Server.Options) {
 	productionOnly();
-	process.once('message', (data: string) => {
-		const workerData: Worker.Data = JSON.parse(data);
-		const {process: proc} = options;
+	return new Promise((resolve, reject) => {
+		process.once('message', (workerData: Worker.Data) => {
+			const {process: proc} = options;
 
-		if(proc?.cid !== workerData.cid) {
-			throw new Error("Process IDs do not match (Worker.Data[cid] vs Server.Options[process].cid)");
-		}
+			if(proc?.id !== workerData.id) {
+				throw new Error("Process IDs do not match (Worker.Data[id] vs Server.Options[process].id)");
+			}
 
-		if(cluster.worker) {
-			cluster.worker.workerData = workerData;
-		}
+			if(cluster.worker) {
+				Object.defineProperty(cluster.worker, "workerData", {
+					value: workerData,
+					enumerable: true,
+					configurable: false,
+					writable: false,
+				});
+			}
 
-		server(options).catch((err) => {
-			debug.error('Server failure', err);
-			process.exit(1);
+			server(options).then(resolve).catch(reject);
 		});
 	});
 }

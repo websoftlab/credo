@@ -1,27 +1,12 @@
 import type {Server} from "../types";
 import type {CredoJSCmd} from "./types";
-import cluster from "cluster";
-import {isMainThread} from "worker_threads";
-import createCmd from "./createCmd";
 import {createCredoJS, BootMgr} from "../credo";
-
-function isPrimaryCluster(cls: any): boolean {
-	if("isPrimary" in cls) {
-		return cls.isPrimary;
-	} else {
-		return cls.isMaster;
-	}
-}
+import {isMainProcess} from "../utils";
+import {Commander} from "@credo-js/cli-commander";
 
 export default async function cmdService(options: Server.Options = {}) {
-	if(!isMainThread || !isPrimaryCluster(cluster)) {
-		throw new Error("Command line not available in cluster worker mode");
-	}
-
-	const args = process.argv.slice(2);
-	const name = args.shift();
-	if(!name) {
-		throw new Error("Command name not specified");
+	if(!isMainProcess()) {
+		throw new Error("Running the command line is only allowed on the main thread!");
 	}
 
 	const {registrar: registrarOption, ... rest} = options;
@@ -35,16 +20,17 @@ export default async function cmdService(options: Server.Options = {}) {
 		throw new Error("Command line not available in development mode");
 	}
 
-	const cmd = createCmd(credo, name, args);
-
-	Object.defineProperty(credo, "cmd", {
-		get() { return cmd; },
-		enumerable: true,
-		configurable: false,
+	const cmd = new Commander({
+		prompt: "credo cmd",
+		version: require("../package.json").version,
+		description: "Command shell for internal operations",
 	});
 
+	credo.define("cmd", cmd);
+
 	// load & bootstrap, run cmd
-	const registrar = options.registrar || new BootMgr();
+	const registrar = registrarOption || new BootMgr();
 	await (await registrar.load(credo))();
-	await cmd.run();
+
+	return cmd.begin();
 }

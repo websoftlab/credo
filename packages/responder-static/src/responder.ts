@@ -1,6 +1,6 @@
 import type {CredoJS, Route} from "@credo-js/server";
 import type {Context, Next} from "koa";
-import type {ResponderStaticOptions} from "./types";
+import type {ResponderStaticOptions, StaticCtorConfig} from "./types";
 import type {Stats} from "fs";
 import {basename, extname, join, normalize, parse, resolve, sep} from "path";
 import resolvePath from "resolve-path";
@@ -58,10 +58,9 @@ function decode(path: string): string | false {
 	}
 }
 
-type StaticCtorConfig = {
-	publicPath?: string[];
-	exclude?: Array<string | RegExp>;
-};
+function cwd(file: string) {
+	return join(process.cwd(), file);
+}
 
 export default (function responder(credo: CredoJS, name: string, config: StaticCtorConfig = {}) {
 
@@ -72,7 +71,6 @@ export default (function responder(credo: CredoJS, name: string, config: StaticC
 	} = options;
 	const {
 		publicPath = [],
-		exclude: excludeConfig,
 	} = config;
 
 	let root: string[] = publicPath.slice();
@@ -85,12 +83,19 @@ export default (function responder(credo: CredoJS, name: string, config: StaticC
 	}
 
 	if(!root.length) {
-		root.push(join(process.cwd(), "/public"));
+		root.push(cwd("/public"));
 	}
 
 	let exclude: Array<string | RegExp | ((path: string) => boolean)> = Array.isArray(excludePath) ? excludePath.slice() : (excludePath ? [excludePath] : []);
-	if(Array.isArray(excludeConfig) && excludeConfig.length) {
-		exclude = exclude.concat(excludeConfig);
+
+	// add client directory
+	if(credo.renderHTMLDriver) {
+		const mid = credo.process?.mid;
+		const clientPath: string = cwd(`${__BUNDLE__}/client${mid ? `-${mid}` : ""}`);
+		const clientPrivate: string = clientPath + sep + ".";
+		const clientManifest: string = join(clientPath, `/manifest.json`);
+		root.unshift(clientPath);
+		exclude.unshift((path: string) => (path === clientManifest || path.startsWith(clientPrivate)));
 	}
 
 	const rootTree = root.map(rootPoint => normalize(resolve(rootPoint)));

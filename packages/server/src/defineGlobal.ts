@@ -8,5 +8,6 @@ export default function defineGlobal(mode?: "development" | "production", ssr: b
 		if(typeof __SSR__ === "undefined") global.__SSR__ = Boolean(ssr);
 		if(typeof __SRV__ === "undefined") global.__SRV__ = true;
 		if(typeof __WEB__ === "undefined") global.__WEB__ = false;
+		if(typeof __ENV__ === "undefined") global.__ENV__ = isDev ? "development" : "production";
 	}
 }

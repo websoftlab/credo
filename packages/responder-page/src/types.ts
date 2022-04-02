@@ -233,3 +233,11 @@ export interface OnPageJSONBeforeRenderHook extends CtxHook {
 	};
 }
 
+// utils
+
+export interface LoadManifestOptions {
+	mid?: number,
+	envMode: string,
+	devServerHost?: string,
+	devServerPort?: number,
+}

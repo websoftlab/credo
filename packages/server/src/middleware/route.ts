@@ -231,6 +231,7 @@ function createRegHost(prop: { host: string, port: string }) {
 }
 
 type LoadRoutesType = {
+	sort: "native" | "pattern",
 	isHost: (ctx: Context) => boolean,
 	routes: Route.Point[],
 	route404?: Route.EmptyPoint,
@@ -243,6 +244,7 @@ export function loadRoutes(credo: CredoJSGlobal): LoadRoutesType {
 		routes = [],
 		route404,
 		middleware,
+		sort = "native",
 		... otherConf
 	} = conf;
 
@@ -289,6 +291,7 @@ export function loadRoutes(credo: CredoJSGlobal): LoadRoutesType {
 
 	const parent = {... otherConf, middleware: createMiddleware(middleware)};
 	const load: LoadRoutesType = {
+		sort,
 		isHost,
 		routes: configRoute(routes, [], parent),
 	};

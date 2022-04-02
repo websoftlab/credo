@@ -7,20 +7,33 @@ import {
 	sessionMiddleware,
 	loadRoutes,
 } from "./middleware";
-import {createStaticOptions} from "./utils";
 import cluster from "cluster";
 import {Worker, isMainThread} from 'worker_threads';
 import {createCredoJS, BootMgr} from "./credo";
 import cronService from "./cron/service";
 import prettyMs from "pretty-ms";
+import daemon from "./daemon";
 import type {Context} from "koa";
 import type {CredoJS, Server} from "./types";
 
 export default async function server(options: Server.Options = {}) {
 
 	// run cron service
-	if(options.cronMode === "service") {
+	const {cronMode} = options;
+	if(cronMode === "service") {
 		return cronService(options);
+	}
+
+	const isProd = __PROD__ || options.mode === "production";
+	if(isProd) {
+		daemon().init();
+	}
+
+	const ended: Function[] = [];
+	function done() {
+		for(const end of ended) {
+			end();
+		}
 	}
 
 	const {
@@ -30,7 +43,7 @@ export default async function server(options: Server.Options = {}) {
 
 	const registrar = registrarOption || new BootMgr();
 	const app = new Koa();
-	const isCluster = cluster.isWorker && options.process?.cid === cluster.worker?.workerData?.cid;
+	const isCluster = cluster.isWorker && options.process?.id === cluster.worker?.workerData?.id;
 	const credo: CredoJS = await createCredoJS<CredoJS>(options, {
 		mode: "app",
 		cluster: isCluster,
@@ -58,11 +71,21 @@ export default async function server(options: Server.Options = {}) {
 		routes,
 		isHost,
 		route404,
+		sort,
 	} = routeConfig;
 
-	Object.defineProperty(credo, "routes", { get() { return routes; }, enumerable: true, configurable: false });
+	// sort pattern
+	if(sort === "pattern") {
+		ended.push(() => {
+			routes.sort((a, b) => {
+				return (b.pattern ? b.pattern.length : -1) - (a.pattern ? a.pattern.length : -1);
+			});
+		});
+	}
 
-	registrar.option("responders", "static", createStaticOptions(publicPath, options.process?.id));
+	credo.define("routes", function() { return routes; }, true);
+
+	registrar.option("responders", "static", {publicPath});
 
 	const {
 		env,
@@ -116,31 +139,48 @@ export default async function server(options: Server.Options = {}) {
 	registrar.middleware(routeMiddleware);
 
 	const boot = await registrar.load(credo);
-	const complete = async () => {
-		// bootstrap
-		await boot();
 
-		// cron
-		if(!isCluster && !credo.process && !credo.isCron()) {
+	function cron<T>(serv: T): T {
+		if(isProd && !isCluster && !credo.process && !credo.isCron() && cronMode !== "disabled" && isMainThread) {
 			const cron = credo.config("cron");
-			if(cron.enabled && isMainThread) {
+			if(cron.enabled) {
+				const dmn = daemon();
+				const argv: string[] = [];
+				if(process.argv.includes("--no-pid")) {
+					argv.push("--no-pid");
+				}
+
+				let cronWorker: Worker | undefined;
+				credo.define("cronWorker", function() { return cronWorker; }, true);
+
 				const startCron = () => {
-					const cronWorker = new Worker(require.main?.filename || process.argv[1], {
-						workerData: "cron",
+					cronWorker = new Worker(require.main?.filename || process.argv[1], {
+						workerData: {pid: process.pid, appMode: "cron"},
+						argv,
+					});
+					cronWorker.on("message", (message) => {
+						dmn.send(message);
 					});
 					cronWorker.on('exit', (code) => {
-						credo.cronWorker = undefined;
+						cronWorker = undefined;
 						credo.debug.error("Cron worker exit ({blue %s}), try restart after 10 seconds...", code);
 						setTimeout(startCron, 10000);
+
+						// send restart count
+						dmn.send({
+							type: "restart",
+							id: "cron",
+							part: 1,
+							pid: dmn.pid,
+							cid: 0,
+						});
 					});
-					credo.cronWorker = cronWorker;
 				};
 				startCron();
 			}
 		}
-
-		return credo;
-	};
+		return serv;
+	}
 
 	renderMiddleware(credo, {route404});
 
@@ -148,21 +188,26 @@ export default async function server(options: Server.Options = {}) {
 	const port = env.get("port").default(1278).toPortNumber().value;
 	const mode = env.get("mode").value;
 
-	return new Promise((resolve, reject) => {
-		try {
-			const server = app.listen(port, host, () => {
+	if(isProd) {
+		const dmn = daemon();
+		dmn.send({
+			type: "detail",
+			id: credo.process ? credo.process.id : "main",
+			pid: dmn.pid,
+			cid: process.pid,
+			part: credo.process && cluster.worker?.workerData?.part || 1,
+			port,
+			host,
+			mode: credo.mode,
+		});
+	}
+
+	return boot()
+		.then(done)
+		.then(() => {
+			return app.listen(port, host, () => {
 				credo.debug(`Server is running at http://${host}:${port}/ - {cyan ${mode}} mode`);
-				complete()
-					.then(() => {
-						resolve(server);
-					})
-					.catch((err) => {
-						reject(err);
-						server.close();
-					});
-			});
-		} catch (err) {
-			reject(err);
-		}
-	});
+			})
+		})
+		.then(cron);
 }

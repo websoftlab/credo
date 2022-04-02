@@ -1,8 +1,15 @@
 import type {CredoJSCron, Server} from "../types";
 import {createCredoJS, BootMgr} from "../credo";
 import nodeSchedule from "./nodeSchedule";
+import daemon from "../daemon";
+import cluster from "cluster";
 
 export default async function cronService(options: Server.Options = {}) {
+
+	const isProd = __PROD__ || options.mode === "production";
+	if(isProd) {
+		daemon().init();
+	}
 
 	const {
 		registrar: registrarOption,
@@ -27,6 +34,9 @@ export default async function cronService(options: Server.Options = {}) {
 	await (await registrar.load(credo))();
 
 	const cron = credo.config("cron");
+	if(!cron.enabled) {
+		throw new Error("Cron disabled...");
+	}
 
 	// cron
 	try {
@@ -34,6 +44,22 @@ export default async function cronService(options: Server.Options = {}) {
 	} catch(err) {
 		credo.debug.error("cron jobs failure", err);
 		throw err;
+	}
+
+	credo.debug("CRON Server is running [{cyan %s} jobs]", cron.jobs.length);
+
+	if(isProd) {
+		const dmn = daemon();
+		dmn.send({
+			type: "detail",
+			id: "cron",
+			pid: dmn.pid,
+			cid: process.pid,
+			part: credo.process && cluster.worker?.workerData?.part || 1,
+			port: null,
+			host: null,
+			mode: credo.mode,
+		});
 	}
 
 	return credo;

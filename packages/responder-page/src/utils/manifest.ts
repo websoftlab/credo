@@ -2,6 +2,7 @@ import {join as joinPath} from "path";
 import {existsSync} from "fs";
 import {readFile} from "fs/promises";
 import http from "http";
+import type {LoadManifestOptions} from "../types";
 
 type Manifest = {
 	scripts: string[];
@@ -20,12 +21,16 @@ function manifestJSON(data: string): Manifest | null {
 }
 
 async function loadDevManifest(host: string, port: number): Promise<string> {
-	return new Promise((resolve, reject) => {
+	return new Promise<string>((resolve, reject) => {
 		http
 			.request({host, port, path: "/manifest.json"}, (response) => {
 				let data = "";
 				response.on('data', (chunk) => { data += chunk; });
-				response.on('end', () => { resolve(data); });
+				response.on('end', () => {
+					String(response.statusCode).startsWith("20")
+						? resolve(data)
+						: reject(new Error(`Load error. HTTP Status ${response.statusCode}`));
+				});
 				response.on('error', (error) => { reject(error); });
 			})
 			.end();
@@ -42,9 +47,9 @@ async function readManifest(id?: number) {
 
 let manifest: Manifest | null = null;
 
-export async function loadManifest(options: {id?: number, envMode: string, devServerHost?: string, devServerPort?: number}): Promise<Manifest> {
+export async function loadManifest(options: LoadManifestOptions): Promise<Manifest> {
 	const {
-		id,
+		mid,
 		envMode,
 		devServerHost,
 		devServerPort,
@@ -58,7 +63,7 @@ export async function loadManifest(options: {id?: number, envMode: string, devSe
 	} else if(manifest) {
 		return manifest;
 	} else {
-		const data = await readManifest(id);
+		const data = await readManifest(mid);
 		if(data) {
 			if(envMode === "production") {
 				manifest = data;

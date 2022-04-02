@@ -1,10 +1,10 @@
 import type {CredoJS, CredoJSGlobal, Route, EnvMode, Server} from "./types";
-import type {Cmd} from "./cmd/types";
+import type {CommanderCtor} from "./cmd/types";
 import asyncResult from "@credo-js/utils/asyncResult";
 import {debug, debugSubscribe} from "@credo-js/cli-debug";
 import {cmdBuild, preventBuildListener} from "./cmd/builder";
 import Koa from "koa";
-import {config, loadTree} from "./config";
+import {config} from "./config";
 import ServerHooks from "./ServerHooks";
 import {loadOptions} from "./utils";
 import {cache, init as redisInit} from "./redis";
@@ -72,7 +72,6 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 		mode: string,
 		envMode?: EnvMode,
 		cluster?: boolean,
-		env?: Record<string, any>,
 	},
 	additional: Omit<T, keyof CredoJSGlobal>
 ): Promise<T> {
@@ -80,13 +79,11 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 	const {
 		mode,
 		cluster: isCluster = false,
-		env = {},
-		envMode = env.mode || process.env.NODE_ENV || "development",
+		envMode = process.env.NODE_ENV || "development",
 	} = options;
 
 	const {
 		process: proc,
-		configLoaders,
 		workerData,
 		renderHTMLDriver,
 
@@ -109,8 +106,6 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 	debugSubscribe((event) => {
 		return hooks.emit("onDebug", event);
 	});
-
-	await loadTree(proc?.cid, configLoaders);
 
 	const lexicon = config("lexicon");
 	let {
@@ -146,7 +141,7 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 		dataPath = dataPath[envMode as EnvMode];
 	}
 	if(!dataPath) {
-		dataPath = proc?.id ? `./data/data-${proc.id}` : "./data";
+		dataPath = proc?.mid ? `./data/data-${proc.mid}` : "./data";
 	}
 	const store = await createLocalStore(dataPath);
 
@@ -155,10 +150,27 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 		languages.unshift(language);
 	}
 
-	Object.assign(env, loadOptions(optionsEnv));
-
-	const def = (name: string, value: any) => {
-		Object.defineProperty(credo, name, { value, enumerable: true, writable: false, configurable: false });
+	const def = (name: string, value: any, getterSetter?: true) => {
+		const desc: PropertyDescriptor = {
+			enumerable: true,
+			configurable: false,
+		};
+		if(getterSetter) {
+			if(Array.isArray(value)) {
+				if(typeof value[0] === "function") {
+					desc.get = value[0];
+				}
+				if(typeof value[1] === "function") {
+					desc.set = value[1];
+				}
+			} else if(typeof value === "function") {
+				desc.get = value;
+			}
+		} else {
+			desc.value = value;
+			desc.writable = false;
+		}
+		Object.defineProperty(credo, name, desc);
 	};
 
 	const credo = {
@@ -177,8 +189,7 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 		languages,
 		multilingual,
 		services: {},
-		env: createEnv(env),
-		cron: {},
+		env: createEnv(loadOptions(optionsEnv)),
 		... additional,
 	} as CredoJSGlobal;
 
@@ -186,7 +197,7 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 		def("process", proc);
 	}
 
-	if(isCluster && cluster.isWorker && cluster.worker && workerData?.cid === proc?.cid) {
+	if(isCluster && cluster.isWorker && cluster.worker && workerData?.id === proc?.id) {
 		def("worker", cluster.worker);
 		def("workerData", workerData);
 	}
@@ -197,7 +208,15 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 	}
 
 	["mode", "envMode", "store", "loaded", "define", "isApp", "isCron", "isCmd", "config", "hooks", "debug"].forEach(key => {
-		Object.defineProperty(credo, key, { writable: false, configurable: false });
+		const desc = Object.getOwnPropertyDescriptor(credo, key);
+		if(!desc) {
+			return;
+		}
+		desc.configurable = false;
+		if(!desc.get && !desc.set) {
+			desc.writable = false;
+		}
+		Object.defineProperty(credo, key, desc);
 	});
 
 	// initial cache
@@ -259,7 +278,7 @@ export class BootMgr {
 	responder(name: string, handler: Route.ResponderCtor, options?: any) {
 		define(this, "responders", name, {name, handler, options});
 	}
-	cmd(name: string, handler: Cmd.CommanderCtor, options?: any) {
+	cmd(name: string, handler: CommanderCtor, options?: any) {
 		define(this, "cmd", name, {name, handler, options});
 	}
 	bootstrap(handler: CJSRegHandler, options?: any) {
@@ -295,7 +314,7 @@ export class BootMgr {
 		}
 
 		if(credo.isCmd()) {
-			await credo.cmd.register("build", cmdBuild);
+			cmdBuild(credo, credo.cmd.command("build"));
 		}
 
 		const {services, controllers, responders, middleware, extraMiddleware, cmd, bootstrap, options} = this[REG_KEY];
@@ -364,7 +383,7 @@ export class BootMgr {
 
 		if(credo.isCmd()) {
 			await each(cmd, ({name, handler, options}: any) => {
-				return credo.cmd.register(name, handler, prop("cmd", name, options));
+				return handler(credo, credo.cmd.command(name), prop("cmd", name, options));
 			});
 		}
 

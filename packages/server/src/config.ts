@@ -1,17 +1,18 @@
-import type {ConfigHandler}  from "./types";
+import type {ConfigHandler, EnvMode}  from "./types";
 import {join} from "path";
-import {constants} from "fs";
 import deepmerge from "deepmerge";
-import {readdir, stat, access} from "fs/promises";
+import {readdirSync, existsSync, statSync} from "fs";
 
 const tree: {
-	cid?: string,
+	id?: string,
+	mode: EnvMode,
 	loaded: boolean,
 	priority: string[],
 	loaders: Record<string, <T>(file: string) => T>,
 	path: Record<string, { loader: string, file: string }>,
 } = {
-	cid: "",
+	id: "",
+	mode: process.env.NODE_ENV === "production" ? "production" : "development",
 	loaded: false,
 	priority: ["js", "json"],
 	loaders: {
@@ -26,24 +27,20 @@ const tree: {
 	path: {}
 };
 
-async function info(file: string, checkExists: boolean = false) {
-	if(checkExists) {
-		try {
-			await access(file, constants.F_OK);
-		} catch(err) {
-			return null;
-		}
+function info(file: string, checkExists: boolean = false) {
+	if(checkExists && !existsSync(file)) {
+		return null;
 	}
-	return await stat(file);
+	return statSync(file);
 }
 
-async function loadTreeNode(prefix: string, parent: string[]): Promise<void> {
+function loadTreeNode(prefix: string, parent: string[]): void {
 	let base = "config";
 	if(prefix) {
 		base += `/${prefix}`;
 	}
 	const fullPath = join(process.cwd(), base);
-	const all = await readdir(fullPath);
+	const all = readdirSync(fullPath);
 	for(let file of all) {
 		// ignore hidden
 		if(file.charAt(0) === ".") {
@@ -52,13 +49,13 @@ async function loadTreeNode(prefix: string, parent: string[]): Promise<void> {
 
 		// read only current cluster directory
 		if(prefix === "" && file === "cluster") {
-			if(!tree.cid) {
+			if(!tree.id) {
 				continue;
 			}
 
-			file = `cluster/${tree.cid}`;
+			file = `cluster/${tree.id}`;
 			const clusterPath = join(process.cwd(), file);
-			const stat = await info(clusterPath, true);
+			const stat = info(clusterPath, true);
 			if(!stat || !stat.isDirectory()) {
 				continue;
 			}
@@ -69,7 +66,7 @@ async function loadTreeNode(prefix: string, parent: string[]): Promise<void> {
 		}
 
 		const readPath = join(fullPath, file);
-		const stat = await info(readPath);
+		const stat = info(readPath);
 		if(!stat) {
 			continue;
 		}
@@ -103,10 +100,14 @@ async function loadTreeNode(prefix: string, parent: string[]): Promise<void> {
 	}
 }
 
-export async function loadTree(cid?: string, loaders?: Record<string, <T>(file: string) => T>) {
+export function loadTree(id?: string, mode?: EnvMode, loaders?: Record<string, <T>(file: string) => T>): void {
 	if(!tree.loaded) {
-		if(cid != null) {
-			tree.cid = cid;
+		if(id != null) {
+			tree.id = id;
+		}
+
+		if(mode && tree.mode !== mode) {
+			tree.mode = mode === "production" ? "production" : "development";
 		}
 
 		// add loaders
@@ -134,21 +135,28 @@ export async function loadTree(cid?: string, loaders?: Record<string, <T>(file: 
 		}
 
 		// load tree
-		await loadTreeNode("", []);
+		loadTreeNode("", []);
 
 		tree.loaded = true;
 	}
 }
 
-function get<T extends object = any>(name: string, def?: Partial<T>) {
-	const {path, loaders} = tree;
+function isMode<T>(data: any, mode: EnvMode): data is Record<EnvMode, T> {
+	return data && data.hasOwnProperty(mode) && typeof data[mode] === "object" && data[mode] != null;
+}
+
+function get<T extends object = any>(name: string, def?: Partial<T>): T {
+	const {path, mode, loaders} = tree;
 	const info = path.hasOwnProperty(name) ? path[name] : null;
 	if(!info) {
-		return def;
+		return def as T;
 	}
-	const data = loaders[info.loader]<T>(info.file);
+	let data = loaders[info.loader]<T>(info.file);
+	if(isMode<T>(data, mode)) {
+		data = data[mode];
+	}
 	if(def) {
-		return deepmerge(data, def);
+		return deepmerge(def, data);
 	}
 	return data as T;
 }
@@ -162,7 +170,7 @@ export const config: ConfigHandler = function config<T extends object = any>(nam
 		throw new Error("Cluster access denied");
 	}
 
-	return ((tree.cid
-		? get(`cluster/${tree.cid}/${name}`, get(name, def))
+	return ((tree.id
+		? get(`cluster/${tree.id}/${name}`, get(name, def))
 		: get(name, def)) || {}) as T;
 }

@@ -1,4 +1,5 @@
-import type {CredoJSCmd} from "./types";
+import type {CredoJSCmd, CommanderCtor} from "./types";
+import type {Command} from "@credo-js/cli-commander";
 
 const BUILD_KEY = Symbol();
 let onBuildEmit = false;
@@ -10,30 +11,42 @@ export function preventBuildListener(event: {name: string, [BUILD_KEY]?: boolean
 	onBuildEmit = true;
 }
 
-export function cmdBuild(credo: CredoJSCmd) {
+export const cmdBuild: CommanderCtor = function cmdBuild(credo: CredoJSCmd, command: Command) {
 	if(!credo.hooks.has("onBuild", preventBuildListener)) {
 		credo.hooks.subscribe("onBuild", preventBuildListener);
 	}
-	return async (name?: string) => {
-		if(
-			name ||
-			credo.cmd.args.length > 0 ||
-			credo.cmd.options.length > 0
-		) {
-			throw new Error("Command `build` does not contain additional names, arguments or options")
+
+	credo.cmd.on("add", () => {
+		if(credo.loaded) {
+			throw new Error("You cannot add a new command to the command list because the system is already loaded");
 		}
+	});
 
-		let {buildTimeout} = credo.config("config");
-		if(typeof buildTimeout !== "number" || buildTimeout < 0.001) {
-			buildTimeout = 15;
+	credo.cmd.on("remove", (cmd: Command) => {
+		if(cmd === command) {
+			throw new Error("You cannot remove the default build command");
 		}
+	});
 
-		const id = setTimeout(() => {
-			credo.debug.error(`Attention! Assembly takes too long [{green %s} second limit], process aborted`, buildTimeout);
-			process.exit(1);
-		}, buildTimeout * 1000);
+	command
+		.description("The command is run after building the server in production mode. Can be forced")
+		.notation("Emit onBuild hook...")
+		.strict()
+		.option("--timeout", {alt: "-T", description: "Timeout for onBuild hook functions", type: "value", format: "time-interval"})
+		.action<never, {timeout?: number}, void>(async (_, opt) => {
+			let {timeout} = opt;
+			if(timeout == null) {
+				timeout = 15000;
+			}
 
-		await credo.hooks.emit("onBuild", {[BUILD_KEY]: true});
-		clearTimeout(id);
-	};
-}
+			const id = timeout === 0 ? 0 : setTimeout(() => {
+				credo.debug.error(`Attention! Assembly takes too long [{green %s} second limit], process aborted`, timeout as number/1000);
+				process.exit(1);
+			}, timeout);
+
+			await credo.hooks.emit("onBuild", {[BUILD_KEY]: true});
+			if(id !== 0) {
+				clearTimeout(id);
+			}
+		});
+};
