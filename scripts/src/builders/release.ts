@@ -117,6 +117,8 @@ export default async function release(name: string, scope: string[] = []) {
 		return debug(`All packages have already been released for channel ${name}`)
 	}
 
+	const release: {name: string, version: string}[] = [];
+
 	for(const pg of all) {
 		debug("Publish {yellow %s} package...", pg.name);
 		await cmd("npm", createNpmArgs("publish", channel), {
@@ -126,11 +128,19 @@ export default async function release(name: string, scope: string[] = []) {
 		// update JsonFile
 		await writeJsonFile<BundleVersionJson>(pg.cwdPath("bundle-version.json"), {
 			version: pg.version,
-			lastVersion: pg.latestVersion || undefined,
 			release: {
 				... pg.release,
 				[name]: pg.version,
 			},
 		});
+
+		release.push({
+			name: pg.name,
+			version: pg.version,
+		});
 	}
+
+	release.forEach(item => {
+		debug("Publish channel {white %s}: {yellow %s}@{green %s} ...", name, item.name, item.version);
+	});
 }

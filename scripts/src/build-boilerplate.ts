@@ -121,7 +121,10 @@ $ npm install --save ${name}
 		devDependencies: {},
 		peerDependencies: {},
 		exports: {
-			"./": "./build/"
+			"./": "./build/",
+			".": {
+				"require": "./build/index.js"
+			}
 		},
 		types: "build/index.d.ts",
 		typesVersions: {

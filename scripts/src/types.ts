@@ -65,7 +65,6 @@ export interface Config {
 
 export interface BundleVersionJson {
 	version: string;
-	lastVersion?: string | null;
 	release?: Record<string, string>;
 }
 
