@@ -41,7 +41,10 @@
 		"credo": "*"
 	},
 	"exports": {
-		"./": "./build/"
+		"./": "./build/",
+		".": {
+			"require": "./build/index.js"
+		}
 	},
 	"types": "build/index.d.ts",
 	"typesVersions": {

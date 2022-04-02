@@ -22,7 +22,10 @@
 	},
 	"peerDependencies": {},
 	"exports": {
-		"./": "./src/"
+		"./": "./src/",
+		".": {
+			"require": "./build/index.js"
+		}
 	},
 	"types": "build/index.d.ts",
 	"typesVersions": {
