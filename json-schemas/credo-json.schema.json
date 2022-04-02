@@ -269,8 +269,8 @@
 			"type": "object",
 			"properties": {
 				"clusters": {
-					"type": "object",
-					"additionalProperties": {
+					"type": "array",
+					"items": {
 						"$ref": "#/definitions/Cluster"
 					}
 				},
@@ -299,6 +299,70 @@
 							]
 						}
 					]
+				},
+				"onBuildTimeout": {
+					"description": "Timeout for onBuild hook functions",
+					"type": [
+						"string",
+						"number"
+					]
+				},
+				"daemon": {
+					"description": "Server daemon options",
+					"type": "object",
+					"properties": {
+						"killSignal": {
+							"description": "KILL signal for stop command",
+							"type": "string",
+							"enum": [
+								"SIGABRT",
+								"SIGALRM",
+								"SIGBUS",
+								"SIGCHLD",
+								"SIGCONT",
+								"SIGFPE",
+								"SIGHUP",
+								"SIGILL",
+								"SIGINT",
+								"SIGKILL",
+								"SIGPIPE",
+								"SIGPOLL",
+								"SIGPROF",
+								"SIGQUIT",
+								"SIGSEGV",
+								"SIGSTOP",
+								"SIGSYS",
+								"SIGTERM",
+								"SIGTRAP",
+								"SIGTSTP",
+								"SIGTTIN",
+								"SIGTTOU",
+								"SIGUSR1",
+								"SIGUSR2",
+								"SIGURG",
+								"SIGVTALRM",
+								"SIGXCPU",
+								"SIGXFSZ",
+								"SIGWINCH"
+							]
+						},
+						"delay": {
+							"description": "Time between CPU data samples in microseconds",
+							"type": "number",
+							"minimum": 3000,
+							"maximum": 300000
+						},
+						"cpuPoint": {
+							"description": "Number of processor data save points",
+							"type": "number",
+							"minimum": 10,
+							"maximum": 2000
+						},
+						"pid": {
+							"description": "PID file (JSON format)",
+							"type": "string"
+						}
+					}
 				}
 			}
 		}

@@ -316,6 +316,14 @@
 				"$ref": "#/definitions/ExtraMiddlewareType"
 			}
 		},
+		"sort": {
+			"description": "Sorting the list of routes",
+			"type": "string",
+			"enum": [
+				"native",
+				"pattern"
+			]
+		},
 		"route404": {
 			"description": "Route for 404 page",
 			"$ref": "#/definitions/EmptyRoute"

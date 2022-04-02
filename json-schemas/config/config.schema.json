@@ -40,10 +40,6 @@
 					}
 				}
 			]
-		},
-		"buildTimeout": {
-			"description": "Waiting time for bootstrap functions",
-			"type": "number"
 		}
 	},
 	"required": [
