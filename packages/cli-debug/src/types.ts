@@ -1,14 +1,14 @@
-import type {Debugger as DebuggerCtor} from "debug";
-
 export interface Debugger {
 	(formatter: any, ...args: any[]): void;
-	[key: string]: DebuggerCtor;
+	[key: string]: DebugLogger;
 }
+
+export type DebugLogger = (formatter: any, ...args: any[]) => void;
 
 export type DebugListener = (event: DebugEvent) => (void | Promise<void>);
 
 export interface DebugEvent {
+	namespace: string;
 	timestamp: number;
-	name: string;
-	args: any[];
+	[key: string]: any;
 }

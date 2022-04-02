@@ -1,42 +1,41 @@
 import createDebug from "debug";
-import {format} from "@credo-js/cli-color";
-import asyncResult from "@credo-js/utils/asyncResult";
-import type {DebugEvent, DebugListener, Debugger} from "./types";
+import util from "util";
+import {getLogger, createWinstonLogger} from "./winstonLogger";
+import {reconfigure} from "./accessibility";
+import createLogger from "./createLogger";
+import {addListener, emitListener, listenersLength, removeListener} from "./listeners";
+import {setFormat} from "./formatters";
+import type {DebugListener, Debugger} from "./types";
+import {setPrefix, getPrefix} from "./namespace";
 
-const app = createDebug(`credo:app`);
+const app = createLogger(`app`);
 const formatArgsOrigin = createDebug.formatArgs;
-const listeners: DebugListener[] = [];
 
-let argsPrevent = false;
-
-async function emit(event: DebugEvent) {
-	for(let listener of listeners) {
-		await asyncResult(listener(event));
-	}
-}
-
-createDebug.formatArgs = function formatArgs(args) {
+createDebug.formatArgs = function formatArgs(originArgs) {
 	const {namespace} = this;
-	const timestamp: number = Date.now();
+	const args = originArgs.slice();
+
+	formatArgsOrigin.call(this, originArgs);
+
+	// emit event
+	if(listenersLength() === 0) {
+		return;
+	}
+
+	const evn: { namespace: string } & Record<string, any> = {namespace};
 	if(typeof args[0] === "string") {
-		args[0] = format(args[0]);
+		evn.message = args.shift();
+		if(args.length) {
+			evn.message = util.format(evn.namespace, ... args);
+		}
+	} else {
+		evn.args = args;
 	}
-	formatArgsOrigin.call(this, args);
-	if(!argsPrevent) {
-		emit({
-			timestamp,
-			name: namespace,
-			args: args.slice(),
-		})
-		.catch((err: Error) => {
-			argsPrevent = true;
-			debug.error(err);
-			argsPrevent = false;
-		});
-	}
+
+	emitListener(evn);
 }
 
-const log = function log(formatter: any, ...args: any[]) { return app(formatter, ... args); } as Debugger;
+const log = createLogger("app") as Debugger;
 log.app = app;
 
 export const debug: Debugger = new Proxy<Debugger>(log, {
@@ -44,7 +43,7 @@ export const debug: Debugger = new Proxy<Debugger>(log, {
 		if(name in target) {
 			return target[name];
 		}
-		const func = createDebug(`credo:${name}`);
+		const func = createLogger(name);
 		target[name] = func;
 		return func;
 	}
@@ -54,15 +53,56 @@ export function debugSubscribe(handler: DebugListener) {
 	if(typeof handler !== "function") {
 		return () => {};
 	}
-	if(!listeners.includes(handler)) {
-		listeners.push(handler);
-	}
+	addListener(handler);
 	return () => {
-		const index = listeners.indexOf(handler);
-		if(index !== -1) {
-			listeners.splice(index, 1);
-		}
+		removeListener(handler);
 	}
 }
 
-export type {Debugger, DebugEvent, DebugListener} from "./types";
+export function debugEnable(namespaces: string = "*") {
+
+	if(!namespaces) {
+		namespaces = process.env.DEBUG || "";
+		if(!namespaces) {
+			const prefix = getPrefix();
+			if(!prefix) {
+				return;
+			}
+			namespaces = `${prefix}*`;
+		}
+	}
+
+	// native debug
+	createDebug.enable(namespaces);
+
+	// system
+	reconfigure(namespaces);
+}
+
+export function debugFormat<T = any, F = any, D = any>(namespace: string, formatter: (object: T) => F, details?: D) {
+	if(typeof formatter !== "function") {
+		throw new Error("Log formatter must be a function");
+	}
+	setFormat(namespace, formatter, details);
+}
+
+export function debugSetNamespacePrefix(prefix: string) {
+	setPrefix(prefix);
+}
+
+export function debugConfig(options: any) {
+	const {
+		namespacePrefix,
+		... rest
+	} = options;
+	createWinstonLogger(rest);
+	if(typeof namespacePrefix === "string") {
+		setPrefix(namespacePrefix);
+	}
+}
+
+export function winston() {
+	return getLogger();
+}
+
+export type {Debugger, DebugEvent, DebugListener, DebugLogger} from "./types";
