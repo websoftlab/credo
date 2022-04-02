@@ -8,4 +8,5 @@ declare global {
 	export var __SSR__: boolean;
 	export var __SRV__: boolean;
 	export var __WEB__: boolean;
+	export var __ENV__: "production" | "development";
 }
