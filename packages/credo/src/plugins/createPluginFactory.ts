@@ -31,9 +31,11 @@ export default async function createPluginFactory(plugins: CredoPlugin.Plugin[],
 	}
 
 	// check page responder
-	if(options.renderDriver && !plugins.some(plugin => plugin.responders.hasOwnProperty("page"))) {
-		await installDependencies(["@credo-js/responder-page"]);
-		await docTypeReference("@credo-js/responder-page");
+	if(options.renderDriver) {
+		await docTypeReference("@credo-js/types/global-render");
+		if(!plugins.some(plugin => plugin.responders.hasOwnProperty("page"))) {
+			await installDependencies(["@credo-js/responder-page"]);
+		}
 	}
 
 	const listeners: Record<string, Function[]> = {};

@@ -2,7 +2,11 @@ import {cwdPath, existsStat} from "../utils";
 import {readFile, writeFile} from "fs/promises";
 
 function ref(name: string) {
-	return `/// <reference types="${name}/global" />`;
+	const ended = name.startsWith("@") ? name.lastIndexOf("/") !== name.indexOf("/") : name.includes("/");
+	if(!ended) {
+		name += "/global";
+	}
+	return `/// <reference types="${name}" />`;
 }
 
 export default async function docTypeReference(name: string | string[]) {
@@ -32,7 +36,6 @@ export default async function docTypeReference(name: string | string[]) {
 	}
 
 	name.map(ref).forEach(add);
-	add(`/// <reference types="@credo-js/types/index" />`);
 
 	if(update) {
 		await writeFile(file, text);

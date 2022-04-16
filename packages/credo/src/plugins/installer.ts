@@ -163,7 +163,7 @@ export async function installCredoJS() {
 
 	await createCwdFileIfNotExists(".env", "DEBUG=credo:*");
 	await docTypeReference([
-		"credo", "@credo-js/server"
+		"@credo-js/server", "@credo-js/types"
 	]);
 	await createCwdFileIfNotExists("tsconfig.json", () => (
 		toJSON({
