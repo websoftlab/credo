@@ -112,6 +112,8 @@ export default async function createBuild(pg: WorkspacePackageDetail, deps: Reco
 		throw newError("The {yellow %s} file not found!", localPathName(bundleFile));
 	}
 
+	debug("{cyan $} >> {darkGray %s}", localPathName(bundleFile));
+
 	const bundle = await readJsonFile<BundleJson>(stat.file);
 	const entities: BundleEntity[] = [];
 	const append: any[] = [];

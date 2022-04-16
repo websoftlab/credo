@@ -77,10 +77,7 @@ async function run() {
 	});
 
 	await mkFile(join(directory, "tsconfig.json"), {
-		"extends": "../../tsconfig.json",
-		"compilerOptions": {
-			"paths": {}
-		}
+		"extends": "../../tsconfig.json"
 	});
 	await mkFile(join(directory, "tsconfig.build.json"), {
 		"extends": "../../tsconfig.build.json",
