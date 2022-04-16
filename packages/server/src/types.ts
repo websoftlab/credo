@@ -23,6 +23,22 @@ interface PType {
 	mid: number;
 }
 
+export interface CredoServices {
+	[key: string]: any;
+}
+
+export interface CredoControllers {
+	[key: string]: any;
+}
+
+export interface CredoResponders {
+	[key: string]: Route.Responder;
+}
+
+export interface CredoExtraMiddleware {
+	[key: string]: Route.ExtraMiddlewareFunction;
+}
+
 export interface CredoJSGlobal {
 	readonly mode: string;
 	readonly envMode: EnvMode;
@@ -37,7 +53,7 @@ export interface CredoJSGlobal {
 	languages: string[];
 	multilingual: boolean;
 	env: Env;
-	services: Record<string, any>;
+	services: CredoServices;
 	cache?: any;
 	worker?: WorkerCluster;
 	workerData?: Worker.Data;
@@ -54,9 +70,9 @@ export interface CredoJS extends CredoJSGlobal {
 	app: Koa;
 	renderHTMLDriver: string | null;
 	route: RouteManager;
-	controllers: Record<string, any>;
-	responders: Record<string, Route.Responder>;
-	middleware: Record<string, Route.ExtraMiddlewareFunction>;
+	controllers: CredoControllers;
+	responders: CredoResponders;
+	middleware: CredoExtraMiddleware;
 	cronWorker?: WorkerThreads;
 }
 
