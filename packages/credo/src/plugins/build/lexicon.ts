@@ -243,6 +243,9 @@ export async function createLexiconOptions(opts: any, pluginNames: string[]): Pr
 		if(main && opts.route) {
 			let {method, path, service} = opts.route;
 			method = String(method || "GET").trim().toUpperCase();
+			if(!["GET", "POST"].includes(method)) {
+				throw newError(`Invalid lexicon.method: {yellow %s}, only GET and POST methods are allowed`, method);
+			}
 			path = String(path || "").trim();
 			service = String(service || "").trim();
 			if(path && service) {
@@ -460,7 +463,7 @@ export async function buildLexicon(factory: CredoPlugin.Factory) {
 		} = route;
 
 		const sJs = cJs.clone();
-		const isData = ['PUT', 'POST'].includes(method);
+		const isData = method === "POST";
 		const isGet = !isData;
 
 		cJs.group("export default function(api)", "", (t) => {

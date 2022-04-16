@@ -156,8 +156,11 @@
 					"type": "object",
 					"properties": {
 						"method": {
-							"description": "HTTP method (GET, POST, etc.)",
-							"type": "string"
+							"description": "HTTP method (GET or POST)",
+							"type": "string",
+							"enum": [
+								"GET", "POST", "get", "post"
+							]
 						},
 						"path": {
 							"description": "URL pattern path for parser @credo-js/path-to-pattern",
