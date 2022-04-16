@@ -8,14 +8,55 @@ import createRelativePath from "./createRelativePath";
 async function writeLoadable() {
 	const file = buildPath("./loadable.js");
 	if(!await exists(file)) {
-		await writeFile(file, `import {join} from "path";
-export default async function loadable(credo, file, importer) {
-	if(__SSR__ && credo.isApp()) {
-		await import(join(process.cwd(), file));
-		if(importer != null) {
-			const loadable = await import(importer);
-			loadable && typeof loadable.loadAll === "function" && await loadable.loadAll();
+		await writeFile(file, `import {join, dirname, sep} from "path";
+import {watchFile, unwatchFile} from "fs";
+
+async function load(file, loadable) {
+	if(typeof loadable === "string") {
+		loadable = require(loadable);
+	}
+	if(__DEV__) {
+		if(loadable != null && typeof loadable.resetAll === "function") {
+			loadable.resetAll();
 		}
+		const prefix = dirname(require.resolve(file)) + sep;
+		Object.keys(require.cache).forEach(file => {
+			if(file.startsWith(prefix)) {
+				delete require.cache[file];
+			}
+		});
+	}
+	require(file);
+	if(loadable != null && typeof loadable.loadAll === "function") {
+		await loadable.loadAll();
+	}
+}
+
+export default async function loadable(credo, file, importer) {
+	if(!credo.isApp()) {
+		return credo.debug("Server-side rendering is used only in application mode, bootstrap is ignored...");
+	}
+	if(!credo.ssr || !__SSR__) {
+		return;
+	}
+	file = join(process.cwd(), file);
+	await load(file, importer);
+	if(__DEV__) {
+		let reload = false;
+		watchFile(file, (stats) => {
+			if(stats && stats.size > 0) {
+				reload = true;
+			}
+		});
+		credo.hooks.subscribe("onPageHTMLBeforeRender", async ({document}) => {
+			if(document.ssr && reload) {
+				await load(file, importer);
+				reload = false;
+			}
+		});
+		credo.hooks.subscribe("onExit", () => {
+			unwatchFile(file);
+		});
 	}
 }`);
 	}
@@ -209,7 +250,7 @@ export async function buildServer(factory: CredoPlugin.Factory) {
 			cJs.append(`registrar.bootstrap((credo) => ${load}(credo, ${args}));`);
 		}
 
-		cJs.append(`registrar.bootstrap(() => import("./lexicon-server"));`);
+		cJs.append(`registrar.bootstrap((credo) => import("./lexicon-server").then(l => l.default(credo)));`);
 
 		factory.plugins.forEach(plugin => {
 

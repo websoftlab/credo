@@ -20,4 +20,5 @@ export type {
 	RollupConfigure,
 	WebpackConfigure,
 	EStat,
+	DaemonSignKill,
 } from "./types";

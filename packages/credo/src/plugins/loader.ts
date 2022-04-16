@@ -22,14 +22,14 @@ async function ready(plugins: CredoPlugin.Plugin[], sum: PluginSum, deps: string
 		return null;
 	};
 
-	const search = async (file: string, mode: "mixed" | "file" | "directory") => {
+	const search = async (file: string, mode: "mixed" | "file" | "directory", typescript: boolean = false) => {
 
 		file = String(file).trim();
 		if(file.startsWith("/")) {
 			file = `.${file}`;
 		} else if(file.startsWith("~")) {
 			file = file.substring(1);
-			file = (file.startsWith("/") ? "./src" : "./src/") + file;
+			file = (file.startsWith("/") ? "./src-server" : "./src-server/") + file;
 		}
 
 		// search package (node_modules, global, etc.)
@@ -61,7 +61,7 @@ async function ready(plugins: CredoPlugin.Plugin[], sum: PluginSum, deps: string
 
 			if(stat.isDirectory) {
 				const files = [join(file, "/index.js")];
-				if(root) {
+				if(typescript) {
 					files.push(join(file, "/index.ts"));
 				}
 				const search = await searchVariant(files);
@@ -83,7 +83,7 @@ async function ready(plugins: CredoPlugin.Plugin[], sum: PluginSum, deps: string
 		}
 
 		const files = [`${file}.js`, `${file}.json`];
-		if(root) {
+		if(typescript) {
 			files.push(`${file}.ts`);
 		}
 
@@ -113,17 +113,29 @@ async function ready(plugins: CredoPlugin.Plugin[], sum: PluginSum, deps: string
 			return join(pluginPath, ...args);
 		},
 		resolver(file: string | string[], mode: "mixed" | "file" | "directory" = "mixed"): Promise<EStat | null> {
-			return search(join(pluginPath, ...file), mode);
+			return search(join(pluginPath, ...file), mode, root);
 		},
 	};
 
-	const importer = async (point: CredoConfig.Handler, withOptions = true): Promise<CredoPlugin.HandlerOptional> => {
+	const importer = async (point: CredoConfig.Handler, options: {home: string, type?: string, name?: string, typescript?: boolean, withOptions?: boolean}): Promise<CredoPlugin.HandlerOptional> => {
 		if(typeof point === "string") {
 			point = {
 				path: point,
 			};
 		}
-		const stat = await search(point.path, "file");
+		const {typescript = root, withOptions = true} = options;
+		if(point.path.startsWith("~")) {
+			const {home, type, name} = options;
+			if(point.path === "~") {
+				if(!name) {
+					throw newError(`Short link {yellow ~} without filename is not supported for ${type}`);
+				}
+				point.path = home + name;
+			} else {
+				point.path = home + point.path.substring(1);
+			}
+		}
+		const stat = await search(point.path, "file", typescript);
 		if(!stat) {
 			throw newError(`The "{yellow %s}" path not found in the "{yellow %s}" module directory`, point.path, name);
 		}
@@ -207,37 +219,37 @@ async function ready(plugins: CredoPlugin.Plugin[], sum: PluginSum, deps: string
 
 	// bootstrap, bootloader
 	if(bootstrap) {
-		def.bootstrap = await importer(bootstrap);
+		def.bootstrap = await importer(bootstrap, {home: "./src-server/", name: "bootstrap"});
 	}
 	if(bootloader) {
-		def.bootloader = await importer(bootloader);
-	}
-
-	async function each(prop: Record<string, string>, entry: Record<string, CredoPlugin.HandlerOptional>) {
-		for(let name of Object.keys(prop)) {
-			entry[name] = await importer(prop[name]);
-		}
+		def.bootloader = await importer(bootloader, {home: "./src-client/", name: "bootloader"});
 	}
 
 	// middleware
 	if(Array.isArray(middleware)) {
 		for(let file of middleware) {
-			def.middleware.push(await importer(file));
+			def.middleware.push(await importer(file, {home: "./src-server/middleware/", type: "middleware"}));
+		}
+	}
+
+	async function each(prop: Record<string, string>, entry: Record<string, CredoPlugin.HandlerOptional>, home: string) {
+		for(let name of Object.keys(prop)) {
+			entry[name] = await importer(prop[name], {home: `./src-server/${home}/`, name});
 		}
 	}
 
 	// services, controllers, responders, extraMiddleware, cmd
-	await each(services, def.services);
-	await each(controllers, def.controllers);
-	await each(responders, def.responders);
-	await each(extraMiddleware, def.extraMiddleware);
-	await each(cmd, def.cmd);
+	await each(services, def.services, "services");
+	await each(controllers, def.controllers, "controllers");
+	await each(responders, def.responders, "responders");
+	await each(extraMiddleware, def.extraMiddleware, "extraMiddleware");
+	await each(cmd, def.cmd, "cmd");
 
 	// hooks
 	const names: CredoPlugin.HooksEvent[] = ["onBuild", "onInstall", "onWebpackConfigure", "onRollupConfigure", "onOptions"];
 	for(let name of names) {
 		if(hooks[name]) {
-			def.hooks[name] = await importer(hooks[name], false);
+			def.hooks[name] = await importer(hooks[name], {home: "./hooks/", name, typescript: false, withOptions: false});
 		}
 	}
 

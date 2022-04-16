@@ -2,8 +2,8 @@ import loadRootOptions from "./loadRootOptions";
 import {existsStat, readJsonFile, fireHook} from "../utils";
 import {installDependencies} from "../dependencies";
 import docTypeReference from "./docTypeReference";
-import type {CredoPlugin} from "../types";
 import {asyncResult} from "@credo-js/utils";
+import type {CredoPlugin} from "../types";
 
 export default async function createPluginFactory(plugins: CredoPlugin.Plugin[], installList?: string[]): Promise<CredoPlugin.Factory> {
 

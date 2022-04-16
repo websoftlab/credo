@@ -1,5 +1,7 @@
 import type {InputOptions, OutputOptions} from "rollup";
 import type {Configuration} from "webpack";
+import {RollupWatcher} from "rollup";
+import {ChildProcessByStdio} from "child_process";
 
 export type BuildMode = "production" | "development";
 
@@ -21,6 +23,11 @@ interface Configure {
 	isDev: boolean;
 	isDevServer: boolean;
 	cwd: string;
+
+	// optional
+	devServerHost?: string;
+	devServerPort?: string | number;
+	devPort?: string | number;
 }
 
 export type DaemonSignKill =
@@ -62,21 +69,11 @@ export interface BuildConfigure extends Configure, Omit<BuildOptions, "mode"> {
 	fireHook(name: "onWebpackConfigure", config: WebpackConfigure): Promise<void>;
 	fireHook(name: "onRollupConfigure", config: RollupConfigure): Promise<void>;
 	fireOnOptionsHook<T>(name: string, option: T): Promise<T>;
-
-	// optional
-	devServerHost?: string;
-	devServerPort?: string | number;
-	devPort?: string | number;
-	devSSR?: boolean;
 }
 
 export interface ErrorContext extends Error { context?: string[] }
 
 export declare namespace Watch {
-
-	type Listener<T> = (argument: T) => (void | Promise<void>);
-	type Lambda = () => void;
-	type BeforeAfterEvent = BuildOptions & {force: boolean, initial: boolean};
 
 	export type EventName = "onBeforeStart" | "onAfterStart" | "onError" | "onChangeOptions" | "onInit" | "onAbort";
 
@@ -86,30 +83,6 @@ export declare namespace Watch {
 		close(): void;
 	}
 
-	export interface Serve extends BuildOptions {
-		readonly started: boolean;
-		readonly initialized: boolean;
-		readonly ssr: boolean;
-
-		on(name: "onBeforeStart", listener: Listener<BeforeAfterEvent>): Lambda;
-		on(name: "onAfterStart", listener: Listener<BeforeAfterEvent>): Lambda;
-		on(name: "onError", listener: Listener<ErrorContext>): Lambda;
-		on(name: "onChangeOptions", listener: Listener<BuildOptions>): Lambda;
-		on(name: "onInit", listener: Listener<never>): Lambda;
-		on(name: "onAbort", listener: Listener<Error | undefined>): Lambda;
-		on(name: "onDebug", listener: Listener<{text: string, context: BuildType | "system", error: boolean}>): Lambda;
-
-		off(name: EventName, listener: Function): void;
-
-		emitDebug(text: string, context: BuildType | "system", error?: boolean): void;
-		emitError<T extends ErrorContext = ErrorContext>(error: T, context?: string): T;
-
-		start(): Promise<void>;
-		restart(options?: BuildOptions): Promise<void>;
-		abort(err?: Error): Promise<void>;
-		createTrigger(): Trigger;
-	}
-
 	interface CMDOptions {
 		devHost?: string,
 		devPort?: number,
@@ -117,6 +90,90 @@ export declare namespace Watch {
 		port?: number,
 		ssr?: boolean,
 		cluster?: string,
+		noBoard?: boolean,
+	}
+
+	export interface DebugEvent {
+		message: string;
+		error?: boolean;
+		context?: string;
+	}
+
+	export interface Serve {
+
+		watcher: RollupWatcher | null;
+		child: ChildProcessByStdio<any, any, any> | null
+		factory: CredoPlugin.Factory | null;
+
+		readonly progress: boolean;
+		readonly port: number;
+		readonly devPort: number;
+		readonly host: string;
+		readonly devHost: string;
+		readonly ssr: boolean;
+		readonly clusterId: string | null;
+		readonly cluster?: CredoPlugin.RootClusterOptions | undefined;
+		readonly started: boolean;
+
+		start(): Promise<boolean>;
+		restart(): Promise<boolean>;
+		stop(): Promise<boolean>;
+
+		on(name: "error", listener: (error: Error) => void): this;
+		on(name: "debug", listener: (event: DebugEvent) => void): this;
+		on(name: "stop", listener: () => void): this;
+		on(name: "onBeforeBuild", listener: () => void): this;
+		on(name: "build", listener: () => void): this;
+		on(name: "onBeforeStart", listener: () => void): this;
+		on(name: "start", listener: () => void): this;
+
+		once(name: "error", listener: (error: Error) => void): this;
+		once(name: "debug", listener: (event: DebugEvent) => void): this;
+		once(name: "stop", listener: () => void): this;
+		once(name: "onBeforeBuild", listener: () => void): this;
+		once(name: "build", listener: () => void): this;
+		once(name: "onBeforeStart", listener: () => void): this;
+		once(name: "start", listener: () => void): this;
+
+		addListener(name: "error", listener: (error: Error) => void): this;
+		addListener(name: "debug", listener: (event: DebugEvent) => void): this;
+		addListener(name: "stop", listener: () => void): this;
+		addListener(name: "onBeforeBuild", listener: () => void): this;
+		addListener(name: "build", listener: () => void): this;
+		addListener(name: "onBeforeStart", listener: () => void): this;
+		addListener(name: "start", listener: () => void): this;
+
+		off(name: "error", listener: (error: Error) => void): this;
+		off(name: "debug", listener: (event: DebugEvent) => void): this;
+		off(name: "stop", listener: () => void): this;
+		off(name: "onBeforeBuild", listener: () => void): this;
+		off(name: "build", listener: () => void): this;
+		off(name: "onBeforeStart", listener: () => void): this;
+		off(name: "start", listener: () => void): this;
+
+		removeListener(name: "error", listener: (error: Error) => void): this;
+		removeListener(name: "debug", listener: (event: DebugEvent) => void): this;
+		removeListener(name: "stop", listener: () => void): this;
+		removeListener(name: "onBeforeBuild", listener: () => void): this;
+		removeListener(name: "build", listener: () => void): this;
+		removeListener(name: "onBeforeStart", listener: () => void): this;
+		removeListener(name: "start", listener: () => void): this;
+
+		emit(name: "error", error: Error): boolean;
+		emit(name: "debug", event: string | Error | DebugEvent): boolean;
+		emit(name: "stop"): boolean;
+		emit(name: "onBeforeBuild"): boolean;
+		emit(name: "build"): boolean;
+		emit(name: "onBeforeStart"): boolean;
+		emit(name: "start"): boolean;
+
+		removeAllListeners(name: "error"): this;
+		removeAllListeners(name: "debug"): this;
+		removeAllListeners(name: "stop"): this;
+		removeAllListeners(name: "onBeforeBuild"): this;
+		removeAllListeners(name: "build"): this;
+		removeAllListeners(name: "onBeforeStart"): this;
+		removeAllListeners(name: "start"): this;
 	}
 }
 

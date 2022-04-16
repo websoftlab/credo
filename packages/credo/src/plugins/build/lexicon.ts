@@ -27,6 +27,20 @@ function someFile(all: LanguageFile[], file: string): boolean {
 	return all.some(f => f.file === file);
 }
 
+async function createPackagePrefix() {
+	const file = buildPath("lang/packagePrefix.js");
+	if(await exists(file)) {
+		return;
+	}
+
+	return writeBundleFile('lang/packagePrefix.js', `
+export default function packagePrefix(pref, languageData, data = {}) {
+	pref += ":";
+	Object.keys(languageData).forEach((key) => { data[pref + key] = languageData[key]; });
+	return data;
+}`);
+}
+
 async function createLambdaFilter() {
 	const file = buildPath("lang/lambdaFilter.js");
 	if(await exists(file)) {
@@ -358,6 +372,8 @@ export async function buildLexicon(factory: CredoPlugin.Factory) {
 	}
 
 	await createCwdDirectoryIfNotExists(".credo/lang");
+	await createPackagePrefix();
+
 	let isLambda = false;
 	let isPg = false;
 	const ls: LanguageH[] = [];
@@ -386,11 +402,11 @@ export async function buildLexicon(factory: CredoPlugin.Factory) {
 		cJs.append([
 			'let lambda = {};',
 			`const id = ${cJs.tool.esc(id)};`,
-			`const data = ${JSON.stringify(all, null, 2)};`,
+			`const lexicon = ${JSON.stringify(all, null, 2)};`,
 		]);
 
 		if(isMain) {
-			cJs.append(`Object.assign(data, ${isMain});`);
+			cJs.append(`Object.assign(lexicon, ${isMain});`);
 		}
 
 		if(lambda.length) {
@@ -401,7 +417,7 @@ export async function buildLexicon(factory: CredoPlugin.Factory) {
 			});
 		}
 
-		cJs.append(`export {id, data, lambda};`);
+		cJs.append(`export {id, lexicon, lambda};`);
 		await writeBundleFile(`./lang/${id}-inc.js`, cJs.toImport() + cJs.toString());
 
 		const lh: LanguageH = { id, main: `./lang/${id}-inc.js`, packages: [] };
@@ -433,10 +449,7 @@ export async function buildLexicon(factory: CredoPlugin.Factory) {
 
 			cJs.append(`const data = ${JSON.stringify(pgData, null, 2)};`);
 			if(pgMain) {
-				cJs.append([
-					`const pref = ${cJs.tool.esc(`${pgName}:`)};`,
-					`Object.keys(${pgMain}).forEach((key) => { data[pref + key] = ${pgMain}[key]; });`,
-				]);
+				cJs.append(`${cJs.imp("../packagePrefix")}(${cJs.tool.esc(`${pgName}`)}, ${pgMain}, data);`);
 			}
 
 			cJs.append('export default data;');
@@ -499,8 +512,8 @@ export async function buildLexicon(factory: CredoPlugin.Factory) {
 				if(isData) {
 					cJs.append(`addData(config, "id", id);`);
 				}
-				cJs.group('return api.service.http.request(config).then((r) =>', ');', () => {
-					cJs.append('return { id: data.id, data: Object.assign({}, data.data, r.data), lambda: data.lambda };');
+				cJs.group('return api.services.http.request(config).then((r) =>', ');', () => {
+					cJs.append('return { id: data.id, lexicon: Object.assign({}, data.lexicon, r.data), lambda: data.lambda };');
 				});
 			});
 			if(isPg) {
@@ -513,17 +526,46 @@ export async function buildLexicon(factory: CredoPlugin.Factory) {
 					cJs.append(`const config = { url, method: ${cJs.tool.esc(method)}, maxRedirects: 0 };`);
 					if(isData) {
 						cJs.append(`addData(config, "id", id);`);
-						cJs.append(`addData(config, "package", packageName);`);;
+						cJs.append(`addData(config, "package", packageName);`);
 					}
-					cJs.group('return api.service.http.request(config).then((r) =>', ');', () => {
-						cJs.append('return Object.assign({}, data, r.data);');
+					cJs.group('return api.services.http.request(config).then((r) =>', ');', () => {
+						cJs.append(`return {default: Object.assign({}, data.default, r.data)};`);
 					});
 				});
 			}
 		});
+
 		await writeBundleFile(`./lexicon-client.js`, cJs.toImport() + cJs.toString());
 
-		sJs.group("export default function(credo)", "", () => {
+		sJs.group("export default function(credo)", "", (t) => {
+
+			sJs.append(`const pattern = ${sJs.imp('@credo-js/path-to-pattern', 'pathToPattern')}(${t.esc(path)});`);
+			sJs.append(`const languages = ${t.esc(languages)};`);
+
+			sJs.group(`credo.route.addRoute(new ${sJs.imp("@credo-js/server/RouteManager", "RoutePoint")}(`, '), 100);', () => {
+				sJs.append(`pattern,`);
+				sJs.append(`methods: [${t.esc(method)}],`);
+				sJs.append(`match(ctx) { return pattern.match(ctx.path); },`);
+				sJs.group('context:', ',', () => {
+					sJs.append([
+						`name: "lexicon",`,
+						`controller: {`,
+						`\tname: Symbol(),`,
+						`\tasync handler(ctx) {`,
+						`\t\tconst match = ctx.match || {};`,
+						`\t\tconst query = ctx.request.${isGet ? 'query' : 'body'} || {};`,
+						`\t\tconst id = pattern.keys.includes("id") ? match.id : query.id;`,
+						`\t\tconst packageName = pattern.keys.includes("package") ? match["package"] : query["package"];`,
+						`\t\tif(!languages.includes(id)) throw new Error("Language ID not specified or invalid.");`,
+						`\t\tconst data = ${sJs.tool.keyVar('credo.services', service.split("."))}(id, packageName);`,
+						`\t\treturn packageName ? ${sJs.imp("./lang/packagePrefix")}(packageName, data) : data;`,
+						`\t},`,
+						`},`,
+						`responder: { name: "json" },`,
+					]);
+				});
+			});
+
 			for(let lh of ls) {
 				const {id, main, packages} = lh;
 				const ide = sJs.tool.esc(id);
@@ -535,13 +577,15 @@ export async function buildLexicon(factory: CredoPlugin.Factory) {
 					});
 				});
 			}
+
 			sJs.group("async function __id(id, data)", "", () => {
 				sJs.append(`const r = await ${sJs.tool.keyVar('credo.services', service.split("."))}(id);`);
-				sJs.append('return { id: data.id, data: Object.assign({}, data.data, r.data), lambda: data.lambda };');
+				sJs.append('return { id: data.id, lexicon: Object.assign({}, data.lexicon, r), lambda: data.lambda };');
 			});
+
 			sJs.group("async function __idPg(id, packageName, data)", "", () => {
 				sJs.append(`const r = await ${sJs.tool.keyVar('credo.services', service.split("."))}(id, packageName);`);
-				sJs.append('return Object.assign({}, data, r.data);');
+				sJs.append(`return ${sJs.imp("./lang/packagePrefix")}(packageName, r, Object.assign({}, data));`);
 			});
 		});
 

@@ -114,8 +114,9 @@ export async function installCredoJS() {
 		"build",
 		"config",
 		"lexicon",
-		"pages",
-		"src",
+		"src-client",
+		"src-server",
+		"src-full",
 	];
 
 	for(const dir of directories) {
@@ -141,11 +142,7 @@ export async function installCredoJS() {
 		await createCwdFileIfNotExists("credo.json", () => (
 			toJSON({
 				"dependencies": [],
-				"routes": [],
 				"public": "./public",
-				"controllers": {},
-				"services": {},
-				"responders": {},
 				"options": {
 					"renderDriver": false
 				}
@@ -234,11 +231,11 @@ export async function installCredoJS() {
 		const credoJson = await readJsonFile("./credo.json");
 
 		// add hello controller
-		if(!credoJson.controllers?.hello && ! await exists("./src/hello-controller.ts") && ! await exists("./src/hello-controller.js")) {
+		if(!credoJson.controllers?.hello && ! await exists("./src-server/hello-controller.ts") && ! await exists("./src-server/hello-controller.js")) {
 			if(!credoJson.controllers) {
 				credoJson.controllers = {};
 			}
-			credoJson.controllers["hello"] = "./src/hello-controller";
+			credoJson.controllers["hello"] = "./src-server/hello-controller";
 			routes.push({
 				name: "hello-world",
 				responder: "text",
@@ -246,7 +243,7 @@ export async function installCredoJS() {
 				controller: "hello",
 			});
 			await writeJsonFile("./credo.json", credoJson);
-			await createCwdFileIfNotExists("src/hello-controller.ts", () => (
+			await createCwdFileIfNotExists("src-server/hello-controller.ts", () => (
 				`import {Context} from "koa";
 export default function() {
 	return function(ctx: Context) {
@@ -281,7 +278,8 @@ export default function() {
 	}
 
 	await installDependencies(dependencies, {
-		"@credo-js/types": "latest"
+		"@credo-js/types": "latest",
+		"@types/node": "^14.14.31"
 	});
 
 	// add credo devDependencies

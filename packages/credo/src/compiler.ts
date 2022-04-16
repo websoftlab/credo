@@ -7,7 +7,7 @@ import {buildClient, buildLexicon, buildServer, buildPages, buildServerDaemon} f
 import {installDependencies} from "./dependencies";
 import createPluginFactory from "./plugins/createPluginFactory";
 
-export default async function compiler(mode: BuildMode = "development"): Promise<CredoPlugin.Factory> {
+export default async function compiler(mode: BuildMode = "development", clearing: boolean = true): Promise<CredoPlugin.Factory> {
 
 	const stat = await existsStat("credo.json");
 	if(!stat) {
@@ -24,7 +24,9 @@ export default async function compiler(mode: BuildMode = "development"): Promise
 	const dist = isDev ? "dev" : "build";
 
 	// clear old runtime data
-	await clear(`./.credo`);
+	if(clearing) {
+		await clear(`./.credo`);
+	}
 
 	await createCwdDirectoryIfNotExists(dist);
 	await createCwdDirectoryIfNotExists(".credo");

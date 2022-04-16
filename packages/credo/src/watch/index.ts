@@ -1,75 +1,26 @@
-import isWindows from "is-windows";
 import devWatcher from "../webpack/devWatcher";
-import compiler from "../compiler";
-import rollupWatcher from "../rollup/watcher";
 import webpackWatcher from "../webpack/watcher";
-import createWatchServe from "./createWatchServe";
 import {debugError, debugWatch} from "../debug";
-import {watch as watchDirectory, watchFile, unwatchFile} from 'fs';
-import {newError} from "@credo-js/cli-color";
-import {clear, cwdPath, exists} from "../utils";
+import {clear} from "../utils";
 import Board from "./Board";
 import getTerminal from "./Terminal";
 import prepareDebug from "./prepareDebug";
-import type {BuildOptions, CredoPlugin, Watch} from '../types';
+import WatchGlobal from "./WatchGlobal";
+import WatchServe from "./WatchServe";
+import type {Watch} from '../types';
+import type {WatchEntry} from "./WatchGlobal";
 
-function getConfigCluster(id: string | undefined, options: CredoPlugin.RootOptions) {
-	const {clusters} = options;
-	if(clusters && clusters.length) {
-		if(!id) {
-			return clusters[0];
-		}
-		for(let cluster of clusters) {
-			if(cluster.id === id) {
-				return cluster;
-			}
-		}
-		throw newError(`The {yellow %s} cluster not found!`, id);
-	}
-	return undefined;
-}
-
-async function configWatch(serve: Watch.Serve, cluster: string | undefined, conf: BuildOptions) {
-	const configDirectory = cwdPath("config");
-	const credoFile = cwdPath("credo.json");
-
-	if(!await exists(configDirectory)) {
-		throw new Error("Config directory not found");
-	}
-
-	if(!await exists(credoFile)) {
-		throw newError("{cyan %s} file not found", "./credo.json");
-	}
-
-	function recompile() {
-		if(!serve.initialized) {
-			return;
-		}
-
-		compiler(conf.mode)
-			.then((factory) => {
-				conf.factory = factory;
-				try {
-					conf.cluster = getConfigCluster(cluster, factory.options);
-				} catch(err) {
-					return serve.abort(err as Error);
-				}
-
-				return serve.restart(conf);
-			})
-			.catch(err => {
-				serve.emitError(err, "Restart failure (assembly failed)");
-			});
-	}
-
-	const w1 = watchDirectory(configDirectory, { recursive: true }, recompile);
-	watchFile(credoFile, recompile);
-
-	serve.on("onAbort", () => {
-		w1.close();
-		unwatchFile(credoFile, recompile);
-	});
-}
+const watchList: WatchEntry[] = [
+	{path: "lexicon", type: "directory", required: true},
+	{path: "config", type: "directory", required: true},
+	{path: ".env", type: "file", required: false},
+	{path: ".development.env", type: "file", required: false},
+	{path: "credo.json", type: "file", required: true},
+	{path: "tsconfig.json", type: "file", required: true},
+	{path: "tsconfig-server.json", type: "file", required: false},
+	{path: "tsconfig-client.json", type: "file", required: false},
+	{path: "package.json", type: "file", required: true},
+];
 
 export default async function watch(opts: Watch.CMDOptions) {
 
@@ -77,7 +28,11 @@ export default async function watch(opts: Watch.CMDOptions) {
 
 	let board: Board | undefined;
 
-	if(process.stdout.isTTY) {
+	if( !process.stdout.isTTY ) {
+		opts.noBoard = true;
+	}
+
+	if( !opts.noBoard ) {
 		const term = getTerminal();
 		board = new Board(term);
 		board.open();
@@ -92,35 +47,29 @@ export default async function watch(opts: Watch.CMDOptions) {
 		});
 	}
 
-	const mode: "development" = "development";
-	const {
-		port = 1278,
-		devPort = 1277,
-		host = isWindows() ? '127.0.0.1' : '0.0.0.0',
-		devHost = isWindows() ? '127.0.0.1' : '0.0.0.0',
-		ssr = false,
-		cluster,
-	} = opts;
-
-	const factory = await compiler(mode);
-	const conf: BuildOptions = {mode, progressLine: board != null, factory, cluster: getConfigCluster(cluster, factory.options)};
-	const serve = createWatchServe(conf, {host, port, devHost, devPort, ssr});
-
-	serve.on("onError", (error) => {
-		const {context} = error;
+	function errorHandler(error: Error) {
 		if(board) {
-			board.log(error, context ? context[0] : "");
-		} else if(context) {
-			debugError("{yellow [%s]}", context.join(", "), error.message, error.stack);
+			board.log(error);
 		} else {
-			debugError(error.message, error.stack);
+			debugError(error.stack || error.message);
 		}
+	}
+
+	const serve = new WatchServe(opts);
+
+	const watchGlobal = new WatchGlobal(() => {
+		serve
+			.restart()
+			.catch(errorHandler);
 	});
 
-	serve.on("onDebug", (event) => {
-		const {error, context, text} = event;
+	watchList.forEach(item => watchGlobal.add(item));
+
+	serve.on("error", errorHandler);
+	serve.on("debug", (event) => {
+		const {error, context, message} = event;
 		if(board) {
-			const prepare = prepareDebug(text, context, error);
+			const prepare = prepareDebug(message, context, error);
 			if(prepare.type == null) {
 				board.log(prepare.text, prepare.context, prepare.error);
 			} else if(prepare.progress !== null) {
@@ -131,27 +80,23 @@ export default async function watch(opts: Watch.CMDOptions) {
 				board.message(prepare.type, prepare.text);
 			}
 		} else if(error) {
-			debugError("{yellow [%s]}", context, text);
+			debugError("{yellow [%s]}", context, message);
 		} else {
-			debugWatch("{yellow [%s]}", context, text);
+			debugWatch("{yellow [%s]}", context, message);
 		}
 	});
 
-	// subscribe watcher for config directory and ./credo.json file
-	await configWatch(serve, cluster, conf);
-
 	// subscribe client
-	await devWatcher(serve, {
-		host: devHost,
-		port: devPort,
-	});
+	await devWatcher(serve);
 
 	// subscribe server-page
 	await webpackWatcher(serve);
 
-	// subscribe server
-	await rollupWatcher(serve);
+	try {
+		await serve.start();
+	} catch(err: any) {
+		errorHandler(err);
+	}
 
-	// run
-	await serve.start();
+	watchGlobal.start();
 }

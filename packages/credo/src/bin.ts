@@ -7,6 +7,7 @@ import watch from "./watch";
 import {installCredoJS, installPlugin} from "./plugins/installer";
 import {debugBuild, debugWatch} from "./debug";
 import type {Watch} from "./types";
+import compiler from "./compiler";
 
 const pg = require(join(__dirname, "package.json"));
 const cmd = createCommander({
@@ -14,6 +15,15 @@ const cmd = createCommander({
 	version: pg.version,
 	description: `${pg.name} ${pg.description || ""}`
 });
+
+cmd("make")
+	.description("Compiles the project files")
+	.action(async () => {
+		debugBuild(`Trying to make ./credo compiled files...`);
+		await compiler();
+		debugBuild(`Compilation completed`);
+		return 0;
+	})
 
 cmd("dev")
 	.description("Start development mode")
@@ -23,6 +33,7 @@ cmd("dev")
 	.option("--dev-port", {type: "value", description: "Dev Server port", format: "port", name: "number"})
 	.option("--cluster", {type: "value", description: "Cluster ID"})
 	.option("--ssr", "Enable SSR")
+	.option("--no-board", "Disable terminal board")
 	.action<never, Watch.CMDOptions>(async (_, options) => {
 		debugWatch(`Start {cyan development} mode`, options);
 		await watch(options);

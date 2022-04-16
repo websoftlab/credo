@@ -23,7 +23,7 @@ module.exports = function sassBootstrapTransformLoader(srcContent) {
 
 	const { cwdPath } = options;
 	const bootstrap = ["bootstrap.scss", "_bootstrap.scss", "bootstrap.sass", "_bootstrap.sass"].find(file => {
-		return existsSync(joinPath(cwdPath, "pages", file));
+		return existsSync(joinPath(cwdPath, "src-client", file));
 	});
 
 	if(!bootstrap) {
@@ -31,7 +31,7 @@ module.exports = function sassBootstrapTransformLoader(srcContent) {
 	}
 
 	let text = String(srcContent);
-	let append = `@import "pages/${bootstrap}"`;
+	let append = `@import "src-client/${bootstrap}"`;
 	const isScss = extname(this.resourcePath).toLowerCase() === ".scss";
 	if(isScss) {
 		append += ";";

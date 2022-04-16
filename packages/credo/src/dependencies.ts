@@ -1,5 +1,5 @@
 import https from "https";
-import {dirname, basename} from "path";
+import {basename} from "path";
 import {satisfies} from "semver";
 import {newError} from "@credo-js/cli-color";
 import {cwdPath, existsStat, readJsonFile, writeJsonFile} from "./utils";
@@ -243,6 +243,20 @@ export function installPackage() {
 	});
 }
 
+function createName() {
+	// try create
+	let name = basename(process.cwd())
+		.replace(/[^a-z0-9\-_]+/g, '')
+		.replace(/^[\-_0-9]+/g, '')
+		.replace(/[\-_]+$/g, '');
+
+	if(!name) {
+		name = "credo-project";
+	}
+
+	return name;
+}
+
 export async function installDependencies(dependencies: string[] | Record<string, string>, devDependencies: string[] | Record<string, string> = {}) {
 	// check package.json file
 	const cwdPackageJsonFile = cwdPath("package.json");
@@ -258,16 +272,7 @@ export async function installDependencies(dependencies: string[] | Record<string
 	};
 
 	if(!stat) {
-		// try create
-		let name = basename(dirname( process.cwd() ))
-			.replace(/[^a-z0-9\-_]+/g, '')
-			.replace(/^[\-_0-9]+/g, '')
-			.replace(/[\-_]+$/g, '');
-
-		if(!name) {
-			name = "credo-project";
-		}
-
+		const name = createName();
 		data = {
 			name,
 			version: "1.0.0",
@@ -300,6 +305,11 @@ export async function installDependencies(dependencies: string[] | Record<string
 
 	let updateFile = false;
 	let updateDependencies = false;
+
+	if(!data.name) {
+		data.name = createName();
+		updateFile = true;
+	}
 
 	function isAny(ver: string) {
 		return ver === "*" || ver === "latest";

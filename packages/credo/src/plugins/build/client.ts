@@ -45,7 +45,7 @@ export async function buildClient(factory: CredoPlugin.Factory) {
 		const {mid, bootloader} = options;
 		const file = mid ? `client-${mid}/client.js` : "client.js";
 		const cJs = new CmpJS();
-		const bootloaders: string[] = [];
+		const bootloaders: string[] = [cJs.imp(`${mid ? ".." : "."}/lexicon-client.js`)];
 		const boot: string[] = [];
 
 		if(mid) {

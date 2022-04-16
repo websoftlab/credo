@@ -1,106 +1,131 @@
 import type {Watch} from "../types";
+import type {Watching} from "webpack";
 import configure from "./configure";
 import webpack from "webpack";
 
 export default async function watcher(serve: Watch.Serve) {
 
-	let abort: null | (() => Promise<void>);
+	let watch: Watching | null = null;
+	let restart = false;
+	let restartMore = false;
 
-	function disable(text: string = "") {
-		serve.emitDebug(`[status disabled] ${text}`, "server-page");
+	function abort() {
+		const abortWatcher = watch;
+		if(abortWatcher) {
+			watch = null;
+			abortWatcher.close((err) => {
+				if(err) {
+					errorHandler(err);
+				}
+			});
+		}
 	}
 
-	serve.on("onAbort", async () => {
-		if(abort) {
-			await abort();
-		}
-	});
+	function errorHandler(error: Error) {
+		serve.emit("error", error);
+	}
 
-	serve.on("onBeforeStart", async (event) => {
+	function debug(message: string) {
+		serve.emit("debug", {message, context: "server-page"});
+	}
 
-		if(!event.force && !event.initial) {
+	function disable(text: string = "") {
+		debug(`[status disabled] ${text}`);
+	}
+
+	serve.on("onBeforeBuild", abort);
+	serve.on("build", () => {
+		abort();
+
+		const factory = serve.factory;
+		if(!factory) {
 			return;
 		}
 
-		if(abort) {
-			await abort();
-		}
-
-		const {cluster, mode, ... rest} = event;
-		const {options} = event.factory;
-		if(mode !== "development" || !options.renderDriver) {
+		const {options} = factory;
+		if(!options.renderDriver) {
 			return disable("Render driver not registered");
 		}
 
+		const {cluster} = serve;
 		const ssr = cluster ? (cluster.mode === "app" ? cluster.ssr : false) : options.ssr;
 		if(!ssr || !serve.ssr) {
 			return disable("SSR set false");
 		}
 
-		const config = await configure({
-			mode: "development",
-			type: "server-page",
-			isDevServer: false,
-			cluster,
-			debug: serve.progressLine ? (text: string, error?: boolean) => serve.emitDebug(text, "server-page", error) : undefined,
-			... rest,
-		});
+		if(restart) {
+			restartMore = true;
+			return;
+		}
 
-		const {promise, update, close} = serve.createTrigger();
+		restart = true;
 
-		const compiler = webpack(config);
-		const watcher = compiler.watch({
-			aggregateTimeout: 300,
-			poll: undefined,
-		}, (err, stats) => {
-
-			if(err) {
-				return update(err);
+		function recursiveWatching(): Promise<void> {
+			const factory = serve.factory;
+			if(!factory) {
+				throw new Error("Builder factory not defined");
 			}
+			return configure({
+					mode: "development",
+					type: "server-page",
+					isDevServer: false,
+					debug: serve.progress ? (text: string, error?: boolean) => serve.emit("debug", {message: text, context: "server-page", error}) : undefined,
+					progressLine: serve.progress,
+					factory,
+					cluster,
+				})
+				.then(config => {
+					return webpack(config).watch({
+						aggregateTimeout: 300,
+						poll: undefined,
+					}, (err, stats) => {
 
-			if(!stats) {
-				return update(new Error("Unknown watch stats"));
-			}
+						if(err) {
+							return errorHandler(err);
+						}
 
-			serve.emitDebug("Server page compile completed...", "server-page");
+						if(!stats) {
+							return errorHandler(new Error("Unknown watch stats"));
+						}
 
-			const info = stats.toJson();
+						debug("Server page compile completed...");
 
-			if(stats.hasErrors()) {
-				const errors = info.errors;
-				if(errors) {
-					for(let error of errors) {
-						serve.emitError(error as Error, "server-page error");
-					}
-				}
-			}
+						const info = stats.toJson();
 
-			if(stats.hasWarnings()) {
-				const warnings = info.warnings;
-				if(warnings) {
-					for(let error of warnings) {
-						serve.emitError(error as Error, "server-page warning");
-					}
-				}
-			}
+						if(stats.hasErrors()) {
+							const errors = info.errors;
+							if(errors) {
+								for(const error of errors) {
+									errorHandler(error as Error);
+								}
+							}
+						}
 
-			update();
-		});
-
-		abort = async () => {
-			close();
-			return new Promise<void>((resolve, reject) => {
-				abort = null;
-				watcher.close((err) => {
-					if(err) {
-						reject(err);
+						if(stats.hasWarnings()) {
+							const warnings = info.warnings;
+							if(warnings) {
+								for(const error of warnings) {
+									errorHandler(error as Error);
+								}
+							}
+						}
+					});
+				})
+				.then(watching => {
+					if(restartMore) {
+						restartMore = false;
+						abort();
+						return recursiveWatching();
 					} else {
-						resolve();
+						watch = watching;
 					}
 				});
-			})
-		};
+		}
 
-		return promise;
+		recursiveWatching()
+			.catch(errorHandler)
+			.finally(() => {
+				restart = false;
+			});
 	});
 }

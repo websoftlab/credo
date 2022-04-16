@@ -27,7 +27,7 @@ function normalize(file: string) {
 	} else if(file.startsWith("/")) {
 		file = file.substring(1);
 	}
-	return `./pages/${file}`;
+	return `./src-client/${file}`;
 }
 
 async function search(file: string, extensions: string[]) {
@@ -151,14 +151,14 @@ export default async function loadRootOptions(plugins: CredoPlugin.Plugin[]): Pr
 		}
 		const origin = file;
 		if(!file) {
-			file = "./pages/index";
+			file = "./src-client/index";
 		} else {
 			file = normalize(file);
 		}
 
 		file = await search(file, renderDriver.extensions?.all || [".js", ".ts"]);
 		if(!file) {
-			throw newError("Index {cyan %s} file not found", origin || "./pages/index");
+			throw newError("Index {cyan %s} file not found", origin || "./src-client/index");
 		}
 
 		return file;
@@ -203,9 +203,9 @@ export default async function loadRootOptions(plugins: CredoPlugin.Plugin[]): Pr
 			rootComponents = {};
 			for(let name of ["error", "layout", "spinner"]) {
 				const file = (
-					await cwdSearchFile(`pages/_${name}/index`, options.renderDriver.extensions?.all)
+					await cwdSearchFile(`src-client/_${name}/index`, options.renderDriver.extensions?.all)
 				) || (
-					await cwdSearchFile(`pages/_${name}`, options.renderDriver.extensions?.all)
+					await cwdSearchFile(`src-client/_${name}`, options.renderDriver.extensions?.all)
 				);
 				if(file) {
 					rootComponents[name] = file;
