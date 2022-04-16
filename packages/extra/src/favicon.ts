@@ -53,7 +53,7 @@ export async function FaviconHook(event: OnPageHTMLBeforeRenderHook) {
 }
 
 export function subscribeFaviconHook(credo: CredoJSGlobal) {
-	if(credo.isApp()) {
+	if(credo.isApp() && credo.renderHTMLDriver != null) {
 		const {favicon} = credo.config("config");
 		if(favicon) {
 			credo.hooks.subscribe<OnPageHTMLBeforeRenderHook>("onPageHTMLBeforeRender", (event) => {
