@@ -27,7 +27,7 @@ export const middleware = async function (ctx: Context, next: Next) {
 				continue;
 			}
 			if(createHttpError.isHttpError(err)) {
-				return throwError(ctx, err, route.context);
+				return throwError(ctx, err, route.context, "ROUTE_MATCH_ERROR");
 			}
 			throw err;
 		}
@@ -44,7 +44,7 @@ export const middleware = async function (ctx: Context, next: Next) {
 	}
 
 	if(!ctx.route && methodContextError) {
-		return throwError(ctx, createHttpError(400, `The ${ctx.method} method is not supported for this request.`), methodContextError);
+		return throwError(ctx, createHttpError(400, `The ${ctx.method} method is not supported for this request.`), methodContextError, "HTTP_METHOD_NOT_SUPPORTED");
 	}
 
 	return next();

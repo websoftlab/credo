@@ -466,6 +466,6 @@ export interface OnResponseHook extends CtxHook {}
 export interface OnResponseRouteHook extends CtxHook { notFound: boolean }
 export interface OnResponseCompleteHook extends CtxHook {}
 export interface OnResponseControllerHook<Result = any> extends CtxHook { result: Result; }
-export interface OnResponseErrorHook extends CtxHook { route?: Route.Context, error: Error }
+export interface OnResponseErrorHook extends CtxHook { route?: Route.Context, code?: string, error: Error }
 export interface OnLoadHook { complete(handler: Function): void }
 export interface OnBootHook { }

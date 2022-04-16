@@ -53,9 +53,9 @@ function responderCall(credo: CredoJS, ctx: Context, result: any, caller: Route.
 		: res.responder(ctx, result, props);
 }
 
-export async function throwError(ctx: Context, error: any, routeContext?: Route.Context) {
+export async function throwError(ctx: Context, error: any, routeContext?: Route.Context, code?: string) {
 	const {credo} = ctx;
-	await credo.hooks.emit<OnResponseErrorHook>("onResponseError", {ctx, route: routeContext, error});
+	await credo.hooks.emit<OnResponseErrorHook>("onResponseError", {ctx, route: routeContext, code, error});
 	if(ctx.res.writableEnded) {
 		return;
 	}
@@ -83,7 +83,7 @@ export function middleware(credo: CredoJS) {
 
 	async function failure(ctx: Context, error: any) {
 		ctx.credo.debug("Response failure", error);
-		return throwError(ctx, error, ctx.route);
+		return throwError(ctx, error, ctx.route, typeof error.code === "string" ? error.code : "RESPONSE_FAILURE");
 	}
 
 	credo.app.use(async (ctx: Context) => {
