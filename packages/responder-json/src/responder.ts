@@ -1,9 +1,14 @@
-import type {Context, Next} from "koa";
+import type {Context} from "koa";
 import type {CredoJS, Route} from "@credo-js/server";
 import type {ResponderJsonConfigOptions} from "./types";
 import createHttpError from "http-errors";
 import HttpJSON from "./HttpJSON";
 import asyncResult from "@credo-js/utils/asyncResult";
+
+type OriginOptions = {
+	origin: string;
+	credentials: boolean;
+};
 
 function getHeaderString(value?: string | string[]): string {
 	return value != null ? (Array.isArray(value) ? value.join(",") : value) : "";
@@ -12,31 +17,17 @@ function getHeaderString(value?: string | string[]): string {
 export default (function responder(credo: CredoJS, name: string): Route.Responder {
 
 	const options: ResponderJsonConfigOptions = credo.config(`responder/${name}`);
-	const corsKey = Symbol();
 	const {
 		cors: corsOption = true,
 		done: doneHandler,
 		error: errorHandler,
 	} = options;
 	const enabled: boolean = corsOption !== false;
-	const cors = enabled && typeof corsOption === "object" ? corsOption : {};
+	const cors = enabled && corsOption != null && typeof corsOption === "object" ? corsOption : {};
 	const exposeHeaders = getHeaderString(cors.exposeHeaders);
 	const {
 		keepHeadersOnError = true,
 	} = cors;
-
-	type Props = {
-		origin: string,
-		credentials: boolean,
-	};
-
-	function setProps(ctx: any, props: Props) {
-		ctx[corsKey] = props;
-	}
-
-	function getProps(ctx: any): Props {
-		return ctx[corsKey];
-	}
 
 	function isDetails(err: any): err is Error & {
 		details: any;
@@ -49,7 +40,7 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 
 		for(const route of credo.route.routeList) {
 			if(
-				route.context.details.cors === false ||
+				route.context.details?.cors === false ||
 				route.context.responder.name !== name ||
 				! await asyncResult(route.match(ctx))
 			) {
@@ -65,25 +56,16 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 		return methods;
 	}
 
-	function setHeaders(ctx: Context) {
-		if(!enabled) {
-			return;
-		}
-
+	function setHeaders(ctx: Context, opts: OriginOptions) {
 		const {route} = ctx;
-		if(!route || route.details.cors === false) {
-			return;
-		}
-
-		const props = getProps(ctx);
-		if(!props || keepHeadersOnError && ctx.status >= 500) {
+		if(route && route.details?.cors === false || keepHeadersOnError && ctx.status >= 500) {
 			return;
 		}
 
 		const {
 			origin,
 			credentials,
-		} = props;
+		} = opts;
 
 		// Simple Cross-Origin Request, Actual Request, and Redirects
 		ctx.set('Access-Control-Allow-Origin', origin);
@@ -98,13 +80,19 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 	}
 
 	function send(ctx: Context, body: HttpJSON) {
-		ctx.status = body.status;
-		ctx.body = body.toJSON();
+		ctx.bodyEnd(body.toJSON(), body.status);
 	}
 
-	async function error(ctx: Context, error: Error) {
+	async function sendError(ctx: Context, error: Error, withOrigin: boolean) {
 		if(typeof errorHandler === "function") {
 			return send(ctx, await asyncResult(errorHandler(error)));
+		}
+
+		if(withOrigin) {
+			const opts = await setOrigin(ctx);
+			if(opts) {
+				setHeaders(ctx, opts);
+			}
 		}
 
 		let code = 500;
@@ -126,90 +114,105 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 			body.details = error.details;
 		}
 
-		ctx.status = code < 600 ? code : 500;
-		ctx.body = body;
+		ctx.bodyEnd(body, code < 600 ? code : 500);
 	}
+
+	async function setOrigin(ctx: Context): Promise<OriginOptions | false> {
+		if(!enabled) {
+			return false;
+		}
+
+		// If the Origin header is not present terminate this set of steps.
+		// The request is outside the scope of this specification.
+		const requestOrigin = ctx.get('Origin');
+
+		// Always set Vary header
+		// https://github.com/rs/cors/issues/10
+		ctx.vary('Origin');
+
+		if (!requestOrigin) {
+			return false;
+		}
+
+		let origin: string;
+		if (typeof cors.origin === 'function') {
+			origin = await asyncResult(cors.origin(ctx))
+			if (!origin) {
+				return false;
+			}
+		} else {
+			origin = cors.origin || requestOrigin;
+		}
+
+		let credentials: boolean;
+		if (typeof cors.credentials === 'function') {
+			credentials = await asyncResult<boolean>(cors.credentials(ctx));
+		} else {
+			credentials = !!cors.credentials;
+		}
+
+		return {
+			origin,
+			credentials,
+		};
+	}
+
+	async function sendOptions(ctx: Context, opts: OriginOptions) {
+
+		// If there is no Access-Control-Request-Method header or if parsing failed,
+		// do not set any additional headers and terminate this set of steps.
+		// The request is outside the scope of this specification.
+		if (!ctx.get('Access-Control-Request-Method')) {
+			// this not preflight request, ignore it
+			return;
+		}
+
+		const methods = await getOptionsMethods(ctx);
+		if(!methods.length) {
+			return;
+		}
+
+		const {
+			origin,
+			credentials
+		} = opts;
+
+		ctx.set('Access-Control-Allow-Origin', origin);
+		ctx.set('Access-Control-Allow-Methods', methods.join(','));
+
+		if(credentials) {
+			ctx.set('Access-Control-Allow-Credentials', 'true');
+		}
+
+		if(cors.maxAge) {
+			ctx.set('Access-Control-Max-Age', String(cors.maxAge));
+		}
+
+		const allowHeaders = getHeaderString(cors.allowHeaders || ctx.get('Access-Control-Request-Headers'));
+		if(allowHeaders) {
+			ctx.set('Access-Control-Allow-Headers', allowHeaders);
+		}
+
+		ctx.bodyEnd("", 204);
+	}
+
+	credo.hooks.subscribe("onResponseError", async (event) => {
+		const {ctx, code, route} = event;
+		if(ctx.method === "OPTIONS" && code === "HTTP_METHOD_NOT_SUPPORTED" && route?.responder?.name === name) {
+			const opts = await setOrigin(ctx);
+			if(opts) {
+				await sendOptions(ctx, opts);
+			}
+		}
+	});
 
 	return {
 		name,
-		async middleware(ctx: Context, next: Next) {
-			if(!enabled) {
-				return next();
-			}
-
-			// If the Origin header is not present terminate this set of steps.
-			// The request is outside the scope of this specification.
-			const requestOrigin = ctx.get('Origin');
-
-			// Always set Vary header
-			// https://github.com/rs/cors/issues/10
-			ctx.vary('Origin');
-
-			if (!requestOrigin) {
-				return next();
-			}
-
-			let origin: string;
-			if (typeof cors.origin === 'function') {
-				origin = await asyncResult(cors.origin(ctx))
-				if (!origin) {
-					return next();
-				}
-			} else {
-				origin = cors.origin || requestOrigin;
-			}
-
-			let credentials: boolean;
-			if (typeof cors.credentials === 'function') {
-				credentials = await asyncResult<boolean>(cors.credentials(ctx));
-			} else {
-				credentials = !!cors.credentials;
-			}
-
-			setProps(ctx, {
-				origin,
-				credentials,
-			});
-
-			if(ctx.method === "OPTIONS") {
-				// Preflight Request
-
-				// If there is no Access-Control-Request-Method header or if parsing failed,
-				// do not set any additional headers and terminate this set of steps.
-				// The request is outside the scope of this specification.
-				if (ctx.route || !ctx.get('Access-Control-Request-Method')) {
-					// this not preflight request, ignore it
-					return next();
-				}
-
-				const methods = await getOptionsMethods(ctx);
-				if(!methods.length) {
-					return next();
-				}
-
-				ctx.set('Access-Control-Allow-Origin', origin);
-				ctx.set('Access-Control-Allow-Methods', methods.join(','));
-
-				if(credentials) {
-					ctx.set('Access-Control-Allow-Credentials', 'true');
-				}
-
-				if(cors.maxAge) {
-					ctx.set('Access-Control-Max-Age', String(cors.maxAge));
-				}
-
-				const allowHeaders = getHeaderString(cors.allowHeaders || ctx.get('Access-Control-Request-Headers'));
-				if(allowHeaders) {
-					ctx.set('Access-Control-Allow-Headers', allowHeaders);
-				}
-
-				ctx.status = 204;
-			} else {
-				return next();
-			}
-		},
 		async responder(ctx: Context, body: any) {
-			setHeaders(ctx);
+			const opts = await setOrigin(ctx);
+			if(opts) {
+				setHeaders(ctx, opts);
+			}
 			if(!HttpJSON.isHttpJSON(body)) {
 				body = new HttpJSON(body);
 			}
@@ -217,11 +220,13 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 				try {
 					body = await asyncResult(doneHandler(body));
 				} catch(err) {
-					return error(ctx, err as Error);
+					return sendError(ctx, err as Error, false);
 				}
 			}
 			send(ctx, body);
 		},
-		error,
+		error(ctx: Context, error: Error) {
+			return sendError(ctx, error, true);
+		},
 	}
 }) as Route.ResponderCtor;
