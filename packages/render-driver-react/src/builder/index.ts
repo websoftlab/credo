@@ -10,6 +10,15 @@ export default <Omit<CredoPlugin.RenderDriver, "modulePath">>{
 		javascript: [".jsx"],
 		typescript: [".tsx"],
 	},
+	devDependencies: {
+		"@types/history": "^4.7.9",
+		"@types/react": "^17.0.16",
+		"@types/react-dom": "^17.0.9",
+		"@types/react-router-dom": "^5.1.8",
+		"@babel/preset-react": "^7.16.7",
+		"@pmmmwh/react-refresh-webpack-plugin": "^0.5.4",
+		"react-refresh": "^0.10.0"
+	},
 	clientDependencies: [
 		"@credo-js/html-head",
 		"@credo-js/app",
