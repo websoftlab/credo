@@ -290,6 +290,16 @@ export default function() {
 
 	await installDependencies({}, (await readJsonFile(credoPackageJson)).devDependencies || {});
 
+	const packageJson = await readJsonFile("./package.json");
+	if(!packageJson.scripts || Object.keys(packageJson.scripts).length === 0) {
+		packageJson.scripts = {
+			dev: "credo dev",
+			build: "credo build",
+			start: "credo-serv start"
+		};
+		await writeJsonFile("./package.json", packageJson);
+	}
+
 	fi.installed = true;
 
 	await done();
