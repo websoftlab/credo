@@ -63,13 +63,13 @@ export default (function responder(credo: CredoJS, name: string) {
 		const redirectNative = ctx.redirect;
 		ctx.redirect = (url: string, alt?: string) => {
 			if(isPageJSON(ctx)) {
-				ctx.body = {
+				ctx.bodyEnd({
 					redirect: {
 						location: url,
 					},
-				};
+				});
 			} else {
-				return redirectNative(url, alt);
+				return redirectNative.call(ctx, url, alt);
 			}
 		};
 	});
@@ -102,12 +102,29 @@ export default (function responder(credo: CredoJS, name: string) {
 		return [200, 201, 202, 203, 205, 206, 207, 208, 226].includes(data.code);
 	}
 
-	function isPageJSON(ctx: Context) {
-		if(ctx.method === "GET" && ctx.accepts('html', 'json') === "json" && typeof ctx.query.t === "string") {
-			const [qid] = ctx.query.t.split("-", 2);
-			return qid === getQueryId;
+	const IS_PAGE_KEY = Symbol("is-page");
+
+	function isPageQueryId(query: any = {}) {
+		return Object.keys(query).some(key => {
+			return !query[key] && key.startsWith(getQueryId) ? /^-\d+$/.test(key.substring(getQueryId.length)) : false
+		});
+	}
+
+	function isPageJSON(ctx: Context): boolean {
+		let test: boolean | undefined = ctx[IS_PAGE_KEY as never];
+		if(typeof test === "boolean") {
+			return test;
 		}
-		return false;
+		test = false;
+		if(ctx.accepts('html', 'json') === "json") {
+			if(ctx.method === "GET") {
+				test = isPageQueryId(ctx.query);
+			} else if(ctx.method === "POST") {
+				test = isPageQueryId(ctx.request.body);
+			}
+		}
+		Object.defineProperty(ctx, IS_PAGE_KEY, {value: test});
+		return test;
 	}
 
 	function sendRedirect(ctx: Context, location: string, code?: number) {
@@ -116,18 +133,18 @@ export default (function responder(credo: CredoJS, name: string) {
 			location = "/";
 		}
 		if (isPageJSON(ctx)) {
-			ctx.body = {
+			ctx.bodyEnd({
 				redirect: {
 					location,
 				},
-			};
+			});
 		} else {
 			ctx.redirect(location);
-			if (code && isRedirectCode(code)) {
-				ctx.status = code;
-			}
-			ctx.type = "text/html; charset=utf-8";
-			ctx.body = `<html lang="${htmlEscape(ctx.language)}"><head><title>Redirect...</title><meta http-equiv="refresh" content="0; url=${htmlEscape(location)}" /></head></html>`;
+			ctx.bodyEnd(
+				`<html lang="${htmlEscape(ctx.language)}"><head><title>Redirect...</title><meta http-equiv="refresh" content="0; url=${htmlEscape(location)}" /></head></html>`,
+				code && isRedirectCode(code) ? code : undefined,
+				"text/html; charset=utf-8"
+			);
 		}
 	}
 
@@ -145,7 +162,7 @@ export default (function responder(credo: CredoJS, name: string) {
 
 		// fire hook
 		await credo.hooks.emit<OnPageHTMLBeforeRenderHook>("onPageHTMLBeforeRender", {ctx, document});
-		if (ctx.res.writableEnded) {
+		if (ctx.isBodyEnded) {
 			return;
 		}
 
@@ -154,9 +171,7 @@ export default (function responder(credo: CredoJS, name: string) {
 			type += `; ${document.charset}`;
 		}
 
-		ctx.status = code;
-		ctx.type = type;
-		ctx.body = await document.toHTML(ctx);
+		ctx.bodyEnd(await document.toHTML(ctx), code, type);
 	}
 
 	async function sendJSON(ctx: Context, code: number, body: any) {
@@ -171,12 +186,8 @@ export default (function responder(credo: CredoJS, name: string) {
 			body,
 			isError: "message" in body
 		});
-		if (ctx.res.writableEnded) {
-			return;
-		}
 
-		ctx.status = body.code;
-		ctx.body = body;
+		ctx.bodyEnd(body, body.code);
 	}
 
 	function sendError(ctx: Context, message: string, code: number, ssr?: boolean) {
@@ -214,7 +225,11 @@ export default (function responder(credo: CredoJS, name: string) {
 
 		const {page: pagePage = "Index", props: pageProps = {}, ssr} = props;
 
-		if (HttpRedirect.isHttpRedirect(result)) {
+		if(result == null) {
+			throw new Error('Responder result is empty');
+		}
+
+		if(HttpRedirect.isHttpRedirect(result)) {
 			return sendRedirect(ctx, result.location);
 		}
 
@@ -295,11 +310,10 @@ export default (function responder(credo: CredoJS, name: string) {
 						message = error.message;
 					}
 				}
-				ctx.status = code < 600 ? code : 500;
-				ctx.body = {
-					code,
-					message: message || ctx.store.translate("system.page.queryError", "Query error"),
-				};
+				if (!message) {
+					message = ctx.store.translate("system.page.queryError", "Query error");
+				}
+				ctx.bodyEnd({ code, message }, code < 600 ? code : 500);
 			} else {
 				throw error;
 			}
