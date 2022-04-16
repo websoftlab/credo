@@ -35,7 +35,6 @@ export function compilePath<R = any>(path: string): PatternInterface<R> {
 
 	if(segments.length) {
 		const segmentsCompile: AbstractSegment[] = [];
-		const keys: string[] = [];
 		let isReg = false;
 		let isEnd = false;
 		for(let segment of segments) {

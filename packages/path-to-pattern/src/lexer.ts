@@ -234,6 +234,7 @@ export default function lexer(
 			return new Plain(t.value);
 		}
 		if(t.type === LT.NAME) {
+			hasKey(t.value, keys);
 			return new Value(t.value, t.details.required);
 		}
 	}
