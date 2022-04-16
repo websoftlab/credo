@@ -460,7 +460,7 @@ export namespace LocalStore {
 // hooks
 export interface CtxHook { ctx: Koa.Context }
 
-export interface OnMakeURLServerHook extends OnMakeURLHook, CtxHook {}
+export interface OnMakeURLServerHook extends OnMakeURLHook, CtxHook { name?: string }
 export interface OnAppStateHook<State = any> extends CtxHook { ctx: Koa.Context, state: State }
 export interface OnResponseHook extends CtxHook {}
 export interface OnResponseRouteHook extends CtxHook { notFound: boolean }

@@ -6,7 +6,7 @@ export namespace URL {
 	}
 
 	export interface Options extends QueryOptions {
-		path: string | string[];
+		path?: string | string[];
 		host?: string;
 		port?: string | number;
 		protocol?: "http" | "https";

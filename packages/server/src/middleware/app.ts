@@ -19,11 +19,34 @@ export function middleware(credo: CredoJS, options: {
 		multilingual,
 	} = options;
 
+	function createRoutePatternUrl(name: string, params?: any) {
+		const route = credo.route.route(name);
+		if(!route) {
+			throw new Error(`The ${name} route not found`);
+		}
+		const {pattern} = route;
+		if(!pattern) {
+			throw new Error(`The pattern's of ${name} route not found`);
+		}
+		return pattern.replace({ data: params });
+	}
+
 	const createMakeUrlHandler = (ctx: Koa.Context): URL.AsyncHandler => async (url) => {
+		if(!url) {
+			return "/";
+		}
+		let routeName: string | undefined;
 		if(typeof url === "string" || Array.isArray(url)) {
 			url = {path: url};
+		} else if(url.name) {
+			const {name, params, ... rest} = url;
+			routeName = name;
+			url = <URL.Options>{
+				... rest,
+				path: createRoutePatternUrl(name, params),
+			};
 		}
-		await credo.hooks.emit<OnMakeURLServerHook>("onMakeURL", {url, ctx});
+		await credo.hooks.emit<OnMakeURLServerHook>("onMakeURL", {url, ctx, name: routeName});
 		return makeUrl(url);
 	};
 

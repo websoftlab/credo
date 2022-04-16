@@ -6,6 +6,14 @@ declare global {
 	export var credo: CredoJS;
 }
 
+declare module "@credo-js/make-url"  {
+	namespace URL {
+		interface Options {
+			name?: string;
+		}
+	}
+}
+
 declare module 'cluster' {
 	interface Worker {
 		workerData?: WorkerCJS.Data;
