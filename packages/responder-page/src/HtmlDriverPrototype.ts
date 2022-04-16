@@ -1,7 +1,7 @@
 import type {Render} from "./types";
 import type HtmlNode from "./HtmlNode";
-import {API, Page} from "./types";
-import {Context} from "koa";
+import type {API, Page} from "@credo-js/app";
+import type {Context} from "koa";
 
 export default abstract class HtmlDriverPrototype<Type, RenderType = HtmlNode> implements Render.HtmlDriverInterface<Type> {
 

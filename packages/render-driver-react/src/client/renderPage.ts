@@ -1,13 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {createBrowserHistory} from "history";
-import {Api, createHttpJsonService, PageStore} from "@credo-js/responder-page/api/index";
+import {Api, Page, createHttpJsonService, PageStore} from "@credo-js/app";
 import App from "./App";
 import loadDocument from "./loadDocument";
 import {load, loaded, component} from "../loadable";
-import {AppStore} from "@credo-js/lexicon";
+import {AppStore} from "@credo-js/app";
 import type {ReactElement, ElementType} from "react";
-import type {Page} from "@credo-js/responder-page";
 
 type React15Root = { render: Function };
 
@@ -44,20 +43,17 @@ const renderPage: Page.ClientRenderHandler<ElementType> = async function renderP
 
 	const {protocol, host} = window.location;
 	const http = createHttpJsonService({
-		getQueryId,
 		protocol: String(protocol).substring(0, 5) === "https" ? "https" : "http",
 		host,
 	});
 
 	const app = new AppStore(state);
 	const page = new PageStore({
+		getQueryId,
 		http,
 		loader: {load, loaded, component}
 	});
-	const api = new Api<ElementType>("client", app, page, {
-		http,
-		translator: app.translator,
-	});
+	const api = new Api<ElementType>("client", app, page);
 
 	// client system bootstrap
 	bootloader.forEach(func => {

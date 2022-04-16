@@ -1,0 +1,38 @@
+{
+  "name": "@credo-js/app",
+  "version": "1.0.0",
+  "author": "credo@websoftlab.com",
+  "license": "MIT",
+  "scripts": {
+    "build": "node ../../scripts/lib/build.js"
+  },
+  "dependencies": {
+    "@credo-js/lexicon": "*",
+    "@credo-js/make-url": "*",
+    "@credo-js/utils": "*",
+    "mobx": "^6.3.2",
+	"axios": "^0.26.0",
+    "is-plain-object": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.14.0"
+  },
+  "peerDependencies": {},
+  "exports": {
+    "./": "./build/",
+    ".": {
+      "require": "./build/index.js"
+    }
+  },
+  "types": "build/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "build/index.d.ts": [
+        "src/index.ts"
+      ],
+      "*": [
+        "src/*"
+      ]
+    }
+  }
+}

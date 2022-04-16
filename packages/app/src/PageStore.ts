@@ -1,14 +1,15 @@
 import axios from "axios";
 import {computed, action, makeObservable, observable} from "mobx";
-import type {CancelTokenSource, AxiosInstance} from "axios";
-import type {Page} from "../types";
+import {isPlainObject} from "is-plain-object";
+import type {CancelTokenSource, AxiosInstance, AxiosRequestConfig} from "axios";
+import type {Page} from "./types";
 
 async function preload<ComponentType>(loader: Page.Loader<ComponentType>, response: Page.Response) {
 	const page = response.page;
 	if(page) {
 		return loader.loaded(page) ? null : loader.load(page);
 	}
-	throw new Error(`The "${page}" page component is not detected.`);
+	throw new Error(`The page component is not defined in the Page.Response`);
 }
 
 function done<ComponentType>(this: PageStore<ComponentType>, url?: string, key?: string) {
@@ -61,6 +62,7 @@ function isRedirect(data: any): data is ResponseRedirect {
 }
 
 type PrivateOptions<ComponentType> = {
+	getQueryId: string,
 	queryId?: symbol,
 	cancelToken?: CancelTokenSource,
 	http: AxiosInstance,
@@ -84,6 +86,7 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 	loading: boolean = false;
 	error: boolean = false;
 	errorMessage: string | null = null;
+	http!: AxiosInstance;
 
 	[PRIVATE_ID]: PrivateOptions<ComponentType>;
 
@@ -104,9 +107,18 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 			title: computed,
 		});
 
+		const {http, loader, getQueryId} = options;
+		Object.defineProperty(this, "http", {
+			configurable: false,
+			get() {
+				return http;
+			}
+		});
+
 		this[PRIVATE_ID] = {
-			http: options.http,
-			loader: options.loader,
+			getQueryId: getQueryId || "query",
+			http,
+			loader,
 			preload: (url: string, key?: string) => {
 
 				const prv = opt(this);
@@ -172,7 +184,10 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 			});
 	}
 
-	load(url: string, key: string) {
+	load(url: string, key: string, postData: any = null) {
+		if(!url) {
+			url = "";
+		}
 		if(this.url === url && this.key === key) {
 			return;
 		}
@@ -195,7 +210,32 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 			}
 		};
 
-		prv.http.get(url, {cancelToken: cancelTokenSource.token, isPage: true})
+		const queryId = `${prv.getQueryId}-${Date.now()}`;
+		const requestConfig: AxiosRequestConfig = {
+			url,
+			method: "get",
+			cancelToken: cancelTokenSource.token,
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'application/json',
+			},
+		};
+
+		if(postData != null) {
+			if(!isPlainObject(postData)) {
+				throw new Error("Post data must be plain object");
+			}
+			requestConfig.method = "post";
+			requestConfig.data = JSON.stringify({
+				... postData,
+				[queryId]: ""
+			});
+		} else {
+			requestConfig.url += `${url.includes('?') ? '&' : '?'}${queryId}`;
+		}
+
+		prv
+			.http(requestConfig)
 			.then((response) => {
 				const {data, status} = response;
 				if(isObj(data)) {

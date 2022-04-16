@@ -1,9 +1,7 @@
-import Api from "./api/Api";
 import HtmlNode from "./HtmlNode";
-import createHttpJsonService from "./api/createHttpJsonService";
-import PageStore from "./api/PageStore";
+import {PageStore, Api, createHttpJsonService} from "@credo-js/app";
 import type {Context} from "koa";
-import type {Render, API} from "./types";
+import type {Render} from "./types";
 
 const LISTENER_KEY = Symbol();
 const RENDER_DRIVER_KEY = Symbol();
@@ -113,17 +111,13 @@ export default class HtmlDocument {
 
 		// http service
 		const http = createHttpJsonService({
-			getQueryId: driver.getQueryId,
 			host: ctx.host,
 			protocol: ctx.secure ? "https" : "http",
 		});
 
 		const page = new PageStore({http, loader: driver.loader});
 
-		const api: API.ApiInterface<any> = new Api<any>("server", ctx.store, page, {
-			http,
-			translator: ctx.store.translator,
-		});
+		const api = new Api<any>("server", ctx.store, page);
 
 		const html = await driver.toHTML(ctx, api, emit);
 

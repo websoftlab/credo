@@ -8,11 +8,10 @@
 	},
 	"dependencies": {
 		"http-errors": "^1.7.3",
-		"mobx": "^6.3.2",
-		"axios": "^0.26.0",
 		"@credo-js/make-url": "*",
 		"@credo-js/utils": "*",
-		"@credo-js/server": "*"
+		"@credo-js/server": "*",
+		"@credo-js/app": "*"
 	},
 	"devDependencies": {
 		"@types/axios": "^0.14.0",

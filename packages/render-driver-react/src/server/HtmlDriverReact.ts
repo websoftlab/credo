@@ -1,7 +1,7 @@
 import type {ReactElement, ElementType} from "react";
 import type {Context} from "koa";
 import type {HeadTag} from "@credo-js/html-head";
-import type {API} from "@credo-js/responder-page";
+import type {API} from "@credo-js/app";
 import {createElement} from "react";
 import ReactDOMServer from "react-dom/server";
 import createError from "http-errors";

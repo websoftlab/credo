@@ -12,6 +12,7 @@ export default <Omit<CredoPlugin.RenderDriver, "modulePath">>{
 	},
 	clientDependencies: [
 		"@credo-js/html-head",
+		"@credo-js/app",
 		"@credo-js/render-driver-react/app",
 		"@credo-js/render-driver-react/head",
 	],

@@ -13,10 +13,7 @@ export type {
 	ResponderPageOptions,
 	ResponderPageResultNotFound,
 	ResponderPageResultRedirect,
-	HttpJsonServiceOptions,
 	OnPageHTMLBeforeRenderHook,
 	OnPageJSONBeforeRenderHook,
-	API,
-	Page,
-	Render
+	Render,
 } from "./types";

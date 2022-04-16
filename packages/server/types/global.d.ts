@@ -1,5 +1,5 @@
 import type {CredoJS, Route, Worker as WorkerCJS} from "@credo-js/server/types";
-import type {Lexicon} from "@credo-js/lexicon";
+import type {AppStore} from "@credo-js/app";
 import type {URL} from "@credo-js/make-url";
 
 declare global {
@@ -26,7 +26,7 @@ declare module "koa" {
 		makeUrl: URL.AsyncHandler;
 
 		// app
-		readonly store: Lexicon.StoreInterface;
+		readonly store: AppStore;
 
 		// router
 		match?: Record<string, any>;

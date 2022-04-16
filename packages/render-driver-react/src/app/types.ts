@@ -1,10 +1,9 @@
-import type {Page} from "@credo-js/responder-page";
+import type {App, Page} from "@credo-js/app";
 import type {Action, History, Location} from "history";
 import type {ElementType} from "react";
-import type {Lexicon} from "@credo-js/lexicon";
 
 export interface OnAppMountHook {
-	app: Lexicon.StoreInterface;
+	app: App.StoreInterface;
 }
 
 export interface OnLocationChangeHook {

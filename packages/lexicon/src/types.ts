@@ -7,6 +7,22 @@ export namespace Lexicon {
 		replacement?: any;
 	}
 
+	export interface LanguageStoreCtor {
+		new (language?: string, lexicon?: any, lambda?: Record<string, LambdaTranslate>, packages?: string[]): LanguageStoreInterface;
+	}
+
+	export interface LanguageStoreInterface {
+		readonly language: string;
+		readonly lexicon: any;
+		readonly lambda: Record<string, LambdaTranslate>;
+		readonly packages: string[];
+		readonly translator: Translator;
+
+		translate(key: string, alternative?: string | ((key: string) => string)): string;
+		reloadLanguage(id: string): Generator;
+		loadLanguage(id: string, packageName?: string): Generator;
+	}
+
 	export interface Translator {
 		(key: string | TranslateOptions): string;
 		replace(text: string, replacement: any): string;
@@ -25,22 +41,4 @@ export namespace Lexicon {
 
 	export type Listener = (data: Data & {packageName: string | null}) => (Promise<void> | void);
 
-	export interface StoreCtor {
-		new (state?: any, data?: Lexicon.Data): StoreInterface;
-	}
-
-	export interface StoreInterface<State = any> {
-
-		readonly state: State;
-		readonly language: string;
-		readonly lexicon: any;
-		readonly lambda: Record<string, Lexicon.LambdaTranslate>;
-		readonly packages: string[];
-		readonly translator: Lexicon.Translator;
-
-		update(state: any): void;
-		translate(key: string, alternative?: string): string;
-		reloadLanguage(id: string): Generator;
-		loadLanguage(id: string, packageName?: string): Generator;
-	}
 }

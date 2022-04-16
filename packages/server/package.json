@@ -8,7 +8,7 @@
 	},
 	"dependencies": {
 		"@credo-js/utils": "*",
-		"@credo-js/lexicon": "*",
+		"@credo-js/app": "*",
 		"@credo-js/make-url": "*",
 		"@credo-js/path-to-pattern": "*",
 		"@credo-js/cli-debug": "*",

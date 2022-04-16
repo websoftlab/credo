@@ -1,4 +1,4 @@
-import {AppStore} from "@credo-js/lexicon";
+import {AppStore} from "@credo-js/app";
 import clonePlainObject from "@credo-js/utils/clonePlainObject";
 import {observe} from "mobx";
 import {makeUrl} from "@credo-js/make-url";

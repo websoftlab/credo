@@ -18,7 +18,7 @@ function replaceText(key: string, replacement: any) {
 	return String(value);
 }
 
-export function plural(store: Lexicon.StoreInterface, value: number, variant: string | string[]) {
+export function plural(store: Lexicon.LanguageStoreInterface, value: number, variant: string | string[]) {
 	if(typeof variant === "string") {
 		variant = variant.split('||');
 	}
@@ -33,7 +33,7 @@ export function plural(store: Lexicon.StoreInterface, value: number, variant: st
 		.replace(regNumber, String(value));
 }
 
-export function lambda(store: Lexicon.StoreInterface, lambda: string, key: string, replacement: any): string {
+export function lambda(store: Lexicon.LanguageStoreInterface, lambda: string, key: string, replacement: any): string {
 	const func = store.lambda[lambda];
 	if(typeof func === "function") {
 		return func(replacement[key], {
@@ -51,7 +51,7 @@ export function lambda(store: Lexicon.StoreInterface, lambda: string, key: strin
 // This is {value} replace {%total_value "plural_variant_1 || plural_variant_2 || plural_variant_3"}
 // This is {value} replace {%total_value => plural_function}
 
-const recursive = (store: Lexicon.StoreInterface, text: string, replacement: any, depth: number = 0): string => {
+const recursive = (store: Lexicon.LanguageStoreInterface, text: string, replacement: any, depth: number = 0): string => {
 	if(depth > 1) {
 		return text;
 	}
@@ -86,6 +86,6 @@ const recursive = (store: Lexicon.StoreInterface, text: string, replacement: any
 	});
 };
 
-export function replace(store: Lexicon.StoreInterface, text: string, replacement: any) {
+export function replace(store: Lexicon.LanguageStoreInterface, text: string, replacement: any) {
 	return recursive(store, text, replacement);
 }

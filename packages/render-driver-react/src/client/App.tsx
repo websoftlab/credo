@@ -6,7 +6,7 @@ import {ApiContext, Loader} from "../app";
 import type {MutableRefObject, ElementType} from "react";
 import type {Action, History, Location} from "history";
 import type {Lambda} from "mobx";
-import type {API} from "@credo-js/responder-page";
+import type {API} from "@credo-js/app";
 import type {OnAppMountHook, OnLocationChangeHook, OnPageHook, OnPageTitleHook} from "../app";
 
 const initialId: symbol = Symbol();

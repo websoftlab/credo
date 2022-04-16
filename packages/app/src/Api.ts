@@ -1,8 +1,7 @@
 import {makeUrl} from "@credo-js/make-url";
 import {createPlainEvent, subscribe, has} from "@credo-js/utils/events";
-import type {API, Page} from "../types";
+import type {API, App, Page} from "./types";
 import type {URL, OnMakeURLHook} from "@credo-js/make-url";
-import type {Lexicon} from "@credo-js/lexicon";
 import type {Evn} from "@credo-js/utils/events";
 
 type ListenersData = Record<API.HookName, Evn[]>;
@@ -26,15 +25,20 @@ export default class Api<ComponentType, Store = any> implements API.ApiInterface
 	title: string = "";
 	ssr: boolean = false;
 	baseUrl: string = "/";
+	services: API.Services;
 
 	private _listeners: ListenersData = {};
 
 	constructor(
 		public mode: "client" | "server",
-		public app: Lexicon.StoreInterface<Store>,
+		public app: App.StoreInterface<Store>,
 		public page: Page.StoreInterface<ComponentType>,
-		public services: API.Services,
-	) {}
+	) {
+		this.services = {
+			translator: app.translator,
+			http: page.http,
+		};
+	}
 
 	makeUrl: URL.Handler = (url): string => {
 		if(typeof url === "string" || Array.isArray(url)) {

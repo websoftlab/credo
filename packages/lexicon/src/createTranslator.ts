@@ -2,7 +2,7 @@ import translate from "./translate";
 import {replace, plural} from "./replace";
 import type {Lexicon} from "./types";
 
-export default function createTranslator(store: Lexicon.StoreInterface): Lexicon.Translator {
+export default function createTranslator(store: Lexicon.LanguageStoreInterface): Lexicon.Translator {
 
 	const translator: Lexicon.Translator = function translator(key: string | Lexicon.TranslateOptions): string {
 		if(typeof key === "string") {
