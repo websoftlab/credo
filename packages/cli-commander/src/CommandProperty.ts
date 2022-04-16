@@ -18,6 +18,7 @@ export default abstract class CommandProperty {
 	multiple: boolean = false;
 	value: any[] = [];
 	unique: boolean;
+	message?: string;
 
 	protected constructor(options: Property, propertyName: string) {
 
@@ -45,6 +46,11 @@ export default abstract class CommandProperty {
 		this.min = min > 0 ? min : 0;
 		this.max = max > 0 ? max : 0;
 		this.unique = unique === true;
+		this.message = message;
+	}
+
+	get isRequired() {
+		return this.required || this.multiple && this.min > 0;
 	}
 
 	add(value: string) {
@@ -77,29 +83,24 @@ export default abstract class CommandProperty {
 			}
 			if(this.required && value.length === 0) {
 				return {
-					error: isName(this)
-						? format(opts.required, this.name)
-						: format(args.required)
+					error: this.message || (
+						isName(this)
+							? format(opts.required, this.name)
+							: format(args.required)
+					)
 				};
 			}
 			return false;
 		}
 		if(this.required && value.length !== 1) {
 			return {
-				error: isName(this)
-					? format(opts.required, this.name)
-					: format(args.required)
+				error: this.message || (
+					isName(this)
+						? format(opts.required, this.name)
+						: format(args.required)
+				)
 			};
 		}
 		return false;
-	}
-
-	info() {
-		return {
-			propertyName: this.propertyName,
-			description: this.description,
-			required: this.required || this.multiple && this.min > 0,
-			multiple: this.multiple,
-		};
 	}
 }

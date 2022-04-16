@@ -95,20 +95,6 @@ export default class Option extends CommandProperty implements MinOptionInterfac
 		this.is = true;
 	}
 
-	info() {
-		let name = this.name;
-		if(this.alt.length) {
-			name += `, ${this.alt.join(", ")}`;
-		}
-		return {
-			... super.info(),
-			name,
-			isSingleValue: this.isSingleValue,
-			isFlag: this.isFlag,
-			hidden: this.hidden,
-		};
-	}
-
 	protected _error(): false | {error: string} {
 		if(this.value.length === 0) {
 			if(this.isFlag) {
@@ -119,12 +105,12 @@ export default class Option extends CommandProperty implements MinOptionInterfac
 					return super._error();
 				}
 				return {
-					error: format(opts.valuable, this.name),
+					error: format(this.message || opts.valuable, this.name),
 				};
 			}
 			if(this.required) {
 				return {
-					error: format(opts.required, this.name),
+					error: format(this.message || opts.required, this.name),
 				};
 			}
 			return false;

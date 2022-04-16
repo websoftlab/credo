@@ -34,6 +34,32 @@ export default class Command {
 		};
 	}
 
+	get commandArgument() {
+		return this._argument;
+	}
+
+	get commandOptionList() {
+		return this
+			._optionList
+			.filter(option => !(option instanceof ErrorOption || option.hidden)) as Option[];
+	}
+
+	get commandNotation() {
+		return this._option.notation;
+	}
+
+	get commandDescription() {
+		return this._option.description;
+	}
+
+	get commandStrict() {
+		return this._option.strict;
+	}
+
+	get commandVersion() {
+		return this._option.version;
+	}
+
 	stream(value: NodeJS.WriteStream) {
 		this._option.stream = value;
 		return this;
@@ -100,21 +126,6 @@ export default class Command {
 		}
 		this._handler = handler;
 		return this;
-	}
-
-	info() {
-		return {
-			name: this.name,
-			notation: this._option.notation,
-			description: this._option.description,
-			strict:   this._option.strict,
-			version:  this._option.version,
-			argument: this._argument ? this._argument.info() : null,
-			options:  this
-				._optionList
-				.filter(option => !(option instanceof ErrorOption || option.hidden))
-				.map(option => (option as Option).info()),
-		};
 	}
 
 	async begin(argv: string[]) {

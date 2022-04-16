@@ -23,7 +23,7 @@ export default class Commander extends EventEmitter {
 	}
 
 	get commands() {
-		return this._commandList.slice();
+		return this._commandList.filter(cmd => cmd.name !== "*");
 	}
 
 	get version() {
@@ -107,7 +107,7 @@ export default class Commander extends EventEmitter {
 
 		const argv = Array.isArray(argvInit) ? argvInit.slice() : process.argv.slice(2);
 		const name = argv.shift();
-		const command = this._commandList.find(cmd => cmd.name === name);
+		let command = name === "*" || ! name ? undefined : this.find(name);
 
 		if(command) {
 			this.emit("begin", command);
@@ -115,6 +115,14 @@ export default class Commander extends EventEmitter {
 		}
 
 		const ok = name === "--help";
+		if(!ok) {
+			command = this.find("*");
+			if(command) {
+				this.emit("begin", command);
+				return command.begin(name ? [name].concat(argv) : argv);
+			}
+		}
+
 		if(ok && argv[0]) {
 			await helpCommand(this, argv[0]);
 		} else {

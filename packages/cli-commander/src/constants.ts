@@ -51,5 +51,6 @@ export const titles = {
 	warning: "Warning!",
 	options: "Options",
 	commands: "Commands",
+	arguments: "Arguments",
 	help: "Display help",
 };

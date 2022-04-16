@@ -1,9 +1,48 @@
 import type Commander from "../Commander";
+import type Command from "../Command";
+import Option from "../Option";
 import Help from "./Help";
 import Group from "./Group";
 import GroupItem from "./GroupItem";
 import {newError} from "@credo-js/cli-color";
 import {commands, titles} from "../constants";
+
+function createGroupItem(option: Option) {
+	const item = new GroupItem(option.name, option.description);
+	if(option.multiple || option.isSingleValue) {
+		item.property = option.propertyName;
+		item.required = option.isRequired;
+		item.multiple = option.multiple;
+	}
+	return item;
+}
+
+function helpGroup(help: Help, command: Command, option?: Option) {
+
+	const argument = command.commandArgument;
+	if(argument) {
+		const group = new Group(titles.arguments);
+		const item = new GroupItem("", argument.description);
+		item.property = argument.propertyName;
+		item.required = argument.isRequired;
+		item.multiple = argument.multiple;
+		group.addItem(item);
+		help.addGroup(group);
+	}
+
+	const options = command.commandOptionList;
+	if(option) {
+		options.push(option);
+	}
+
+	if(options.length) {
+		const group = new Group(titles.options);
+		options.forEach(option => {
+			group.addItem(createGroupItem(option));
+		});
+		help.addGroup(group);
+	}
+}
 
 export async function helpCommand(commander: Commander, commandName: string) {
 
@@ -12,44 +51,25 @@ export async function helpCommand(commander: Commander, commandName: string) {
 		throw newError(commands.notFound, commandName);
 	}
 
-	const info = command.info();
-	const {argument, options} = info;
 	const help = new Help({
-		name: info.name,
-		description: info.description,
-		version: info.version,
+		name: command.name,
+		description: command.commandDescription,
+		version: command.commandVersion,
 		prompt: commander.prompt,
 		stream: commander.stream,
 	});
 
+	const argument = command.commandArgument;
 	if(argument) {
 		help.addProp("argument", argument.required, argument.multiple, "blue");
-
-		const group = new Group("Arguments");
-		const item = new GroupItem("", argument.description);
-		item.property = argument.propertyName;
-		item.required = argument.required;
-		item.multiple = argument.multiple;
-		group.addItem(item);
-		help.addGroup(group);
 	}
 
+	const options = command.commandOptionList;
 	if(options.length) {
-		help.addProp("option", options.some(item => item.required), options.length > 1, "yellow");
-
-		const group = new Group("Options");
-		options.forEach(option => {
-			const item = new GroupItem(option.name, option.description);
-			if(option.multiple || option.isSingleValue) {
-				item.property = option.propertyName;
-				item.required = option.required;
-				item.multiple = option.multiple;
-			}
-			group.addItem(item);
-		});
-
-		help.addGroup(group);
+		help.addProp("option", options.some(item => item.isRequired), options.length > 1, "yellow");
 	}
+
+	helpGroup(help, command);
 
 	help.print();
 }
@@ -64,13 +84,17 @@ export async function helpCommandList(commander: Commander) {
 		version: commander.version,
 	});
 
-	const groupOptions = new Group(titles.options);
-	const groupCommands = new Group(titles.commands);
+	const helpOption = new Option("--help", {type: ["flag", "value"], name: "command", description: titles.help});
+	const root = commander.find("*");
+	const group = new Group(titles.commands);
 
-	const groupHelpItem = new GroupItem("--help", titles.help);
-	groupHelpItem.property = "command";
-
-	groupOptions.addItem(groupHelpItem);
+	if(root) {
+		helpGroup(help, root, helpOption);
+	} else {
+		const group = new Group(titles.options);
+		group.addItem(createGroupItem(helpOption));
+		help.addGroup(group);
+	}
 
 	commands.sort((a, b) => {
 		const an = a.name.includes(":") ? `--${a.name}` : a.name;
@@ -82,9 +106,8 @@ export async function helpCommandList(commander: Commander) {
 	let prevItem: GroupItem;
 
 	commands.forEach(command => {
-		const info = command.info();
-		const name = info.name;
-		const item = new GroupItem(name, info.description);
+		const name = command.name;
+		const item = new GroupItem(name, command.commandDescription);
 		const prefIndex = name.indexOf(":");
 		const pref = prefIndex > 0 ? name.substring(0, prefIndex + 1) : "--";
 
@@ -95,22 +118,25 @@ export async function helpCommandList(commander: Commander) {
 			}
 		}
 
-		if(info.argument) {
-			item.property = info.argument.propertyName;
-			item.required = info.argument.required;
-			item.multiple = info.argument.multiple;
-		} else if(info.options.length) {
-			item.property = "option";
-			item.required = info.options.some(item => item.required);
-			item.multiple = info.options.length > 1;
+		const arg = command.commandArgument;
+		if(arg) {
+			item.property = arg.propertyName;
+			item.required = arg.isRequired;
+			item.multiple = arg.multiple;
+		} else {
+			const optionList = command.commandOptionList;
+			if(optionList.length) {
+				item.property = "option";
+				item.required = optionList.some(item => item.isRequired);
+				item.multiple = optionList.length > 1;
+			}
 		}
 
 		prevItem = item;
-		groupCommands.addItem(item);
+		group.addItem(item);
 	});
 
 	help.addProp("options", true, false, "yellow");
-	help.addGroup(groupOptions);
-	help.addGroup(groupCommands);
+	help.addGroup(group);
 	help.print();
 }
