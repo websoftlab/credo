@@ -12,6 +12,7 @@ import type {BootMgr} from "./credo";
 import type {LocalStoreData} from "./store";
 import type {Stats} from "fs";
 import type {CredoJSCmd, OnBuildHook, CommanderCtor} from "./cmd/types";
+import type {RouteManager} from "./RouteManager";
 
 export type EnvMode = "development" | "production";
 
@@ -52,7 +53,7 @@ export interface CredoJS extends CredoJSGlobal {
 	readonly ssr: boolean;
 	app: Koa;
 	renderHTMLDriver: string | null;
-	routes: Route.Point[];
+	route: RouteManager;
 	controllers: Record<string, any>;
 	responders: Record<string, Route.Responder>;
 	middleware: Record<string, Route.ExtraMiddlewareFunction>;

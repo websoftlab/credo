@@ -5,7 +5,6 @@ import {
 	renderMiddleware,
 	bodyParserMiddleware,
 	sessionMiddleware,
-	loadRoutes,
 } from "./middleware";
 import cluster from "cluster";
 import {Worker, isMainThread} from 'worker_threads';
@@ -13,6 +12,7 @@ import {createCredoJS, BootMgr} from "./credo";
 import cronService from "./cron/service";
 import prettyMs from "pretty-ms";
 import daemon from "./daemon";
+import {RouteManager} from "./RouteManager";
 import type {Context} from "koa";
 import type {CredoJS, Server} from "./types";
 
@@ -27,13 +27,6 @@ export default async function server(options: Server.Options = {}) {
 	const isProd = __PROD__ || options.mode === "production";
 	if(isProd) {
 		daemon().init();
-	}
-
-	const ended: Function[] = [];
-	function done() {
-		for(const end of ended) {
-			end();
-		}
 	}
 
 	const {
@@ -66,24 +59,7 @@ export default async function server(options: Server.Options = {}) {
 		}
 	}
 
-	const routeConfig = loadRoutes(credo);
-	const {
-		routes,
-		isHost,
-		route404,
-		sort,
-	} = routeConfig;
-
-	// sort pattern
-	if(sort === "pattern") {
-		ended.push(() => {
-			routes.sort((a, b) => {
-				return (b.pattern ? b.pattern.length : -1) - (a.pattern ? a.pattern.length : -1);
-			});
-		});
-	}
-
-	credo.define("routes", function() { return routes; }, true);
+	credo.define("route", new RouteManager(credo));
 
 	registrar.option("responders", "static", {publicPath});
 
@@ -102,22 +78,21 @@ export default async function server(options: Server.Options = {}) {
 	app.use(async (ctx: Context, next) => {
 		const time = Date.now();
 		const delta = () => prettyMs(Date.now() - time);
-		if(!isHost(ctx)) {
+		if(!credo.route.isHost(ctx)) {
 			credo.debug.route("invalid host {red %s} %s %s (%s) {red 400}", ctx.hostname, ctx.method, ctx.url, delta());
-			ctx.throw(400, "Bad Request");
-		} else {
-			try {
-				await next();
-			} finally {
-				credo.debug.route(
-					`{blue [%s]} %s %s (%s) {${ctx.status < 300 ? "green" : "red"} %s}`,
-					ctx.hostname,
-					ctx.method,
-					ctx.url,
-					delta(),
-					ctx.status
-				);
-			}
+			return ctx.throw(400, "Bad Request");
+		}
+		try {
+			await next();
+		} finally {
+			credo.debug.route(
+				`{blue [%s]} %s %s (%s) {${ctx.status < 300 ? "green" : "red"} %s}`,
+				ctx.hostname,
+				ctx.method,
+				ctx.url,
+				delta(),
+				ctx.status
+			);
 		}
 	});
 
@@ -182,7 +157,7 @@ export default async function server(options: Server.Options = {}) {
 		return serv;
 	}
 
-	renderMiddleware(credo, {route404});
+	renderMiddleware(credo);
 
 	const host = env.get("host").default("127.0.0.1").value;
 	const port = env.get("port").default(1278).toPortNumber().value;
@@ -203,7 +178,6 @@ export default async function server(options: Server.Options = {}) {
 	}
 
 	return boot()
-		.then(done)
 		.then(() => {
 			return app.listen(port, host, () => {
 				credo.debug(`Server is running at http://${host}:${port}/ - {cyan ${mode}} mode`);

@@ -1,6 +1,6 @@
 import {asyncResult, callIn} from "@credo-js/utils";
 import createError from "http-errors";
-import type {Context, Next} from "koa";
+import type {Context} from "koa";
 import type {CredoJS, Route, OnResponseRouteHook, OnResponseCompleteHook, OnResponseControllerHook, OnResponseErrorHook} from "../types";
 
 function noCache(): Route.CacheOptions {
@@ -79,25 +79,22 @@ export async function throwError(ctx: Context, error: any, routeContext?: Route.
 	}
 }
 
-export function middleware(credo: CredoJS, options: {route404?: Route.EmptyPoint}) {
-	const {
-		route404,
-	} = options;
+export function middleware(credo: CredoJS) {
 
 	async function failure(ctx: Context, error: any) {
 		ctx.credo.debug("Response failure", error);
 		return throwError(ctx, error, ctx.route);
 	}
 
-	credo.app.use(async (ctx: Context, _: Next) => {
+	credo.app.use(async (ctx: Context) => {
 
 		// page not found ?
 		let notFound = false;
 		if(!ctx.route) {
 			ctx.status = 404;
 			notFound = true;
-			if(route404 && route404.methods.includes(ctx.method)) {
-				ctx.route = route404.context;
+			if(credo.route.isNotFoundRoute() && credo.route.routeNotFound.method(ctx.method)) {
+				ctx.route = credo.route.routeNotFound.context;
 			} else if(["GET", "POST"].includes(ctx.method)) {
 				ctx.route = create404();
 			}

@@ -11,7 +11,6 @@ function getHeaderString(value?: string | string[]): string {
 
 export default (function responder(credo: CredoJS, name: string): Route.Responder {
 
-	const {routes} = credo;
 	const options: ResponderJsonConfigOptions = credo.config(`responder/${name}`);
 	const corsKey = Symbol();
 	const {
@@ -48,8 +47,7 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 	async function getOptionsMethods(ctx: Context): Promise<string[]> {
 		const methods: string[] = [];
 
-		for(let i = 0; i < routes.length; i++) {
-			const route = routes[i];
+		for(const route of credo.route.routeList) {
 			if(
 				route.context.details.cors === false ||
 				route.context.responder.name !== name ||
