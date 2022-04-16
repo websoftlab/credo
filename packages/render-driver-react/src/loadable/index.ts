@@ -137,6 +137,8 @@ const {
 	loadedComponents,
 	component,
 	loadable,
+	reset,
+	resetAll,
 } = createLoadable({
 	render(loaded: any, props: any) {
 		return createElement(resolve(loaded), props);
@@ -156,4 +158,6 @@ export {
 	loadedComponents,
 	component,
 	loadable,
+	reset,
+	resetAll,
 };

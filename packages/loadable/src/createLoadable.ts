@@ -9,13 +9,23 @@ import type {
 } from "./types";
 import {isPlainObject} from "is-plain-object";
 
+function delFrom<T>(all: T[], item: T) {
+	const index = all.indexOf(item);
+	if(index !== -1) {
+		all.splice(index, 1);
+	}
+}
+
 export default function createLoadable<Type, Element, FallbackProps>(options: CreateLoadableOptions<Type, Element, FallbackProps>): Loadable<Type, Element, FallbackProps> {
 
 	const allInitializers: Initializer[] = [];
 	const named: Record<string, Type> = {};
+	const namedId: Record<string, number> = {};
 	const namedInitializers: Record<string, Initializer> = {};
 	const loadedNames: string[] = [];
 	const {render, observer, fallback} = options;
+
+	let lastId = 1;
 
 	async function promiseAll(all: (() => Promise<any>)[]) {
 		return Promise.all(all.map(func => func()));
@@ -86,6 +96,10 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 			throw new Error(`Duplicate loadable name "${name}"`);
 		}
 
+		const myId = lastId ++;
+
+		namedId[name] = myId;
+
 		let loading: boolean = false;
 		let done: boolean = false;
 		let error: false | Error = false;
@@ -113,14 +127,18 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 						error = false;
 						response = result;
 
-						// clear initializers
-						const index = allInitializers.indexOf(init);
-						if(index !== -1) {
-							allInitializers.splice(index, 1);
-						}
+						// compare component version
+						if(myId === namedId[name]) {
 
-						delete namedInitializers[name];
-						loaded(name) || loadedNames.push(name);
+							// clear initializers
+							delFrom(allInitializers, init);
+							delete namedInitializers[name];
+
+							// save loading
+							if(!loaded(name)) {
+								loadedNames.push(name);
+							}
+						}
 					})
 					.catch((err) => {
 						done = true;
@@ -193,7 +211,7 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 	async function load(name: string | string[]): Promise<void> {
 		const initializers: Initializer[] = [];
 		(typeof name === "string" ? [name] : name).forEach(name => {
-			if(namedInitializers[name]) {
+			if(namedInitializers.hasOwnProperty(name)) {
 				initializers.push(namedInitializers[name]);
 			} else if(!defined(name)) {
 				throw new Error(`The "${name}" component is not defined`)
@@ -209,7 +227,7 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 	}
 
 	function loaded(name: string): boolean {
-		return loadedNames.indexOf(name) !== -1;
+		return loadedNames.includes(name);
 	}
 
 	function definedComponents(): string[] {
@@ -227,6 +245,37 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 		return named[name];
 	}
 
+	function del(name: string) {
+		if(!defined(name)) {
+			return false;
+		}
+		delete named[name];
+		delete namedId[name];
+		if(namedInitializers.hasOwnProperty(name)) {
+			delFrom(allInitializers, namedInitializers[name]);
+			delete namedInitializers[name];
+		}
+		delFrom(loadedNames, name);
+		return false;
+	}
+
+	function reset(name: string | string[]) {
+		if(!Array.isArray(name)) {
+			name = [name];
+		}
+		let count = 0;
+		name.forEach(name => {
+			if(del(name)) {
+				count ++;
+			}
+		});
+		return count;
+	}
+
+	function resetAll() {
+		return reset(Object.keys(named));
+	}
+
 	return {
 		load,
 		loadAll,
@@ -236,5 +285,7 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 		loadedComponents,
 		component,
 		loadable,
+		reset,
+		resetAll,
 	};
 }

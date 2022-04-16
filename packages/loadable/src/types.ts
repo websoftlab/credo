@@ -42,5 +42,7 @@ export interface Loadable<Type, Element, FallbackProps> {
 	definedComponents(): string[];
 	loadedComponents(): string[];
 	component(name: string): Type;
-	loadable(options: Options<Element, FallbackProps>): Type
+	loadable(options: Options<Element, FallbackProps>): Type;
+	reset(name: string | string[]): number;
+	resetAll(): number;
 }
