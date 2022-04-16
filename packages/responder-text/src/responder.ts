@@ -4,28 +4,23 @@ import createHttpError from "http-errors";
 import HttpText from "./HttpText";
 
 function send(ctx: Context, body: HttpText) {
-	ctx.status = body.status;
-	ctx.body = body.toHTML();
+	ctx.bodyEnd(body.toText(), body.status);
 }
 
 export default (function responder(_credo: CredoJS, name: string): Route.Responder {
 
 	async function error(ctx: Context, error: Error) {
-
 		let code = 500;
 		let message = "";
-
 		if(createHttpError.isHttpError(error)) {
 			code = error.status;
 			if(error.expose) {
 				message = error.message;
 			}
 		}
-
 		if(!message) {
 			message = ctx.store.translate("system.page.queryError", "Query error");
 		}
-
 		send(ctx, new HttpText(message, code < 600 ? code : 500));
 	}
 
