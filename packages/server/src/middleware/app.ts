@@ -50,6 +50,12 @@ export function middleware(credo: CredoJS, options: {
 		return makeUrl(url);
 	};
 
+	const BODY_END_KEY: symbol = Symbol();
+
+	function isBodyEnded(ctx: any) {
+		return ctx[BODY_END_KEY] === true || ! ctx.res.writable;
+	}
+
 	credo.app.use(async (ctx: Koa.Context, next: Koa.Next) => {
 
 		const val: Record<string, any> = {
@@ -59,6 +65,29 @@ export function middleware(credo: CredoJS, options: {
 			multilingual,
 			languages: languages.slice(),
 			makeUrl: createMakeUrlHandler(ctx),
+			bodyEnd(body?: any, statusCode?: number, type?: string) {
+				if(isBodyEnded(ctx)) {
+					return false;
+				}
+				if(statusCode) {
+					ctx.status = statusCode;
+				}
+				if(typeof type === "string" && type.length) {
+					ctx.type = type;
+				}
+				if(body == null) {
+					if(ctx.body == null) {
+						ctx.body = "";
+					}
+				} else {
+					ctx.body = body;
+				}
+				ctx[BODY_END_KEY as never] = true;
+				return true;
+			},
+			redirectToRoute(name: string, params?: any) {
+				ctx.redirect(createRoutePatternUrl(name, params));
+			}
 		};
 
 		Object.keys(val).forEach(name => {
@@ -80,6 +109,14 @@ export function middleware(credo: CredoJS, options: {
 				if(languages.includes(value))  {
 					ctxLanguage = value;
 				}
+			}
+		});
+
+		Object.defineProperty(ctx, "isBodyEnded", {
+			enumerable: true,
+			configurable: false,
+			get() {
+				return isBodyEnded(ctx);
 			}
 		});
 

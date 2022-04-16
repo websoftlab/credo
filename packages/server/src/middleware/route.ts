@@ -9,7 +9,7 @@ function isMethod(route: Route.Point, ctx: Context) {
 }
 
 export const middleware = async function (ctx: Context, next: Next) {
-	if(ctx.route || ctx.res.writableEnded) {
+	if(ctx.route || ctx.isBodyEnded) {
 		return next();
 	}
 

@@ -56,7 +56,7 @@ function responderCall(credo: CredoJS, ctx: Context, result: any, caller: Route.
 export async function throwError(ctx: Context, error: any, routeContext?: Route.Context, code?: string) {
 	const {credo} = ctx;
 	await credo.hooks.emit<OnResponseErrorHook>("onResponseError", {ctx, route: routeContext, code, error});
-	if(ctx.res.writableEnded) {
+	if(ctx.isBodyEnded) {
 		return;
 	}
 
@@ -115,6 +115,7 @@ export function middleware(credo: CredoJS) {
 			cacheData: any = {};
 
 		if(middleware && middleware.length > 0) {
+			let wait = true;
 			const next = async (i: number) => {
 				if(i < middleware.length) {
 					const {name, props} = middleware[i];
@@ -128,11 +129,13 @@ export function middleware(credo: CredoJS) {
 					} else {
 						await handler(ctx, nextFunction);
 					}
+				} else {
+					wait = false;
 				}
 			};
 			try {
 				await next(0);
-				if(ctx.res.writableEnded) {
+				if(wait || ctx.isBodyEnded) {
 					return;
 				}
 			} catch(err) {
@@ -161,9 +164,7 @@ export function middleware(credo: CredoJS) {
 
 		if(cached) {
 			if(cache.mode === "body") {
-				ctx.status = cacheData.status;
-				ctx.type = cacheData.type;
-				ctx.body = cacheData.body;
+				ctx.bodyEnd(cacheData.body, cacheData.status, cacheData.type);
 			} else {
 				try {
 					const result = cacheData.body;
@@ -182,11 +183,8 @@ export function middleware(credo: CredoJS) {
 			}
 
 			if(result == null) {
-				if(!ctx.res.writableEnded) {
-					ctx.status = 204;
-					ctx.body = "";
-				}
-				return void 0;
+				ctx.bodyEnd("", 204);
+				return;
 			}
 
 			// save cache

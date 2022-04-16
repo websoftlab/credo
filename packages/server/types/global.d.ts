@@ -35,8 +35,11 @@ declare module "koa" {
 
 		// app
 		readonly store: AppStore;
+		readonly isBodyEnded: boolean;
+		bodyEnd(body?: any, statusCode?: number, type?: string): boolean;
 
 		// router
+		redirectToRoute<P = any>(name: string, params?: P): void;
 		match?: Record<string, any>;
 		route?: Route.Context;
 	}
