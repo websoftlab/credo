@@ -255,18 +255,18 @@ export default (function responder(credo: CredoJS, name: string, config: StaticC
 			ctx.set('Cache-Control', directives);
 		}
 
-		if (!ctx.type) {
-			ctx.type = type(path, encodingExt);
-		}
-
-		ctx.body = fs.createReadStream(path);
+		ctx.bodyEnd(
+			fs.createReadStream(path),
+			undefined,
+			ctx.type ? undefined : type(path, encodingExt)
+		);
 	}
 
 	return {
 		name,
 		depth: -10,
 		async middleware(ctx: Context, next: Next) {
-			if(ctx.route || !["HEAD", "GET"].includes(ctx.method) || ctx.res.writableEnded) {
+			if(ctx.isBodyEnded || ctx.route || !["HEAD", "GET"].includes(ctx.method)) {
 				return next();
 			}
 
