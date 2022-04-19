@@ -8,7 +8,7 @@ import type {OnMakeURLHook} from "@credo-js/make-url";
 import type {PatternInterface} from "@credo-js/path-to-pattern";
 import type {Worker as WorkerThreads} from "worker_threads";
 import type {Worker as WorkerCluster} from "cluster";
-import type {BootMgr} from "./credo";
+import type {BootManager} from "./credo";
 import type {LocalStoreData} from "./store";
 import type {Stats} from "fs";
 import type {CredoJSCmd, OnBuildHook, CommanderCtor} from "./cmd/types";
@@ -234,7 +234,7 @@ export namespace Server {
 		devServerPort?: string | number;
 		mode?: EnvMode;
 		cronMode?: Cron.Mode;
-		registrar?: BootMgr;
+		registrar?: BootManager;
 		workerData?: Worker.Data;
 		renderHTMLDriver?: string | null;
 		ssr?: boolean;

@@ -1,5 +1,5 @@
 import type {CredoJSCron, Server} from "../types";
-import {createCredoJS, BootMgr} from "../credo";
+import {createCredoJS, BootManager} from "../credo";
 import nodeSchedule from "./nodeSchedule";
 import daemon from "../daemon";
 import cluster from "cluster";
@@ -21,7 +21,7 @@ export default async function cronService(options: Server.Options = {}) {
 		throw new Error(`Invalid cron service mode (${cronMode})`);
 	}
 
-	const registrar = registrarOption || new BootMgr();
+	const registrar = registrarOption || new BootManager();
 	const credo: CredoJSCron = await createCredoJS<CredoJSCron>(rest, {
 		mode: "cron",
 		cluster: cronMode === "service",

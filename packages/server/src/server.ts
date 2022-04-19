@@ -8,7 +8,7 @@ import {
 } from "./middleware";
 import cluster from "cluster";
 import {Worker, isMainThread} from 'worker_threads';
-import {createCredoJS, BootMgr} from "./credo";
+import {createCredoJS, BootManager} from "./credo";
 import cronService from "./cron/service";
 import prettyMs from "pretty-ms";
 import daemon from "./daemon";
@@ -34,7 +34,7 @@ export default async function server(options: Server.Options = {}) {
 		publicPath = [],
 	} = options;
 
-	const registrar = registrarOption || new BootMgr();
+	const registrar = registrarOption || new BootManager();
 	const app = new Koa();
 	const isCluster = cluster.isWorker && options.process?.id === cluster.worker?.workerData?.id;
 	const credo: CredoJS = await createCredoJS<CredoJS>(options, {

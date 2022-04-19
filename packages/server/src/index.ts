@@ -2,7 +2,7 @@ export {default as server} from "./server";
 export {default as cronServer} from "./cron/service";
 export {default as cmdServer} from "./cmd/service";
 export {default as env} from "./env";
-export {BootMgr} from "./credo";
+export {BootManager} from "./credo";
 export {default as defineGlobal} from "./defineGlobal";
 export {masterProcess, childProcess} from "./worker";
 

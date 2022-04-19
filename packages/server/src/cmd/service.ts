@@ -1,6 +1,6 @@
 import type {Server} from "../types";
 import type {CredoJSCmd} from "./types";
-import {createCredoJS, BootMgr} from "../credo";
+import {createCredoJS, BootManager} from "../credo";
 import {isMainProcess} from "../utils";
 import {Commander} from "@credo-js/cli-commander";
 
@@ -29,7 +29,7 @@ export default async function cmdService(options: Server.Options = {}) {
 	credo.define("cmd", cmd);
 
 	// load & bootstrap, run cmd
-	const registrar = registrarOption || new BootMgr();
+	const registrar = registrarOption || new BootManager();
 	await (await registrar.load(credo))();
 
 	return cmd.begin();

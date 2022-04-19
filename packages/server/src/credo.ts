@@ -28,7 +28,7 @@ type CJSReg = Record<CJSDefTypeMwr, CJSOptions[]> & {
 
 const REG_KEY = Symbol();
 
-function defineWithoutName(bootMgr: BootMgr, key: "bootstrap" | "middleware", body: any) {
+function defineWithoutName(bootMgr: BootManager, key: "bootstrap" | "middleware", body: any) {
 	const reg = bootMgr[REG_KEY];
 	if(reg.prepend) {
 		reg[key].unshift(body);
@@ -37,7 +37,7 @@ function defineWithoutName(bootMgr: BootMgr, key: "bootstrap" | "middleware", bo
 	}
 }
 
-function define(bootMgr: BootMgr, key: CJSDefTypeExt, name: string, body: any) {
+function define(bootMgr: BootManager, key: CJSDefTypeExt, name: string, body: any) {
 	const reg = bootMgr[REG_KEY];
 	if(reg.prepend) {
 		reg[key].unshift(body);
@@ -233,7 +233,7 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 	return credo as T;
 }
 
-export class BootMgr {
+export class BootManager {
 
 	[REG_KEY]: CJSReg = {
 		prepend: false,
@@ -285,7 +285,7 @@ export class BootMgr {
 		defineWithoutName(this, "bootstrap", { handler, options });
 	}
 
-	prepend(func: (bootMgr: BootMgr) => void) {
+	prepend(func: (bootMgr: BootManager) => void) {
 		const reg = this[REG_KEY];
 		const lastPrepend = reg.prepend;
 		reg.prepend = true;

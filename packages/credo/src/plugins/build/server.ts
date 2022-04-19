@@ -237,7 +237,7 @@ export async function buildServer(factory: CredoPlugin.Factory) {
 	}
 
 	function create(isPage: boolean = false, renderHTMLDriver: string | null = null) {
-		cJs.append(`const registrar = new ${srv}.BootMgr();`);
+		cJs.append(`const registrar = new ${srv}.BootManager();`);
 
 		// load ./server-page
 		if(isPage) {
