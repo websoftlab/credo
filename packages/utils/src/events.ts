@@ -1,4 +1,4 @@
-import {isPlainObject} from "is-plain-object";
+import isPlainObject from "./isPlainObject";
 
 type ListenersData = Record<string, Evn[]>;
 type ListenerUnsubscribe = () => void;

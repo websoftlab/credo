@@ -7,7 +7,7 @@ import replace from "@rollup/plugin-replace";
 import aliasPlugin from "@rollup/plugin-alias";
 import baseConfigure from "../configure";
 import {alias, define} from "../config";
-import {isPlainObject} from "is-plain-object";
+import {isPlainObject} from "@credo-js/utils";
 import {cwdPath, buildPath, exists} from "../utils";
 import progressRollupPlugin from "./plugins/progressRollupPlugin";
 import type {InputOptions, OutputOptions} from "rollup";

@@ -3,7 +3,7 @@ import {existsStat, readJsonFile} from "../utils";
 import {newError} from "@credo-js/cli-color";
 import {getPackageModuleVersion, installDependencies, splitModule} from "../dependencies";
 import {satisfies} from "semver";
-import {isPlainObject} from "is-plain-object";
+import {isPlainObject} from "@credo-js/utils";
 import type {EStat, CredoPlugin, CredoConfig} from "../types";
 
 async function ready(plugins: CredoPlugin.Plugin[], sum: PluginSum, deps: string[] = [], loadDependencies: boolean = true) {

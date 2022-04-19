@@ -11,8 +11,7 @@
     "@credo-js/make-url": "*",
     "@credo-js/utils": "*",
     "mobx": "^6.3.2",
-	"axios": "^0.26.0",
-    "is-plain-object": "^5.0.0"
+	"axios": "^0.26.0"
   },
   "devDependencies": {
     "@types/axios": "^0.14.0"

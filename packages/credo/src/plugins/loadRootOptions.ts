@@ -1,12 +1,11 @@
 import type {DaemonSignKill, CredoConfig, CredoPlugin} from "../types";
 import {newError} from "@credo-js/cli-color";
-import {asyncResult} from "@credo-js/utils";
+import {asyncResult, isPlainObject} from "@credo-js/utils";
 import {cwdPath, cwdSearchFile, existsStat, readJsonFile, resolveFile} from "../utils";
 import {createLexiconOptions} from "./build";
 import {cpus} from "os";
 import {debugError, debugBuild} from "../debug";
 import {splitModule, installDependencies} from "../dependencies";
-import {isPlainObject} from "is-plain-object";
 
 type CType = "publicPath" | "bootstrap" | "bootloader";
 
