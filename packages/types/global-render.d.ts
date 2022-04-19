@@ -17,7 +17,7 @@ declare module '*.module.scss' {
 // svg react element
 
 declare module "*.component.svg" {
-	const value: import("react").ElementType<import("react").SVGProps<SVGSVGElement>>;
+	const value: import("react").FC<import("react").SVGProps<SVGSVGElement>>;
 	export default value;
 }
 
