@@ -24,7 +24,11 @@ async function typescriptRule(config: BuildConfigure): Promise<BuildRule> {
 		transpileOnly: true,
 	};
 
-	const stat = await existsStat("./tsconfig.json");
+	let stat = await existsStat("./tsconfig-client.json");
+	if(!stat || !stat.isFile) {
+		stat = await existsStat("./tsconfig.json");
+	}
+
 	if(stat && stat.isFile) {
 		options.configFile = stat.file;
 	} else if(renderDriver?.name === "react") {

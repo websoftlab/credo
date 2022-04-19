@@ -2,7 +2,7 @@ import type {CredoPlugin} from "../types";
 import {asyncResult} from "@credo-js/utils";
 
 function isPluginDefine(obj: any): obj is CredoPlugin.Handler {
-	return obj && typeof obj === "object" && obj.path === "string" && obj.importer === "string";
+	return obj && typeof obj === "object" && typeof obj.path === "string" && typeof obj.importer === "string";
 }
 
 export default async function fireHook(

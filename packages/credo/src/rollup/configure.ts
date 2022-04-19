@@ -75,7 +75,14 @@ export default async function configure(options: BuildConfigureOptions): Promise
 		}
 	}
 
-	const tsconfig = cwdPath("tsconfig.json");
+	let tsconfig: string | false = cwdPath("tsconfig-server.json");
+	if(!await exists(tsconfig)) {
+		tsconfig = cwdPath("tsconfig.json");
+		if(!await exists(tsconfig)) {
+			tsconfig = false;
+		}
+	}
+
 	const config: InputOptions & {output: OutputOptions} = {
 		input,
 		output: {
@@ -88,29 +95,29 @@ export default async function configure(options: BuildConfigureOptions): Promise
 				preventAssignment: false,
 				values: await define(conf),
 			}),
-			externals({
+			externals(await conf.fireOnOptionsHook("plugin.externals", {
 				deps: true,
 				include: [
 					/^@credo-js\/\w+/
 				],
-			}),
-			commonjs({
+			})),
+			commonjs(await conf.fireOnOptionsHook("plugin.commonjs", {
 				extensions,
-			}),
-			json({
+			})),
+			json(await conf.fireOnOptionsHook("plugin.json", {
 				namedExports: false,
-			}),
+			})),
 			aliasPlugin({
 				entries: aliases,
 			}),
-			resolvePlugin({
+			resolvePlugin(await conf.fireOnOptionsHook("plugin.resolve", {
 				extensions,
-			}),
-			typescript({
-				tsconfig: await exists(tsconfig) ? tsconfig : false,
+			})),
+			typescript(await conf.fireOnOptionsHook("plugin.typescript", {
+				tsconfig,
 				cacheDir: buildPath("ts-cache"),
 				allowJs: true,
-			}),
+			})),
 		],
 	};
 
