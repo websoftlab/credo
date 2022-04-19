@@ -1,7 +1,6 @@
-import type {PatternInterface, ReplaceOptions} from "./types";
+import type {PatternInterface, MatchToPathOptions, MatchOptions} from "./types";
 import {AbstractSegment} from "./segment/AbstractSegment";
 import normalize from "./normalize";
-import {MatchOptions} from "./types";
 
 const ID_KEY = Symbol();
 const ID_SEGMENT = Symbol();
@@ -49,7 +48,7 @@ export default class Pattern<R = any> implements PatternInterface<R> {
 		return result;
 	}
 
-	replace(options: ReplaceOptions<R> = {}): string {
+	matchToPath(options: MatchToPathOptions<R> = {}): string {
 		const {data = {}, encode = true} = options;
 		const segments = this[ID_SEGMENT];
 		if(segments.length === 0) {

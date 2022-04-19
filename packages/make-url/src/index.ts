@@ -49,7 +49,7 @@ export function buildQuery(object: any, options: URL.QueryOptions = {}) {
 
 const regHttp = /^https?:/;
 
-export function makeUrl(options: URL.Options) {
+export function makeUrl(options: URL.Options): string {
 	let {
 		path,
 		hash,
@@ -81,7 +81,7 @@ export function makeUrl(options: URL.Options) {
 	}
 
 	if(params != null && typeof params === "object") {
-		path = pathToPattern(path, { cacheable }).replace({ data: params });
+		path = pathToPattern(path, { cacheable }).matchToPath({ data: params });
 	}
 
 	if(search != null && search) {

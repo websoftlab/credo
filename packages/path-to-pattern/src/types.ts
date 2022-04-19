@@ -7,7 +7,7 @@ export interface PatternInterface<R = any> {
 	readonly keys: string[];
 	readonly length: number;
 	match(path: string, options?: MatchOptions): false | R;
-	replace(options?: ReplaceOptions<R>): string;
+	matchToPath(options?: MatchToPathOptions<R>): string;
 }
 
 export interface AddModifierOptions {
@@ -21,7 +21,7 @@ export interface MatchOptions {
 	decode?: boolean | EncodeDecodeFunction;
 }
 
-export interface ReplaceOptions<R = any> {
+export interface MatchToPathOptions<R = any> {
 	data?: R;
 	encode?: boolean | EncodeDecodeFunction;
 }

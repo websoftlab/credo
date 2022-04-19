@@ -43,7 +43,7 @@ pathToPattern("/:id|n(5,7,-)"); // number with length from 5 to 7 with symbol - 
 declare function addModifier(name: string, options: AddModifierOptions): void;
 declare function compilePath<R = any>(path: string): PatternInterface<R>;
 declare function matchPath(path: string | PatternInterface, pathname: string, options?: MatchOptions): any;
-declare function replacePath<R = any>(path: string | PatternInterface, options?: ReplaceOptions<R>): string;
+declare function matchToPath<R = any>(path: string | PatternInterface, options?: ReplaceOptions<R>): string;
 declare function pathToPattern<R = any>(path: string, options?: PathToPatternOptions): PatternInterface<R>;
 ```
 
