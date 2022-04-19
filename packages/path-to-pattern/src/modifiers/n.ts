@@ -1,4 +1,5 @@
-import {escapeRegExp, isNum} from "../utils";
+import {isNum} from "../utils";
+import {regExpEscapeInSet} from "@credo-js/utils";
 
 const notDReg = /[^0-9]+/g;
 const dgt = "0123456789";
@@ -31,7 +32,7 @@ export default {
 					}
 				}
 				if(symbol.length || dash) {
-					return `[0-9${dash ? "\\-" : ""}${symbol ? escapeRegExp(symbol) : ""}]+`;
+					return `[0-9${dash ? "\\-" : ""}${symbol ? regExpEscapeInSet(symbol, false) : ""}]+`;
 				}
 			}
 			return "\\d+";

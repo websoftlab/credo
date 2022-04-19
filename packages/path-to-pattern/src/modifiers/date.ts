@@ -1,4 +1,4 @@
-import {escapeRegExp} from "../utils";
+import {regExpEscape} from "@credo-js/utils"
 
 function minMax(data: any, name: string, val: number, min: number, max: number, offset: number = 0) {
 	if(val < min || val > max) {
@@ -218,9 +218,9 @@ function parse(str: string): {
 			if(!char) {
 				throw new Error("Unexpected end of line");
 			}
-			reg += escapeRegExp(char);
+			reg += regExpEscape(char);
 		} else if(separators.includes(char)) {
-			reg += escapeRegExp(char);
+			reg += regExpEscape(char);
 		} else if(dKey.includes(char)) {
 			const {d, r, f} = dates[char];
 			reg += r;

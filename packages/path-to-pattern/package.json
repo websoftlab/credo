@@ -6,7 +6,9 @@
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"@credo-js/utils": "*"
+	},
 	"devDependencies": {},
 	"peerDependencies": {},
 	"exports": {

@@ -2,7 +2,7 @@ import List from "./segment/List";
 import Values from "./segment/Values";
 import Value from "./segment/Value";
 import Plain from "./segment/Plain";
-import {escapeRegExp} from "./utils";
+import {regExpEscape} from "@credo-js/utils";
 import type {PatternFormatterArgument, PatternRegExArgument, PatternFormatter} from "./types";
 import type {SegmentValue} from "./segment/Values";
 
@@ -262,8 +262,8 @@ export default function lexer(
 		const getter = () => {
 			reg = `(${reg})`;
 			if(prefix || suffix) {
-				if(prefix) reg = escapeRegExp(prefix) + reg;
-				if(suffix) reg = reg + escapeRegExp(suffix);
+				if(prefix) reg = regExpEscape(prefix) + reg;
+				if(suffix) reg = reg + regExpEscape(suffix);
 				reg = `(?:${reg})`;
 			}
 			if(!required) {
@@ -377,7 +377,7 @@ export default function lexer(
 		const token = nxt();
 		if(token.type === LT.CHAR) {
 			entities.push(token.value);
-			rExp.push(escapeRegExp(token.value));
+			rExp.push(regExpEscape(token.value));
 		} else if(i === 1 && token.type === LT.NAME || token.type === LT.GROUP_OPEN) {
 			entities.push(createSegment(token));
 		} else {

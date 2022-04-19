@@ -1,11 +1,5 @@
 
 const isNumReg =/^[1-9]\d*$/;
-const reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
-const reHasRegExpChar = RegExp(reRegExpChar.source);
-
-export function escapeRegExp(str: string) {
-	return str ? (reHasRegExpChar.test(str) ? str.replace(reRegExpChar, '\\$&') : str) : "";
-}
 
 export function isNum(value: string): boolean {
 	return value === "0" || isNumReg.test(value);
