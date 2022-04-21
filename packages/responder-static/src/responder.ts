@@ -1,4 +1,4 @@
-import type {CredoJS, Route} from "@credo-js/server";
+import type {CredoJS, Ctor} from "@credo-js/server";
 import type {Context, Next} from "koa";
 import type {ResponderStaticOptions, StaticCtorConfig} from "./types";
 import type {Stats} from "fs";
@@ -305,4 +305,4 @@ export default (function responder(credo: CredoJS, name: string, config: StaticC
 		},
 		responder,
 	};
-}) as Route.ResponderCtor<StaticCtorConfig>;
+}) as Ctor.Responder<StaticCtorConfig>;

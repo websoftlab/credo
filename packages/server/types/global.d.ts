@@ -39,8 +39,10 @@ declare module "koa" {
 		bodyEnd(body?: any, statusCode?: number, type?: string): boolean;
 
 		// router
-		redirectToRoute<P = any>(name: string, params?: P): void;
+		redirectToRoute<P = any>(name: string, params?: P): Promise<void>;
 		match?: Record<string, any>;
 		route?: Route.Context;
+		cacheable?: boolean;
+		cached?: boolean;
 	}
 }

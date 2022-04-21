@@ -86,26 +86,29 @@ export function middleware(credo: CredoJS) {
 		return throwError(ctx, error, ctx.route, typeof error.code === "string" ? error.code : "RESPONSE_FAILURE");
 	}
 
-	credo.app.use(async (ctx: Context) => {
-
-		// page not found ?
-		let notFound = false;
+	async function render(ctx: Context, notFound: boolean = false): Promise<void> {
 		if(!ctx.route) {
-			ctx.status = 404;
 			notFound = true;
+		}
+
+		if(notFound) {
+			ctx.status = 404;
 			if(credo.route.isNotFoundRoute() && credo.route.routeNotFound.method(ctx.method)) {
 				ctx.route = credo.route.routeNotFound.context;
 			} else if(["GET", "POST"].includes(ctx.method)) {
 				ctx.route = create404();
+			} else {
+				ctx.route = undefined;
 			}
 		}
 
 		await credo.hooks.emit<OnResponseRouteHook>("onResponseRoute", {ctx, notFound});
-		if(!ctx.route) {
+
+		const {route} = ctx;
+		if(!route) {
 			return ctx.throw(404);
 		}
 
-		const {route} = ctx;
 		const {controller, responder, middleware} = route;
 
 		let cache = route.cache,
@@ -179,7 +182,9 @@ export function middleware(credo: CredoJS) {
 			try {
 				result = await controllerCall(credo, ctx, controller);
 			} catch(err) {
-				return failure(ctx, err);
+				return ! notFound && createError.isHttpError(err) && err.status === 404
+					? render(ctx, true)
+					: failure(ctx, err);
 			}
 
 			if(result == null) {
@@ -220,5 +225,7 @@ export function middleware(credo: CredoJS) {
 				body: ctx.body,
 			}, {ttl: cache.ttl});
 		}
-	});
+	}
+
+	credo.app.use((ctx: Context) => render(ctx));
 }

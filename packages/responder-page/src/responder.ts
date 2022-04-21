@@ -4,7 +4,7 @@ import type {
 	ResponderPageOptions, ResponderPageResult, ResponderPageResultFound,
 	LoadManifestOptions
 } from "./types";
-import type {CredoJS, Route} from "@credo-js/server";
+import type {CredoJS, Ctor, Route} from "@credo-js/server";
 import type {Context} from "koa";
 import {isHttpStatus, isRedirectCode} from "./utils/status";
 import {htmlEscape} from "@credo-js/utils";
@@ -225,11 +225,15 @@ export default (function responder(credo: CredoJS, name: string) {
 
 		const {page: pagePage = "Index", props: pageProps = {}, ssr} = props;
 
-		if(result == null) {
+		if (result == null) {
 			throw new Error('Responder result is empty');
 		}
 
-		if(HttpRedirect.isHttpRedirect(result)) {
+		if(typeof result !== "object") {
+			throw new Error('Invalid page responder type, object expected');
+		}
+
+		if (HttpRedirect.isHttpRedirect(result)) {
 			return sendRedirect(ctx, result.location);
 		}
 
@@ -319,4 +323,4 @@ export default (function responder(credo: CredoJS, name: string) {
 			}
 		}
 	}
-}) as Route.ResponderCtor;
+}) as Ctor.Responder;

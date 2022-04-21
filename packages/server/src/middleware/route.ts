@@ -1,29 +1,34 @@
 import {asyncResult} from "@credo-js/utils";
 import {throwError} from "./render";
 import createHttpError from "http-errors";
+import {RouteEntity} from "../route";
 import type {Context, Next} from "koa";
 import type {Route} from "../types";
+import type {RouteVariant} from "../route/types";
 
-function isMethod(route: Route.Point, ctx: Context) {
-	return route.methods.includes(ctx.method);
+type ContextRef = {
+	context?: Route.Context;
+	message?: string;
+	code?: string;
 }
 
-export const middleware = async function (ctx: Context, next: Next) {
-	if(ctx.route || ctx.isBodyEnded) {
-		return next();
-	}
-
-	const routes = ctx.credo.route.routeList;
-	let methodContextError: Route.Context | null = null;
-
+async function find(ctx: Context, ref: ContextRef, routes: RouteVariant[]): Promise<void> {
 	for(const route of routes) {
+		if(RouteEntity.isRouteGroup(route)) {
+			if(route.match(ctx)) {
+				return find(ctx, ref, route.routes);
+			}
+			continue;
+		}
+
 		let match: any;
 
 		try {
 			match = await asyncResult(route.match(ctx));
 		} catch(err) {
-			if(!isMethod(route, ctx)) {
-				methodContextError = route.context;
+			if(!route.method(ctx.method)) {
+				ref.context = route.context;
+				ref.code = "ROUTE_MATCH_ERROR";
 				continue;
 			}
 			if(createHttpError.isHttpError(err)) {
@@ -33,18 +38,30 @@ export const middleware = async function (ctx: Context, next: Next) {
 		}
 
 		if(match) {
-			if(isMethod(route, ctx)) {
+			if(route.method(ctx.method)) {
 				ctx.route = route.context;
-				Object.defineProperty(ctx, "match", { get() { return match; } });
-				break;
+				ctx.match = match;
+				return;
 			} else {
-				methodContextError = route.context;
+				ref.context = route.context;
+				ref.message = `The ${ctx.method} method is not supported for this request.`;
+				ref.code = "HTTP_METHOD_NOT_SUPPORTED";
 			}
 		}
 	}
+}
 
-	if(!ctx.route && methodContextError) {
-		return throwError(ctx, createHttpError(400, `The ${ctx.method} method is not supported for this request.`), methodContextError, "HTTP_METHOD_NOT_SUPPORTED");
+export const middleware = async function (ctx: Context, next: Next) {
+	if(ctx.route || ctx.isBodyEnded) {
+		return next();
+	}
+
+	const ref: ContextRef = {};
+
+	await find(ctx, ref, ctx.credo.route.routeList);
+
+	if(!ctx.route && ref.context) {
+		return throwError(ctx, createHttpError(400, ref.message || `Route query error`), ref.context, ref.code);
 	}
 
 	return next();

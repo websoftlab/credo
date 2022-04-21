@@ -1,6 +1,7 @@
 import type {Context} from "koa";
-import type {CredoJS, Route} from "@credo-js/server";
+import type {CredoJS, Ctor, Route, RouteVariant} from "@credo-js/server";
 import type {ResponderJsonConfigOptions} from "./types";
+import {RouteEntity} from "@credo-js/server";
 import createHttpError from "http-errors";
 import HttpJSON from "./HttpJSON";
 import asyncResult from "@credo-js/utils/asyncResult";
@@ -35,10 +36,14 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 		return "details" in err && err.details != null;
 	}
 
-	async function getOptionsMethods(ctx: Context): Promise<string[]> {
-		const methods: string[] = [];
-
-		for(const route of credo.route.routeList) {
+	async function getOptionsMethods(ctx: Context, routes: RouteVariant[], methods: string[]): Promise<string[]> {
+		for(const route of routes) {
+			if(RouteEntity.isRouteGroup(route)) {
+				if(await asyncResult(route.match(ctx, false))) {
+					await getOptionsMethods(ctx, route.routes, methods);
+				}
+				continue;
+			}
 			if(
 				route.context.details?.cors === false ||
 				route.context.responder.name !== name ||
@@ -167,7 +172,7 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 			return;
 		}
 
-		const methods = await getOptionsMethods(ctx);
+		const methods = await getOptionsMethods(ctx, credo.route.routeList, []);
 		if(!methods.length) {
 			return;
 		}
@@ -229,4 +234,4 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 			return sendError(ctx, error, true);
 		},
 	}
-}) as Route.ResponderCtor;
+}) as Ctor.Responder;

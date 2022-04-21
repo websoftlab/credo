@@ -12,7 +12,7 @@ import {createCredoJS, BootManager} from "./credo";
 import cronService from "./cron/service";
 import prettyMs from "pretty-ms";
 import daemon from "./daemon";
-import {RouteManager} from "./RouteManager";
+import {RouteManager} from "./route";
 import type {Context} from "koa";
 import type {CredoJS, Server} from "./types";
 
@@ -58,8 +58,6 @@ export default async function server(options: Server.Options = {}) {
 			registrar.responder(name, (await import((`@credo-js/responder-${name}`))).responder);
 		}
 	}
-
-	credo.define("route", new RouteManager(credo));
 
 	registrar.option("responders", "static", {publicPath});
 
@@ -114,6 +112,9 @@ export default async function server(options: Server.Options = {}) {
 	registrar.middleware(routeMiddleware);
 
 	const boot = await registrar.load(credo);
+
+	// add route after loading services
+	credo.define("route", new RouteManager(credo));
 
 	function cron<T>(serv: T): T {
 		if(isProd && !isCluster && !credo.process && !credo.isCron() && cronMode !== "disabled" && isMainThread) {

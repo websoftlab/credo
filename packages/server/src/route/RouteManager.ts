@@ -1,21 +1,18 @@
-import type {CredoJS, Route} from "./types";
+import type {CredoJS, Route, RouteConfig} from "../types";
 import type {Context} from "koa";
 import type {PatternInterface} from "@credo-js/path-to-pattern";
+import type {Nullable} from "../helpTypes";
+import type {RouteVariant, NRPCDecode, NormalizeRoute} from "./types";
 import {pathToPattern, matchPath} from "@credo-js/path-to-pattern";
-import {asyncResult, callIn} from "@credo-js/utils";
+import {asyncResult} from "@credo-js/utils";
+import {createMethods, nameGen, trimLeftSegment, trimRightSegment} from "./utils";
+import {default as RouteEntity} from "./RouteEntity";
+import {default as RoutePattern} from "./RoutePattern";
+import {default as RouteEmpty} from "./RouteEmpty";
+import {default as RouteGroup} from "./RouteGroup";
+import {default as RouteDynamic} from "./RouteDynamic";
+import {sortNative, sortPattern} from "./sort";
 
-type Nullable<T> = undefined | null | T;
-
-class NameGen {
-	private iter: number = 1;
-	gen() {
-		return `route-key-${this.iter++}`;
-	}
-}
-
-const nameGen = new NameGen();
-
-const regUpperTest = /[^A-Z]/;
 const regInvalid = /[^a-z0-9\-*.]/;
 const regHostPort = /^(.+?):([0-9x*]+)$/;
 const regHostCreate = /[.*]+/g;
@@ -24,7 +21,7 @@ const regNRPC = /^(?:(.+?):)?(.+?)@(.+?)$/;
 
 function createMatchCallback<Params extends { [K in keyof Params]?: string } = {}>(path: string): {
 	pattern: PatternInterface<Params>,
-	match: Route.PointMatch<Params>,
+	match: (ctx: Context) => false | Params,
 } {
 	path = String(path).trim();
 	if(path.length === 0 || !path.startsWith("/")) {
@@ -38,72 +35,131 @@ function createMatchCallback<Params extends { [K in keyof Params]?: string } = {
 	};
 }
 
-function createPathCallback(path: Nullable<Route.Path>): { pattern?: PatternInterface, match: Route.PointMatch } {
-	if(!path) {
-		return createMatchCallback("/");
-	} else if(Array.isArray(path)) {
-		const [p, test] = path;
-		const find = createMatchCallback(p);
+function getService(credo: CredoJS, service: string) {
+	const nodes = String(service).split(".");
+	let target: any = credo.services;
+	let handler: any = target;
+
+	do {
+		const node = nodes.shift() as string;
+		if(!handler.hasOwnProperty(node)) {
+			throw new Error(`The '${service}' service not found`);
+		}
+		handler = handler[node];
+		if(!handler) {
+			throw new Error(`The '${service}' service is invalid`);
+		}
+		if(typeof handler === "object") {
+			target = handler;
+		}
+	} while(nodes.length > 0);
+
+	return {
+		target,
+		handler,
+	};
+}
+
+function createDynamicPathOptions(credo: CredoJS, path: RouteConfig.PathDynamic) {
+
+	let {matchToPath, match, service} = path;
+	let length: number | (() => number) | undefined = undefined;
+
+	if(service) {
+		if(match) throw new Error(`You cannot use the 'service' and 'match' options at the same time for a group route.`);
+		if(matchToPath) throw new Error(`You cannot use the 'service' and 'matchToPath' options at the same time for a group route.`);
+
+		const {target, handler} = getService(credo, service);
+
+		if(typeof handler === "function") {
+			match = (ctx: Context) => handler.call(target, ctx);
+		} else {
+			if(typeof handler.match !== "function") {
+				throw new Error(`The ${service}.match() service function is not defined`);
+			}
+			match = (ctx: Context) => handler.match.call(target, ctx);
+			if(typeof handler.matchToPath === "function") {
+				matchToPath = (params?: any) => handler.matchToPath.call(target, params);
+			}
+			const descriptor = Object.getOwnPropertyDescriptor(handler, "length");
+			if(descriptor) {
+				const {value, get} = descriptor;
+				if(typeof value === "number") {
+					length = descriptor.value;
+				} else if(typeof get === "function") {
+					length = () => {
+						return get.call(handler);
+					};
+				}
+			}
+		}
+	} else if(typeof match !== "function") {
+		throw new Error(`The "match" or "service" option is required for dynamic route`);
+	}
+
+	return {
+		match,
+		matchToPath,
+		length,
+	};
+}
+
+function createPatternPathOptions(credo: CredoJS, path: RouteConfig.PathPattern | RouteConfig.PathHandler): { pattern?: PatternInterface, match: Route.Match } {
+
+	if(path.type === "pattern") {
+		return createMatchCallback(path.pattern);
+	}
+
+	const {type} = path;
+	if(path.type !== "handler") {
+		throw new Error(`Invalid path type ${type}`);
+	}
+
+	let {pattern, handler} = path;
+	let test: Function;
+
+	if(typeof handler === "function") {
+		test = handler;
+	} else {
+		const {handler: callback, target} = getService(credo, handler);
+		if(typeof callback !== "function") {
+			throw new Error(`The "${handler}" service is not a function`);
+		}
+		test = (ctx: Context, match?: any) => callback.call(target, ctx, match);
+	}
+
+	if(pattern) {
+		const find = createMatchCallback(pattern);
 		return {
 			pattern: find.pattern,
-			match: async (ctx: Context) => {
+			async match(ctx: Context) {
 				const match = find.match(ctx);
 				if(!match) {
 					return false;
+				} else if(await asyncResult(test(ctx, match))) {
+					return match;
 				}
-				if(typeof test === "string") {
-					if(await asyncResult(callIn(ctx.credo.services, test, [ctx, match], () => {
-						throw new Error(`The "${test}" service is not defined`);
-					}))) {
-						return match;
-					}
-				} else if(typeof test === "function") {
-					if(await asyncResult(test(ctx, match))) {
-						return match;
-					}
-				} else {
-					throw new Error("Math path parameter must be string or function");
-				}
+			}
+		};
+	}
+
+	return {
+		async match(ctx: Context) {
+			const match = await asyncResult(test(ctx));
+			if(typeof match === "string") {
+				return matchPath(match, ctx.path);
+			} else if(typeof path === "object" && path != null) {
+				return path;
+			} else if(match === true) {
+				return {};
+			} else {
 				return false;
 			}
-		};
-	} else if(typeof path === "function") {
-		const getPath = path;
-		return {
-			match: async (ctx: Context) => {
-				const path: any = await asyncResult(getPath(ctx));
-				if(typeof path === "string") {
-					return matchPath(path, ctx.path);
-				} else if(typeof path === "object" && path != null) {
-					return path;
-				} else {
-					return false;
-				}
-			}
-		};
-	} else {
-		return createMatchCallback(path);
-	}
+		},
+	};
 }
 
-function createMethods(method: Nullable<Route.Method>): string[] {
-	if(!method) {
-		return ["GET"];
-	}
-	if(!Array.isArray(method)) {
-		method = [method];
-	}
-	const support: string[] = [];
-	method.forEach(val => {
-		val = String(val).trim().toUpperCase();
-		if(val.length > 0 && !regUpperTest.test(val) && !support.includes(val)) {
-			support.push(val);
-		}
-	});
-	return support;
-}
-
-function createMiddleware(middleware?: Route.ExtraMiddlewareType[], format: Route.ExtraMiddleware[] = []): Route.ExtraMiddleware[] {
+function createMiddleware(middleware?: RouteConfig.ExtraMiddlewareType[], format: Route.ExtraMiddleware[] = []): Route.ExtraMiddleware[] {
 	format = Array.isArray(format) ? format.slice().map(item => Object.create(item)) : [];
 	if(!Array.isArray(middleware)) {
 		return format;
@@ -161,7 +217,7 @@ function createResponder(responder?: string | [string, any]) {
 	}
 }
 
-function createController(controller?: Route.Controller) {
+function createController(controller?: RouteConfig.Controller) {
 	if(!controller) {
 		throw new Error("The controller argument required for route");
 	}
@@ -184,7 +240,7 @@ function createController(controller?: Route.Controller) {
 	}
 }
 
-function createCacheConfig(cache: Nullable<Route.Cache>) {
+function createCacheConfig(cache: Nullable<RouteConfig.Cache>) {
 	const c: Route.CacheOptions = {
 		mode: "body",
 		ttl: 3600,
@@ -269,11 +325,12 @@ function createHostListRegExp(host: string | string[]): RegExp[] {
 
 }
 
-function getNRPC(nrpc: Route.NRPCType, parentResponder?: string): Route.NRPCDecode {
+function getNRPC(nrpc: RouteConfig.NRPCType, parentResponder?: string): NRPCDecode {
 
 	let rProps: any = null;
 	let cProps: any = null;
 	let details: any = null;
+
 	if(Array.isArray(nrpc)) {
 		if(nrpc[1] != null) rProps = nrpc[1];
 		if(nrpc[2] != null) cProps = nrpc[2];
@@ -300,7 +357,7 @@ function getNRPC(nrpc: Route.NRPCType, parentResponder?: string): Route.NRPCDeco
 	const responder = segments[0];
 	const controller = segments[2] || name;
 
-	const route: Route.NRPCDecode = {
+	const route: NRPCDecode = {
 		name,
 		responder: rProps != null ? [responder, rProps] : responder,
 		path: "/" + trimLeftSegment(segments[1] || name),
@@ -318,35 +375,7 @@ function getNRPC(nrpc: Route.NRPCType, parentResponder?: string): Route.NRPCDeco
 	return route;
 }
 
-function trimLeftSegment(segment: string) {
-	segment = segment.trim();
-	while(segment.startsWith("/")) {
-		segment = segment.substring(1);
-	}
-	return segment;
-}
-
-function trimRightSegment(segment: string) {
-	segment = segment.trim();
-	while(segment.endsWith("/")) {
-		segment = segment.slice(0, -1);
-	}
-	return segment;
-}
-
-type NormalizeRoute = {
-	cache?: Route.Cache;
-	details?: any;
-	middleware?: Route.ExtraMiddlewareType[];
-	routes?: Route.Route[];
-	method?: Route.Method;
-	name: string;
-	responder?: string | [string, any];
-	path?: Route.Path;
-	controller: Route.Controller;
-};
-
-function normalizeRoute(route: Route.Route | Route.EmptyRoute, parent: any): NormalizeRoute {
+function normalizeRoute(route: RouteConfig.Route | RouteConfig.EmptyRoute, parent: any): NormalizeRoute {
 	if(typeof route === "string" || Array.isArray(route)) {
 		route = {
 			nrpc: route,
@@ -411,7 +440,7 @@ function normalizeRoute(route: Route.Route | Route.EmptyRoute, parent: any): Nor
 	};
 }
 
-function configEmptyRoute(route: Route.EmptyRoute, parent: any = {}): Route.EmptyPoint {
+function configEmptyRoute(route: RouteConfig.EmptyRoute, parent: any = {}): Route.RouteEmpty {
 
 	const {
 		name,
@@ -440,7 +469,13 @@ function configEmptyRoute(route: Route.EmptyRoute, parent: any = {}): Route.Empt
 	};
 }
 
-function configRoute(configRoutes: Route.Route[] = [], parent: any = {}, callback: (point: RoutePoint) => void): void {
+function configRoute(
+	credo: CredoJS,
+	configRoutes: RouteConfig.Route[],
+	parent: any,
+	callback: (r: RouteVariant, g?: RouteGroup) => void,
+	group?: RouteGroup
+): void {
 
 	for(let route of configRoutes) {
 		let {
@@ -454,13 +489,6 @@ function configRoute(configRoutes: Route.Route[] = [], parent: any = {}, callbac
 			middleware,
 			... otherRoute
 		} = normalizeRoute(route, parent);
-
-		if(!name) {
-			name = nameGen.gen();
-		}
-		if(parent.name) {
-			name = `${parent.name}.${name}`;
-		}
 
 		if(parent.path) {
 			if(path) {
@@ -478,121 +506,115 @@ function configRoute(configRoutes: Route.Route[] = [], parent: any = {}, callbac
 			}
 		}
 
-		if("routes" in otherRoute && Array.isArray(otherRoute.routes)) {
-			return configRoute(otherRoute.routes, {
-				name,
-				path,
-				controller,
-				responder,
-				method,
-				middleware: createMiddleware(middleware, parent.middleware),
-				cache: cache == null ? parent.cache : cache,
-				details: {
-					... parent.details,
-					... details,
-				},
-			}, callback);
+		const createParent = () => ({
+			name,
+			path,
+			controller,
+			responder,
+			method,
+			middleware: createMiddleware(middleware, parent.middleware),
+			cache: cache == null ? parent.cache : cache,
+			details: {
+				... parent.details,
+				... details,
+			},
+		});
+
+		if(otherRoute.group) {
+			if(typeof path !== "string") {
+				throw new Error(`'${name}' group route path must be a string`);
+			}
+			let routes: RouteConfig.Route[] = [];
+			if("routes" in otherRoute && Array.isArray(otherRoute.routes) && otherRoute.routes.length > 0) {
+				routes = otherRoute.routes;
+			} else {
+				credo.debug.error(`Attention! The routes group route option '${name}' is empty`);
+			}
+			const routeGroup = new RouteGroup(path, method);
+			callback(routeGroup, group);
+			if(routes.length > 0) {
+				configRoute(credo, routes, createParent(), callback, routeGroup);
+			}
+			continue;
+		}
+
+		if("routes" in otherRoute) {
+			const {routes} = otherRoute;
+			if(Array.isArray(routes) && routes.length > 0) {
+				configRoute(credo, routes, createParent(), callback, group);
+			}
+			continue;
+		}
+
+		if(!path) {
+			path = "/";
+		}
+
+		if(typeof path === "string") {
+			path = {
+				type: "pattern",
+				pattern: path,
+			};
 		}
 
 		const methods = createMethods(method);
-		const rt = new RoutePoint({
-			... createPathCallback(path),
-			methods,
-			context: {
-				name,
-				cache: createCacheConfig(cache),
-				responder: createResponder(responder),
-				controller: createController(controller),
-				middleware: createMiddleware(middleware, parent.middleware),
-				details: {
-					... parent.details,
-					... details,
-				},
+		const context: Route.Context = {
+			name,
+			cache: createCacheConfig(cache),
+			responder: createResponder(responder),
+			controller: createController(controller),
+			middleware: createMiddleware(middleware, parent.middleware),
+			details: {
+				... parent.details,
+				... details,
 			},
-		});
-		callback(rt);
-	}
-}
+		};
 
-function sortPattern(a: RoutePoint, b: RoutePoint) {
-	let bl = b.pattern ? b.pattern.length : -1;
-	let al = a.pattern ? a.pattern.length : -1;
-	if(b.pattern && a.pattern) {
-		if(al !== bl) {
-			return bl - al;
+		// RoutePattern
+		if(path.type === "dynamic") {
+			callback(new RouteDynamic({
+				... createDynamicPathOptions(credo, path),
+				methods,
+				context,
+			}), group);
+		} else {
+			callback(new RoutePattern({
+				... createPatternPathOptions(credo, path),
+				methods,
+				context,
+			}), group);
 		}
-		let aNoKeys = a.pattern.keys.length === 0;
-		if(b.pattern.keys.length === 0) {
-			if(aNoKeys) {
-				return 1;
-			}
-		} else if(aNoKeys) {
-			return - 1;
-		}
-		return b.priority - a.priority;
-	}
-	if(bl === al) {
-		return b.priority - a.priority;
-	} else {
-		return bl - al;
-	}
-}
-
-function sortNative(a: RoutePoint, b: RoutePoint) {
-	return a.priority === b.priority ? 0 : b.priority - a.priority;
-}
-
-class RouteWithoutMatch implements Route.EmptyPoint {
-
-	name: string;
-	context: Route.Context;
-	methods: string[];
-
-	constructor(point: Route.EmptyPoint) {
-		this.name = point.context.name;
-		this.context = point.context;
-		this.methods = point.methods;
-	}
-
-	method(method: string): boolean {
-		return this.methods.includes(method);
-	}
-}
-
-export class RouteEmptyPoint extends RouteWithoutMatch {}
-
-export class RoutePoint extends RouteWithoutMatch implements Route.Point {
-	index: number = 0;
-	priority: number = 1;
-	match: Route.PointMatch;
-	pattern?: PatternInterface;
-
-	constructor({match, pattern, ... rest}: Route.Point) {
-		super(rest);
-		this.match = match;
-		this.pattern = pattern;
 	}
 }
 
 const ADD_ROUTE_KEY = Symbol();
 
-export class RouteManager {
+export default class RouteManager {
 
 	private readonly _hostList: RegExp[] = [];
-	private readonly _nameToRoute: Record<string, RoutePoint> = {};
+	private readonly _nameToRoute: Record<string, RoutePattern | RouteDynamic> = {};
 	private _sorted: boolean = false;
-	private _routeList: RoutePoint[] = [];
+	private _routeList: RouteVariant[] = [];
 	private _init: boolean = false;
-	private _routeNotFound: RouteEmptyPoint | null = null;
+	private _routeNotFound: RouteEmpty | null = null;
 
-	[ADD_ROUTE_KEY] = (route: RoutePoint, priority?: number) => {
+	[ADD_ROUTE_KEY] = (route: RouteVariant, priority?: number, group?: RouteGroup) => {
 		route.index = this._routeList.length;
 		if(typeof priority === "number") {
 			route.priority = priority;
 		}
 		Object.freeze(route);
 
-		this._routeList.push(route);
+		if(group) {
+			group.routes.push(route);
+		} else {
+			this._routeList.push(route);
+		}
+
+		if(RouteEntity.isRouteGroup(route)) {
+			return;
+		}
+
 		const {name} = route;
 		if(this.added(name)) {
 			this.credo.error("Duplicate route name {cyan %s}", name);
@@ -603,13 +625,23 @@ export class RouteManager {
 
 	constructor(public credo: CredoJS) {
 
+		const freezeRoutes = (routes: RouteVariant[]) => {
+			Object.freeze(routes);
+			for(const route of routes) {
+				if(RouteEntity.isRouteGroup(route)) {
+					freezeRoutes(route.routes);
+				}
+			}
+		};
+
 		const init = () => {
 			this._init = true;
 
 			Object.freeze(this);
-			Object.freeze(this._routeList);
 			Object.freeze(this._nameToRoute);
 			Object.freeze(this._hostList);
+
+			freezeRoutes(this._routeList);
 
 			return this;
 		};
@@ -630,12 +662,12 @@ export class RouteManager {
 
 		this._hostList = createHostListRegExp(host);
 
-		configRoute(routes, {... otherConf, middleware}, (route) => {
-			this[ADD_ROUTE_KEY](route);
+		configRoute(credo, routes, {... otherConf, middleware}, (route, group) => {
+			this[ADD_ROUTE_KEY](route, undefined, group);
 		});
 
 		if(route404) {
-			this._routeNotFound = new RouteEmptyPoint(configEmptyRoute(route404, otherConf));
+			this._routeNotFound = new RouteEmpty(configEmptyRoute(route404, otherConf));
 		}
 
 		credo.hooks.once("onBoot", () => {
@@ -660,7 +692,7 @@ export class RouteManager {
 		return this._hostList.some(reg => reg.test(host));
 	}
 
-	isNotFoundRoute(): this is {routeNotFound: RouteEmptyPoint} {
+	isNotFoundRoute(): this is {routeNotFound: RouteEmpty} {
 		return this._routeNotFound != null;
 	}
 
@@ -680,44 +712,61 @@ export class RouteManager {
 		return this._routeNotFound;
 	}
 
-	addRoute(route: RoutePoint | Route.Route, priority?: number) {
+	addRoute(route: RouteVariant | RouteConfig.Route, priority?: number) {
 		if(this._init) {
 			return this;
 		}
 
-		if(route instanceof RoutePoint) {
+		if(RouteEntity.isRoute(route)) {
 			this[ADD_ROUTE_KEY](route, priority);
 			return this;
 		}
 
-		configRoute([route], {middleware: []}, (route) => {
-			this[ADD_ROUTE_KEY](route, priority);
+		configRoute(this.credo, [route], {middleware: []}, (route, group) => {
+			this[ADD_ROUTE_KEY](route, priority, group);
 		});
 
 		return this;
 	}
 
-	addNotFoundRoute(route: Route.EmptyRoute) {
+	addNotFoundRoute(route: RouteEmpty | RouteConfig.EmptyRoute) {
 		if(this._init) {
 			return this;
 		}
-		this._routeNotFound = new RouteEmptyPoint(configEmptyRoute(route));
+		if(RouteEntity.isRouteEmpty(route)) {
+			this._routeNotFound = route;
+		} else {
+			this._routeNotFound = new RouteEmpty(configEmptyRoute(route));
+		}
 		return this;
 	}
 
-	remove(route: RoutePoint) {
+	remove(route: RouteVariant) {
 		if(this._init) {
 			return this;
 		}
 
-		const index = this._routeList.indexOf(route);
-		if(index !== -1) {
-			this._routeList.splice(index);
+		function del(routes: RouteVariant[]) {
+			for(let i = 0; i < routes.length; i++) {
+				const item = routes[i];
+				if(item === route) {
+					routes.splice(i, 1);
+					return true;
+				}
+				if(RouteEntity.isRouteGroup(item) && del(item.routes)) {
+					return true;
+				}
+			}
+			return false;
 		}
 
-		const key = Object.keys(this._nameToRoute).find(key => this._nameToRoute[key] === route);
-		if(key) {
-			delete this._nameToRoute[key];
+		del(this._routeList);
+
+		if(!RouteEntity.isRouteGroup(route)) {
+			const name = route.name;
+			if(this._nameToRoute.hasOwnProperty(name)) {
+				delete this._nameToRoute[name];
+			}
 		}
 
 		return this;
@@ -732,10 +781,35 @@ export class RouteManager {
 	}
 
 	pattern(name: string) {
-		return this.added(name) && this._nameToRoute[name].pattern || null;
+		if(!this.added(name)) {
+			return null;
+		}
+		const route = this._nameToRoute[name];
+		if(RouteEntity.isRoutePattern(route)) {
+			return route.pattern || null;
+		}
+		return null;
 	}
 
-	sort(type: "native" | "pattern" | ((a: RoutePoint, b: RoutePoint) => number)) {
+	async matchToPath(name: string, match?: any): Promise<string> {
+		if(!this.added(name)) {
+			throw new Error(`The ${name} route not found`);
+		}
+		const route = this._nameToRoute[name];
+		if(RouteEntity.isRoutePattern(route)) {
+			const pattern = route.pattern;
+			if(!pattern) {
+				throw new Error(`The pattern's of ${name} route not found`);
+			}
+			return pattern.matchToPath({data: match});
+		}
+		if(!route.matchToPath) {
+			throw new Error(`The ${name} matchToPath route not defined`);
+		}
+		return route.matchToPath(match);
+	}
+
+	sort(type: "native" | "pattern" | ((a: RouteVariant, b: RouteVariant) => number)) {
 		if(this._init) {
 			return this;
 		}

@@ -1,5 +1,5 @@
 import type {Context} from "koa";
-import type {CredoJS, Route} from "@credo-js/server";
+import type {CredoJS, Ctor, Route} from "@credo-js/server";
 import createHttpError from "http-errors";
 import HttpText from "./HttpText";
 
@@ -35,4 +35,4 @@ export default (function responder(_credo: CredoJS, name: string): Route.Respond
 		},
 		error,
 	}
-}) as Route.ResponderCtor;
+}) as Ctor.Responder;

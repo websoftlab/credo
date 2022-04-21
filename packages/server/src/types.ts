@@ -12,7 +12,9 @@ import type {BootManager} from "./credo";
 import type {LocalStoreData} from "./store";
 import type {Stats} from "fs";
 import type {CredoJSCmd, OnBuildHook, CommanderCtor} from "./cmd/types";
-import type {RouteManager} from "./RouteManager";
+import type {RouteManager} from "./route";
+import type {Command} from "@credo-js/cli-commander";
+import type {Promisify} from "./helpTypes";
 
 export type EnvMode = "development" | "production";
 
@@ -147,10 +149,10 @@ export namespace Config {
 		path?: string;
 		controller?: string;
 		details?: any;
-		middleware?: Route.ExtraMiddlewareType[];
-		route404?: Route.EmptyRoute;
+		middleware?: RouteConfig.ExtraMiddlewareType[];
+		route404?: RouteConfig.EmptyRoute;
 		sort?: "native" | "pattern";
-		routes: Route.Route[];
+		routes: RouteConfig.Route[];
 	}
 
 	export interface Middleware {
@@ -179,7 +181,7 @@ export namespace Config {
 export namespace Server {
 	export type HookName = string;
 
-	export type HookListener<Event = any, Name extends string = string> = ((event: Event & {name: Name}) => void | Promise<void>) | (() => void | Promise<void>);
+	export type HookListener<Event = any, Name extends string = string> = ((event: Event & {name: Name}) => Promisify<void>) | (() => Promisify<void>);
 
 	export type HookUnsubscribe = () => void;
 
@@ -266,14 +268,17 @@ export namespace Worker {
 }
 
 // Routes
-export namespace Route {
+export namespace RouteConfig {
 
-	type RouteBase = {
+	interface RouteBase {
+		group?: boolean;
 		cache?: Cache;
 		details?: any;
 		middleware?: ExtraMiddlewareType[];
 		routes?: Route[];
-	};
+	}
+
+	export type ExtraMiddlewareType<MProps = any> = string | [string, MProps] | [null, string];
 
 	export type NRPCType<RProps = any, CProps = any, Details = any> =
 		string |
@@ -283,10 +288,24 @@ export namespace Route {
 
 	export type Method = string | string[];
 
+	export interface PathHandler<Params extends { [K in keyof Params]?: string } = {}> {
+		type: "handler";
+		handler: string | ((ctx: Koa.Context, match: any) => Promisify<string | Params | false | null>);
+		pattern?: string;
+	}
+	export interface PathDynamic<Params extends { [K in keyof Params]?: string } = {}> {
+		type: "dynamic";
+		service?: string;
+		match?: Route.Match<Params>;
+		matchToPath?: Route.MatchToPath<Params>;
+	}
+	export interface PathPattern { type: "pattern", pattern: string }
+
 	export type Path<Params extends { [K in keyof Params]?: string } = {}> =
 		string |
-		[string, (string | ( (ctx: Koa.Context, match: any) => boolean | Promise<boolean> ))] |
-		((ctx: Koa.Context) => (string | Params | false | null | Promise<string | Params | false | null>));
+		PathHandler<Params> |
+		PathDynamic<Params> |
+		PathPattern;
 
 	export type Route =
 		NRPCType |
@@ -303,55 +322,70 @@ export namespace Route {
 
 	export type EmptyRoute =
 		NRPCType |
-		Omit<RouteBase, "routes"> & {
+		Omit<RouteBase, "routes" | "group"> & {
 			method?: Method;
 			name?: string;
 			responder?: string | [string, any];
 			controller: Controller;
 		} |
-		Omit<RouteBase, "routes"> & {
+		Omit<RouteBase, "routes" | "group"> & {
 			nrpc: NRPCType;
 		}
 
-	export type PointMatch<Params extends { [K in keyof Params]?: string } = {}> = (ctx: Koa.Context) => (Params | false | Promise<Params | false>);
-	export type Point = {
+	export type Cache = boolean | number | "body" | "controller" | Partial<Route.CacheOptions>;
+
+	export type Controller<ControllerProps = any, ControllerResult = any> =
+		string |
+		[string, ControllerProps] |
+		Route.ControllerFunction<ControllerProps, ControllerResult>;
+}
+
+export namespace Route {
+
+	export type MatchToPath<Params extends { [K in keyof Params]?: string } = {}> = (params?: Params) => Promisify<string>;
+
+	export type Match<Params extends { [K in keyof Params]?: string } = {}> = (ctx: Koa.Context) => Promisify<Params | false>;
+
+	export interface RoutePattern {
 		pattern?: PatternInterface;
-		match: PointMatch;
+		match: Match;
 		methods: string[];
 		context: Context;
 	}
 
-	export type EmptyPoint = Omit<Point, "match" | "pattern">;
-
-	export type NRPCDecode<CProps = any, RProps = any, Details = any> = {
-		method?: Method;
-		details?: Details;
-		name: string;
-		responder: string | [string, RProps];
+	export interface RouteGroup {
+		methods?: string[];
 		path: string;
-		controller: string | [string, CProps];
+		routes?: Route[];
 	}
 
-	export type CacheOptions = {
+	export interface RouteDynamic extends Omit<RoutePattern, "pattern"> {
+		matchToPath?: MatchToPath;
+		length?: number | (() => number);
+	}
+
+	export type Route = RoutePattern | RouteGroup | RouteDynamic;
+
+	export type RouteEmpty = Omit<RoutePattern, "match" | "pattern">;
+
+	export interface CacheOptions {
 		ttl: number;
-		cacheable: (ctx: Koa.Context) => boolean | Promise<boolean>;
-		getKey: (ctx: Koa.Context) => string | Promise<string>;
+		cacheable: (ctx: Koa.Context) => Promisify<boolean>;
+		getKey: (ctx: Koa.Context) => Promisify<string>;
 		mode: "body" | "controller";
 	}
 
-	export type Cache = boolean | number | "body" | "controller" | Partial<CacheOptions>
-
 	export interface MiddlewareFunction {
-		(ctx: Koa.Context, next: Koa.Next): (void | Promise<void>);
+		(ctx: Koa.Context, next: Koa.Next): Promisify<void>;
 		name?: string;
 		depth?: number;
 	}
 
 	export type ControllerFunction<ControllerProps = any, ControllerResult = any> = (
-		(ctx: Koa.Context, props?: ControllerProps) => (ControllerResult | Promise<ControllerResult>)
+		(ctx: Koa.Context, props?: ControllerProps) => Promisify<ControllerResult>
 	);
 
-	export type Context<ControllerProps = any, ResponderProps = any, RouteDetails = any> = {
+	export interface Context<ControllerProps = any, ResponderProps = any, RouteDetails = any> {
 		name: string;
 		cache?: CacheOptions;
 		details?: RouteDetails;
@@ -367,31 +401,40 @@ export namespace Route {
 		};
 	}
 
-	export type Controller<ControllerProps = any, ControllerResult = any> =
-		string |
-		[string, ControllerProps] |
-		ControllerFunction<ControllerProps, ControllerResult>;
-
 	export type ResponderFunction<ControllerResult = any, ResponderProps = any> = (
-		(ctx: Koa.Context, result: ControllerResult, props?: ResponderProps) => (Promise<void> | void)
+		(ctx: Koa.Context, result: ControllerResult, props?: ResponderProps) => Promisify<void>
 	);
 
-	export type Responder<ControllerResult = any, ResponderProps = any> = {
+	export interface Responder<ControllerResult = any, ResponderProps = any> {
 		name: string;
-		middleware?: ((ctx: Koa.Context, next: Koa.Next) => (Promise<void> | void));
-		error?: ((ctx: Koa.Context, error: Error) => (Promise<void> | void));
+		middleware?: ((ctx: Koa.Context, next: Koa.Next) => Promisify<void>);
+		error?: ((ctx: Koa.Context, error: Error) => Promisify<void>);
 		depth?: number;
 		responder: ResponderFunction<ControllerResult, ResponderProps>;
 	}
 
-	export type MiddlewareCtor = MiddlewareFunction | ( (credo: CredoJS) => MiddlewareFunction );
+	export interface ExtraMiddleware<MProps = any> { name: string, props?: MProps }
 
-	export type ResponderCtor<C = never> = (credo: CredoJS, name: string, config?: C) => Responder;
+	export type ExtraMiddlewareFunction<MProps = never> = (ctx: Koa.Context, next: Koa.Next, props?: MProps) => Promisify<void>;
+}
 
-	export type ExtraMiddlewareFunction<MProps = never> = (ctx: Koa.Context, next: Koa.Next, props?: MProps) => (Promise<void> | void);
-	export type ExtraMiddlewareType<MProps = any> = string | [string, MProps] | [null, string];
-	export type ExtraMiddleware<MProps = any> = {name: string, props?: MProps};
-	export type ExtraMiddlewareCtor<MProps = never> = ExtraMiddlewareFunction | ( (credo: CredoJS) => ExtraMiddlewareFunction<MProps> );
+export namespace Ctor {
+
+	type CtorHandler<Result = void, Opt = unknown> = (credo: CredoJS, options?: Opt) => Promisify<Result>;
+
+	export type Commander<Opt = unknown> = (credo: CredoJSCmd, command: Command, opt?: Opt) => void;
+
+	export type Controller<ControllerFunc = Function, Opt = unknown> = CtorHandler<ControllerFunc, Opt>;
+
+	export type Service<ServiceFunc = Function, Opt = unknown> = CtorHandler<ServiceFunc, Opt>;
+
+	export type Bootstrap<Opt = unknown> = CtorHandler<Function | void, Opt>;
+
+	export type Middleware<Opt = unknown> = Route.MiddlewareFunction | CtorHandler<Route.MiddlewareFunction, Opt>;
+
+	export type Responder<Conf = unknown> = (credo: CredoJS, name: string, config?: Conf) => Route.Responder;
+
+	export type ExtraMiddleware<MProps = unknown> = Route.ExtraMiddlewareFunction | ((credo: CredoJS) => Promisify<Route.ExtraMiddlewareFunction<MProps>>);
 }
 
 // Cron
@@ -418,7 +461,7 @@ export namespace Cron {
 	}
 
 	export interface Job extends Base {
-		job(date: Date): void | Promise<void>;
+		job(date: Date): Promisify<void>;
 	}
 
 	export interface Service extends Base {
@@ -439,12 +482,13 @@ export namespace LocalStore {
 	}
 
 	export type ReadOptions<R = string> = {
-		builder?: () => (R | Promise<R>);
+		live?: (name: string, data: R) => boolean;
+		builder?: () => Promisify<R>;
 		json?: boolean;
 	}
 
 	export type RequireOptions<R = any> = {
-		builder?: () => (string | Promise<string>);
+		builder?: () => Promisify<string>;
 		clearCache?: boolean;
 		hash?: [keyof R, string];
 	}

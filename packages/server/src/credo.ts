@@ -1,5 +1,4 @@
-import type {CredoJS, CredoJSGlobal, Route, EnvMode, Server} from "./types";
-import type {CommanderCtor} from "./cmd/types";
+import type {CredoJSGlobal, Route, EnvMode, Server, Ctor} from "./types";
 import asyncResult from "@credo-js/utils/asyncResult";
 import {debug, debugSubscribe} from "@credo-js/cli-debug";
 import {cmdBuild, preventBuildListener} from "./cmd/builder";
@@ -12,7 +11,6 @@ import cluster from "cluster";
 import {createEnv} from "./envVar";
 import {createLocalStore} from "./store";
 
-type CJSRegHandler<T = void> = (credo: CredoJS, options?: any) => (Promise<T> | T);
 type CJSDefType = "services" | "controllers" | "responders" | "middleware" | "cmd";
 type CJSDefTypeExt = CJSDefType | "extraMiddleware";
 type CJSDefTypeMwr = "services" | "controllers" | "responders" | "extraMiddleware" | "cmd";
@@ -263,25 +261,25 @@ export class BootManager {
 	defined(key: CJSDefTypeExt, name: string) {
 		return this[REG_KEY].defined.includes(`${key}:${name}`);
 	}
-	service(name: string, handler: CJSRegHandler, options?: any) {
+	service<ServiceFunc = Function, Opt = unknown>(name: string, handler: Ctor.Service<ServiceFunc, Opt>, options?: Opt) {
 		define(this, "services", name, {name, handler, options});
 	}
-	controller(name: string, handler: CJSRegHandler, options?: any) {
+	controller<ControllerFunc = Function, Opt = unknown>(name: string, handler: Ctor.Controller<ControllerFunc, Opt>, options?: Opt) {
 		define(this, "controllers", name, {name, handler, options});
 	}
-	middleware(handler: CJSRegHandler | Function, options?: any) {
+	middleware<Opt = unknown>(handler: Ctor.Middleware<Opt>, options?: Opt) {
 		defineWithoutName(this, "middleware", { handler, options });
 	}
-	extraMiddleware(name: string, handler: CJSRegHandler, options?: any) {
+	extraMiddleware<MProps = unknown>(name: string, handler: Ctor.ExtraMiddleware<MProps>, options?: MProps) {
 		define(this, "extraMiddleware", name, {name, handler, options});
 	}
-	responder(name: string, handler: Route.ResponderCtor, options?: any) {
+	responder<Conf = unknown>(name: string, handler: Ctor.Responder<Conf>, options?: Conf) {
 		define(this, "responders", name, {name, handler, options});
 	}
-	cmd(name: string, handler: CommanderCtor, options?: any) {
+	cmd<Opt = unknown>(name: string, handler: Ctor.Commander<Opt>, options?: Opt) {
 		define(this, "cmd", name, {name, handler, options});
 	}
-	bootstrap(handler: CJSRegHandler, options?: any) {
+	bootstrap<Opt = unknown>(handler: Ctor.Bootstrap<Opt>, options?: Opt) {
 		defineWithoutName(this, "bootstrap", { handler, options });
 	}
 

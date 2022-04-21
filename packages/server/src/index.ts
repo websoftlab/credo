@@ -5,13 +5,17 @@ export {default as env} from "./env";
 export {BootManager} from "./credo";
 export {default as defineGlobal} from "./defineGlobal";
 export {masterProcess, childProcess} from "./worker";
+export {RouteEmpty, RouteEntity, RouteGroup, RoutePattern, RouteDynamic, RouteManager} from "./route";
 
+export type {RouteVariant} from "./route/types";
 export type {
 	Worker,
 	Server,
 	Route,
-	Cron,
+	RouteConfig,
 	Config,
+	Cron,
+	Ctor,
 	LocalStore,
 
 	CtxHook,
@@ -32,5 +36,10 @@ export type {
 	CredoJSCmd,
 	CredoJSCron,
 	ConfigHandler,
+	CommanderCtor,
+	CredoControllers,
+	CredoExtraMiddleware,
+	CredoResponders,
+	CredoServices,
 	EnvVar
 } from "./types";

@@ -173,27 +173,36 @@ export class LocalStoreData {
 		await checkDirectory(this[pathType], "data root path");
 	}
 
-	async read<R = never>(file: string, options: LocalStore.ReadOptions<R | string> = {}): Promise<R> {
+	async read<R = string>(file: string, options: LocalStore.ReadOptions<R> = {}): Promise<R> {
+		const originFile = file;
 		file = resolvePath(this, file);
 		const exists = await checkFileOrNotExists(file);
 
 		// json option
 		let {json = "auto"} = options;
 		if(json === "auto") {
-			json = /\.json/.test(file);
+			json = /\.json/.test(originFile);
 		}
 
 		if(exists) {
-			const data = (await readFile(file)).toString();
+			let data: string | R = (await readFile(file)).toString();
 			if(json === "auto") {
 				json = /\.json/.test(file);
 			}
-			return json ? JSON.parse(data) : data;
+			if(json) {
+				data = JSON.parse(data);
+			}
+			const {live} = options;
+			if(typeof live === "function" && !live(originFile, data as R)) {
+				await this.remove(file);
+			} else {
+				return data as R;
+			}
 		}
 
 		const {builder} = options;
 		if(typeof builder === "function") {
-			let data = await asyncResult(builder());
+			let data: R | string = await asyncResult(builder());
 			if(data == null) {
 				data = json ? "{}" : "";
 			}

@@ -19,18 +19,6 @@ export function middleware(credo: CredoJS, options: {
 		multilingual,
 	} = options;
 
-	function createRoutePatternUrl(name: string, params?: any) {
-		const route = credo.route.route(name);
-		if(!route) {
-			throw new Error(`The ${name} route not found`);
-		}
-		const {pattern} = route;
-		if(!pattern) {
-			throw new Error(`The pattern's of ${name} route not found`);
-		}
-		return pattern.replace({ data: params });
-	}
-
 	const createMakeUrlHandler = (ctx: Koa.Context): URL.AsyncHandler => async (url) => {
 		if(!url) {
 			return "/";
@@ -43,7 +31,7 @@ export function middleware(credo: CredoJS, options: {
 			routeName = name;
 			url = <URL.Options>{
 				... rest,
-				path: createRoutePatternUrl(name, params),
+				path: await credo.route.matchToPath(name, params),
 			};
 		}
 		await credo.hooks.emit<OnMakeURLServerHook>("onMakeURL", {url, ctx, name: routeName});
@@ -85,9 +73,9 @@ export function middleware(credo: CredoJS, options: {
 				ctx[BODY_END_KEY as never] = true;
 				return true;
 			},
-			redirectToRoute(name: string, params?: any) {
-				ctx.redirect(createRoutePatternUrl(name, params));
-			}
+			async redirectToRoute(name: string, params?: any) {
+				ctx.redirect(await credo.route.matchToPath(name, params));
+			},
 		};
 
 		Object.keys(val).forEach(name => {
