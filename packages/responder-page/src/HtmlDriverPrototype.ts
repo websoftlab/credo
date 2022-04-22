@@ -1,10 +1,11 @@
-import type {Render} from "./types";
+import type { Render } from "./types";
 import type HtmlNode from "./HtmlNode";
-import type {API, Page} from "@credo-js/app";
-import type {Context} from "koa";
+import type { API, Page } from "@credo-js/app";
+import type { Context } from "koa";
 
-export default abstract class HtmlDriverPrototype<Type, RenderType = HtmlNode> implements Render.HtmlDriverInterface<Type> {
-
+export default abstract class HtmlDriverPrototype<Type, RenderType = HtmlNode>
+	implements Render.HtmlDriverInterface<Type>
+{
 	protected headSource: (string | RenderType)[] = [];
 	protected bodySource: (string | RenderType)[] = [];
 
@@ -40,6 +41,6 @@ export default abstract class HtmlDriverPrototype<Type, RenderType = HtmlNode> i
 	abstract toHTML(
 		ctx: Context,
 		api: API.ApiInterface<Type> | null,
-		emit: <T extends {type: string} = any>(event: T) => Promise<T>
+		emit: <T extends { type: string } = any>(event: T) => Promise<T>
 	): Promise<string>;
 }

@@ -1,45 +1,45 @@
-import {join as joinPath} from "path";
-import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import {babel, postcss} from '../config';
-import type {BuildLoaderRule} from "../types";
-import type {BuildConfigure} from "../../types";
+import { join as joinPath } from "path";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import { babel, postcss } from "../config";
+import type { BuildLoaderRule } from "../types";
+import type { BuildConfigure } from "../../types";
 
 const cssLoader = (config: BuildConfigure, options: any = {}): BuildLoaderRule => ({
-	loader: 'css-loader',
+	loader: "css-loader",
 	options: {
-		... options,
+		...options,
 		sourceMap: config.isDev,
-	}
+	},
 });
 
 /**
  * Sass loader with sass-resources-loader
  */
 const sassLoaderItems = (config: BuildConfigure): BuildLoaderRule[] => {
-	const {isDev, cwd} = config;
+	const { isDev, cwd } = config;
 	return [
 		{
-			loader: 'sass-loader',
+			loader: "sass-loader",
 			options: {
 				sourceMap: isDev,
-				implementation: require('sass'),
+				implementation: require("sass"),
 			},
 		},
 		{
 			loader: joinPath(__dirname, "../utils/sass-bootstrap-transform-loader.js"),
 			options: {
-				cwdPath: cwd
-			}
-		}
+				cwdPath: cwd,
+			},
+		},
 	];
 };
 
 async function postCssLoader(config: BuildConfigure): Promise<BuildLoaderRule> {
 	return {
-		loader: 'postcss-loader',
+		loader: "postcss-loader",
 		options: {
 			postcssOptions: {
-				... await postcss(config),
+				...(await postcss(config)),
 			},
 			sourceMap: config.isDev,
 		},
@@ -60,17 +60,11 @@ const miniCssExtractLoader = (config: BuildConfigure): BuildLoaderRule => ({
 
 async function babelLoader(config: BuildConfigure): Promise<BuildLoaderRule> {
 	return {
-		loader: 'babel-loader',
+		loader: "babel-loader",
 		options: {
-			... await babel(config),
+			...(await babel(config)),
 		},
 	};
 }
 
-export {
-	cssLoader,
-	sassLoaderItems,
-	postCssLoader,
-	miniCssExtractLoader,
-	babelLoader,
-}
+export { cssLoader, sassLoaderItems, postCssLoader, miniCssExtractLoader, babelLoader };

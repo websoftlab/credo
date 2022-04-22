@@ -1,26 +1,26 @@
 import type Group from "./Group";
-import type {ModifierColorName} from "@credo-js/cli-color";
-import type {HelpOptions} from "./types";
-import {color} from "@credo-js/cli-color";
+import type { ModifierColorName } from "@credo-js/cli-color";
+import type { HelpOptions } from "./types";
+import { color } from "@credo-js/cli-color";
 
 type PropType = {
-	name: string,
-	required: boolean,
-	multiple: boolean,
-	color?: ModifierColorName,
+	name: string;
+	required: boolean;
+	multiple: boolean;
+	color?: ModifierColorName;
 };
 
 function getProp(prop: PropType) {
 	let text = prop.name;
-	if(prop.multiple) {
+	if (prop.multiple) {
 		text = `... ${text}[]`;
 	}
-	if(!prop.required) {
+	if (!prop.required) {
 		text = `? ${text}`;
 	}
 	text = `[${text}]`;
 	const length = text.length;
-	if(prop.color) {
+	if (prop.color) {
 		text = color(prop.color, text);
 	}
 	return {
@@ -30,7 +30,6 @@ function getProp(prop: PropType) {
 }
 
 export default class Help {
-
 	groups: Group[] = [];
 	props: PropType[] = [];
 	name: string = "";
@@ -49,9 +48,9 @@ export default class Help {
 
 	get delta() {
 		let calc = 0;
-		this.groups.forEach(item => {
+		this.groups.forEach((item) => {
 			const delta = item.delta;
-			if(delta > calc) {
+			if (delta > calc) {
 				calc = delta;
 			}
 		});
@@ -72,31 +71,31 @@ export default class Help {
 	}
 
 	print() {
-		const {stream, delta} = this;
+		const { stream, delta } = this;
 
 		let max = (stream.columns || 85) - 5;
-		if(max > 140) {
+		if (max > 140) {
 			max = 140;
 		}
 
 		const noBr = delta + 30 > max;
 
 		function writeLimitNl(text: string, start: number = 0, delta: number = 0) {
-			if(noBr) {
+			if (noBr) {
 				return stream.write(text + "\n");
 			}
 
-			while(text.length) {
+			while (text.length) {
 				let len = max - start;
-				if(text.length <= len) {
+				if (text.length <= len) {
 					stream.write(text);
 					break;
 				}
 
 				let chunk = text.substring(0, len);
-				if(text[len] !== " ") {
+				if (text[len] !== " ") {
 					const index = chunk.lastIndexOf(" ");
-					if(index > 0) {
+					if (index > 0) {
 						chunk = text.substring(0, index);
 						len = index;
 					}
@@ -107,7 +106,7 @@ export default class Help {
 				stream.write(chunk);
 				stream.write("\n");
 
-				if(delta > 0) {
+				if (delta > 0) {
 					stream.write("".padStart(delta, " "));
 					start = delta;
 				} else {
@@ -119,48 +118,48 @@ export default class Help {
 		}
 
 		stream.write(`Usage: ${this.prompt}`);
-		if(this.name) {
+		if (this.name) {
 			stream.write(" ");
 			stream.write(color.white(this.name));
 		}
-		for(const prop of this.props) {
+		for (const prop of this.props) {
 			stream.write(` ${getProp(prop).text}`);
 		}
 		stream.write("\n\n");
 
-		if(this.version) {
+		if (this.version) {
 			stream.write(`Ver. ${color.lightYellow(this.version)}\n`);
 		}
-		if(this.description) {
+		if (this.description) {
 			writeLimitNl(this.description);
 			stream.write("\n");
 		}
 
-		for(const group of this.groups) {
+		for (const group of this.groups) {
 			stream.write(group.name + ":\n");
-			for(const item of group.items) {
+			for (const item of group.items) {
 				let len = 2;
 				stream.write("  ");
-				const {name, property, description, multiple, required, br} = item;
-				if(name) {
+				const { name, property, description, multiple, required, br } = item;
+				if (name) {
 					len += name.length + 2;
 					stream.write(color.white(name) + "  ");
 				}
-				if(property) {
+				if (property) {
 					const frm = getProp({
 						name: property,
 						required,
 						multiple,
-						color: "yellow"
+						color: "yellow",
 					});
 					len += frm.length + 2;
 					stream.write(frm.text + "  ");
 				}
-				if(description) {
-					if(noBr) {
+				if (description) {
+					if (noBr) {
 						writeLimitNl(description);
 					} else {
-						if(len < delta) {
+						if (len < delta) {
 							stream.write("".padEnd(delta - len));
 						}
 						writeLimitNl(description, delta, delta);
@@ -168,7 +167,7 @@ export default class Help {
 				} else {
 					stream.write("\n");
 				}
-				if(br) {
+				if (br) {
 					stream.write("\n");
 				}
 			}

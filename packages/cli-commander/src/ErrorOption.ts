@@ -1,7 +1,7 @@
-import type {ErrorOptionOptions, MinOptionInterface} from "./types";
-import {format, color} from "@credo-js/cli-color";
-import {assertOptionName, getAltNames} from "./util";
-import {opts, titles} from "./constants";
+import type { ErrorOptionOptions, MinOptionInterface } from "./types";
+import { format, color } from "@credo-js/cli-color";
+import { assertOptionName, getAltNames } from "./util";
+import { opts, titles } from "./constants";
 
 export default class ErrorOption implements MinOptionInterface {
 	alt: string[];
@@ -12,7 +12,7 @@ export default class ErrorOption implements MinOptionInterface {
 
 	constructor(public name: string, options: ErrorOptionOptions = {}) {
 		assertOptionName(name);
-		let {alt, stream, throwable = false, message = ""} = options;
+		let { alt, stream, throwable = false, message = "" } = options;
 		this.alt = getAltNames(name, alt);
 		this.message = message || format(opts.notAllowed, throwable ? titles.error : titles.warning, name);
 		this.throwable = Boolean(throwable);
@@ -20,18 +20,18 @@ export default class ErrorOption implements MinOptionInterface {
 	}
 
 	add(): void {
-		this.is =  true;
+		this.is = true;
 	}
 
 	define(): void {
-		this.is =  true;
+		this.is = true;
 	}
 
 	val(): null {
-		if(!this.is) {
+		if (!this.is) {
 			return null;
 		}
-		if(this.throwable) {
+		if (this.throwable) {
 			throw new Error(this.message);
 		} else {
 			this.stream.write(color.lightRed("$ ") + this.message + "\n");

@@ -1,17 +1,16 @@
-import {localPathName} from "../../utils";
-import {debugBuild} from "../../debug";
-import type {Plugin} from "rollup";
-import type {BuildConfigure} from "../../types";
+import { localPathName } from "../../utils";
+import { debugBuild } from "../../debug";
+import type { Plugin } from "rollup";
+import type { BuildConfigure } from "../../types";
 
 export default function progressRollupPlugin(conf: BuildConfigure) {
-
 	const progress = {
 		total: 0,
 		loaded: 0,
 	};
 
 	function debug(message: string) {
-		if(conf.debug) {
+		if (conf.debug) {
 			conf.debug(message);
 		} else {
 			debugBuild(message);
@@ -19,13 +18,13 @@ export default function progressRollupPlugin(conf: BuildConfigure) {
 	}
 
 	return <Plugin>{
-		name: 'progress',
+		name: "progress",
 		load() {
 			progress.loaded += 1;
 		},
 		watchChange(id) {
 			const file = localPathName(id);
-			if(!file.includes(':')) {
+			if (!file.includes(":")) {
 				debug(`change watch: ${file}`);
 			}
 		},
@@ -33,7 +32,7 @@ export default function progressRollupPlugin(conf: BuildConfigure) {
 			debug("[status build] start build");
 		},
 		buildEnd(err) {
-			if(err) {
+			if (err) {
 				debug(`[status error] build failure: ${err.message}`);
 			} else {
 				debug("[status build] end build");
@@ -45,17 +44,17 @@ export default function progressRollupPlugin(conf: BuildConfigure) {
 		},
 		transform(_code: string, id: string) {
 			const file = localPathName(id);
-			if (file.includes(':')) {
+			if (file.includes(":")) {
 				return;
 			}
 
 			let output = "";
 
-			if(progress.total > 0) {
-				if(progress.total < progress.loaded) {
+			if (progress.total > 0) {
+				if (progress.total < progress.loaded) {
 					progress.loaded = progress.total;
 				}
-				output += `[progress ${Math.round(100 * progress.loaded / progress.total)}%] `;
+				output += `[progress ${Math.round((100 * progress.loaded) / progress.total)}%] `;
 				output += `${progress.loaded} / ${progress.total}: `;
 			} else {
 				output += `[status wait] ${progress.loaded}: `;

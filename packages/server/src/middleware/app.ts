@@ -1,51 +1,50 @@
-import {AppStore} from "@credo-js/app";
+import { AppStore } from "@credo-js/app";
 import clonePlainObject from "@credo-js/utils/clonePlainObject";
-import {observe} from "mobx";
-import {makeUrl} from "@credo-js/make-url";
+import { observe } from "mobx";
+import { makeUrl } from "@credo-js/make-url";
 import type Koa from "koa";
-import type {URL} from "@credo-js/make-url";
-import type {CredoJS, OnMakeURLServerHook, OnAppStateHook, OnResponseHook} from "../types";
+import type { URL } from "@credo-js/make-url";
+import type { CredoJS, OnMakeURLServerHook, OnAppStateHook, OnResponseHook } from "../types";
 
-export function middleware(credo: CredoJS, options: {
-	store: any,
-	language: string,
-	languages: string[],
-	multilingual: boolean,
-}) {
-	const {
-		store,
-		language,
-		languages,
-		multilingual,
-	} = options;
+export function middleware(
+	credo: CredoJS,
+	options: {
+		store: any;
+		language: string;
+		languages: string[];
+		multilingual: boolean;
+	}
+) {
+	const { store, language, languages, multilingual } = options;
 
-	const createMakeUrlHandler = (ctx: Koa.Context): URL.AsyncHandler => async (url) => {
-		if(!url) {
-			return "/";
-		}
-		let routeName: string | undefined;
-		if(typeof url === "string" || Array.isArray(url)) {
-			url = {path: url};
-		} else if(url.name) {
-			const {name, params, ... rest} = url;
-			routeName = name;
-			url = <URL.Options>{
-				... rest,
-				path: await credo.route.matchToPath(name, params),
-			};
-		}
-		await credo.hooks.emit<OnMakeURLServerHook>("onMakeURL", {url, ctx, name: routeName});
-		return makeUrl(url);
-	};
+	const createMakeUrlHandler =
+		(ctx: Koa.Context): URL.AsyncHandler =>
+		async (url) => {
+			if (!url) {
+				return "/";
+			}
+			let routeName: string | undefined;
+			if (typeof url === "string" || Array.isArray(url)) {
+				url = { path: url };
+			} else if (url.name) {
+				const { name, params, ...rest } = url;
+				routeName = name;
+				url = <URL.Options>{
+					...rest,
+					path: await credo.route.matchToPath(name, params),
+				};
+			}
+			await credo.hooks.emit<OnMakeURLServerHook>("onMakeURL", { url, ctx, name: routeName });
+			return makeUrl(url);
+		};
 
 	const BODY_END_KEY: symbol = Symbol();
 
 	function isBodyEnded(ctx: any) {
-		return ctx[BODY_END_KEY] === true || ! ctx.res.writable;
+		return ctx[BODY_END_KEY] === true || !ctx.res.writable;
 	}
 
 	credo.app.use(async (ctx: Koa.Context, next: Koa.Next) => {
-
 		const val: Record<string, any> = {
 			credo, // link to credo
 			store: null,
@@ -54,17 +53,17 @@ export function middleware(credo: CredoJS, options: {
 			languages: languages.slice(),
 			makeUrl: createMakeUrlHandler(ctx),
 			bodyEnd(body?: any, statusCode?: number, type?: string) {
-				if(isBodyEnded(ctx)) {
+				if (isBodyEnded(ctx)) {
 					return false;
 				}
-				if(statusCode) {
+				if (statusCode) {
 					ctx.status = statusCode;
 				}
-				if(typeof type === "string" && type.length) {
+				if (typeof type === "string" && type.length) {
 					ctx.type = type;
 				}
-				if(body == null) {
-					if(ctx.body == null) {
+				if (body == null) {
+					if (ctx.body == null) {
 						ctx.body = "";
 					}
 				} else {
@@ -78,9 +77,11 @@ export function middleware(credo: CredoJS, options: {
 			},
 		};
 
-		Object.keys(val).forEach(name => {
+		Object.keys(val).forEach((name) => {
 			Object.defineProperty(ctx, name, {
-				get() { return val[name]; }
+				get() {
+					return val[name];
+				},
 			});
 		});
 
@@ -94,10 +95,10 @@ export function middleware(credo: CredoJS, options: {
 				return ctxLanguage;
 			},
 			set(value: string) {
-				if(languages.includes(value))  {
+				if (languages.includes(value)) {
 					ctxLanguage = value;
 				}
-			}
+			},
 		});
 
 		Object.defineProperty(ctx, "isBodyEnded", {
@@ -105,13 +106,13 @@ export function middleware(credo: CredoJS, options: {
 			configurable: false,
 			get() {
 				return isBodyEnded(ctx);
-			}
+			},
 		});
 
 		const state = typeof store === "function" ? await store(ctx) : clonePlainObject(store);
 
 		// emit hook, update state
-		await credo.hooks.emit<OnAppStateHook>("onAppState", {ctx, state});
+		await credo.hooks.emit<OnAppStateHook>("onAppState", { ctx, state });
 
 		const appStore = new AppStore(state);
 
@@ -119,7 +120,7 @@ export function middleware(credo: CredoJS, options: {
 
 		observe(appStore, "language", (prop) => {
 			const value = prop.newValue as string;
-			if(value && value !== val.language) {
+			if (value && value !== val.language) {
 				val.language = value;
 			}
 		});
@@ -127,7 +128,7 @@ export function middleware(credo: CredoJS, options: {
 		val.store = appStore;
 
 		// emit hook, start response
-		await credo.hooks.emit<OnResponseHook>("onResponse", {ctx});
+		await credo.hooks.emit<OnResponseHook>("onResponse", { ctx });
 
 		return next();
 	});

@@ -1,5 +1,5 @@
-import type {CredoPlugin} from "../types";
-import {asyncResult} from "@credo-js/utils";
+import type { CredoPlugin } from "../types";
+import { asyncResult } from "@credo-js/utils";
 
 function isPluginDefine(obj: any): obj is CredoPlugin.Handler {
 	return obj && typeof obj === "object" && typeof obj.path === "string" && typeof obj.importer === "string";
@@ -8,21 +8,21 @@ function isPluginDefine(obj: any): obj is CredoPlugin.Handler {
 export default async function fireHook(
 	hooks: CredoPlugin.Hooks | Partial<Record<CredoPlugin.HooksEvent, CredoPlugin.Handler>>,
 	hook: CredoPlugin.HooksEvent,
-	args: any[] = [],
+	args: any[] = []
 ) {
 	let func = hooks[hook];
-	if(isPluginDefine(func)) {
+	if (isPluginDefine(func)) {
 		const hookFunc = require(func.path);
-		if(func.importer === "default") {
-			func = hookFunc.__esModule && hookFunc.default || hookFunc;
+		if (func.importer === "default") {
+			func = (hookFunc.__esModule && hookFunc.default) || hookFunc;
 		} else {
 			func = hookFunc[func.importer];
 		}
 	}
 
-	if(typeof func !== "function") {
+	if (typeof func !== "function") {
 		return;
 	}
 
-	await asyncResult(( func as (... args: any[]) => (void | Promise<void>) )(... args.slice()));
+	await asyncResult((func as (...args: any[]) => void | Promise<void>)(...args.slice()));
 }

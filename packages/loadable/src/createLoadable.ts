@@ -7,28 +7,29 @@ import type {
 	RenderHandler,
 	FallbackHandler,
 } from "./types";
-import {isPlainObject} from "@credo-js/utils";
+import { isPlainObject } from "@credo-js/utils";
 
 function delFrom<T>(all: T[], item: T) {
 	const index = all.indexOf(item);
-	if(index !== -1) {
+	if (index !== -1) {
 		all.splice(index, 1);
 	}
 }
 
-export default function createLoadable<Type, Element, FallbackProps>(options: CreateLoadableOptions<Type, Element, FallbackProps>): Loadable<Type, Element, FallbackProps> {
-
+export default function createLoadable<Type, Element, FallbackProps>(
+	options: CreateLoadableOptions<Type, Element, FallbackProps>
+): Loadable<Type, Element, FallbackProps> {
 	const allInitializers: Initializer[] = [];
 	const named: Record<string, Type> = {};
 	const namedId: Record<string, number> = {};
 	const namedInitializers: Record<string, Initializer> = {};
 	const loadedNames: string[] = [];
-	const {render, observer, fallback} = options;
+	const { render, observer, fallback } = options;
 
 	let lastId = 1;
 
 	async function promiseAll(all: (() => Promise<any>)[]) {
-		return Promise.all(all.map(func => func()));
+		return Promise.all(all.map((func) => func()));
 	}
 
 	function createLoaderFromArray(loader: Loader[]): Loader {
@@ -39,9 +40,11 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 		const keys = Object.keys(loader);
 		return async () => {
 			const data: any = {};
-			await Promise.all(keys.map(async (key) => {
-				data[key] = await loader[key]();
-			}));
+			await Promise.all(
+				keys.map(async (key) => {
+					data[key] = await loader[key]();
+				})
+			);
 			return data;
 		};
 	}
@@ -51,52 +54,46 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 	}
 
 	function loadable(options: Options<Element, FallbackProps>): Type {
-
-		const {loader} = options;
+		const { loader } = options;
 		options = {
 			throwable: false,
 			delay: 200,
-			... options
+			...options,
 		};
 
 		let loaderFn: Loader;
 
-		if(isPlainLoader(loader)) {
+		if (isPlainLoader(loader)) {
 			loaderFn = createLoaderFromPlainObject(loader);
-		} else if(Array.isArray(loader)) {
+		} else if (Array.isArray(loader)) {
 			loaderFn = createLoaderFromArray(loader);
-		} else if(!options.render) {
+		} else if (!options.render) {
 			loaderFn = loader;
 			options.render = render;
 		}
 
-		if(typeof options.render !== "function") {
+		if (typeof options.render !== "function") {
 			throw new Error(`Loadable requires a "function render(loaded, props)" option`);
 		}
 
-		if(!options.fallback && !options.throwable) {
+		if (!options.fallback && !options.throwable) {
 			throw new Error(`Loadable requires a "fallback" option or a "throwable" option`);
 		}
 
 		const renderFn: RenderHandler<Element> = options.render;
 		const fallbackFn: FallbackHandler<Element> = options.fallback || fallback;
 
-		const {
-			name,
-			throwable = false,
-			delay,
-			timeout,
-		} = options;
+		const { name, throwable = false, delay, timeout } = options;
 
-		if(!name) {
+		if (!name) {
 			throw new Error(`Loadable requires a "name" option`);
 		}
 
-		if(defined(name)) {
+		if (defined(name)) {
 			throw new Error(`Duplicate loadable name "${name}"`);
 		}
 
-		const myId = lastId ++;
+		const myId = lastId++;
 
 		namedId[name] = myId;
 
@@ -115,27 +112,26 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 		}
 
 		function init() {
-			if(done) {
+			if (done) {
 				return error ? Promise.reject(error) : Promise.resolve(response);
 			}
-			if(!promise) {
+			if (!promise) {
 				loading = true;
 				promise = loaderFn()
-					.then(result => {
+					.then((result) => {
 						done = true;
 						loading = false;
 						error = false;
 						response = result;
 
 						// compare component version
-						if(myId === namedId[name]) {
-
+						if (myId === namedId[name]) {
 							// clear initializers
 							delFrom(allInitializers, init);
 							delete namedInitializers[name];
 
 							// save loading
-							if(!loaded(name)) {
+							if (!loaded(name)) {
 								loadedNames.push(name);
 							}
 						}
@@ -158,25 +154,31 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 			name,
 			init,
 			reset,
-			isDone() { return done; },
-			isLoading() { return loading; },
-			done(err: Error | false, props: any, createFallbackProps: (err: (Error | false)) => FallbackProps): Element {
-				if(error) {
+			isDone() {
+				return done;
+			},
+			isLoading() {
+				return loading;
+			},
+			done(err: Error | false, props: any, createFallbackProps: (err: Error | false) => FallbackProps): Element {
+				if (error) {
 					err = error;
 				}
 
-				if(err && throwable) {
+				if (err && throwable) {
 					throw err;
 				}
 
-				if(done) {
+				if (done) {
 					return renderFn(response, props);
 				}
 
 				// for server side
-				if(__SRV__ && promise == null) {
+				if (__SRV__ && promise == null) {
 					init().then(() => {
-						console.log(`Warning, use loadAll() function for server side rendering. Component "${name}" is not loaded.`)
+						console.log(
+							`Warning, use loadAll() function for server side rendering. Component "${name}" is not loaded.`
+						);
 					});
 				}
 
@@ -186,7 +188,7 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 			timeout,
 		});
 
-		if(name) {
+		if (name) {
 			named[name] = Component;
 			namedInitializers[name] = init;
 		}
@@ -195,29 +197,29 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 	}
 
 	async function loadAll(depth: number = 2) {
-		if(depth < 1 || isNaN(depth) || ! isFinite(depth)) {
+		if (depth < 1 || isNaN(depth) || !isFinite(depth)) {
 			depth = 1;
 		}
 		const startDepth = depth;
-		while(depth > 0 && allInitializers.length > 0) {
+		while (depth > 0 && allInitializers.length > 0) {
 			await promiseAll(allInitializers);
-			depth --;
+			depth--;
 		}
-		if(__DEV__) {
-			allInitializers.length > 0 && console.error(`Not all bootloaders are initiated (depth = ${startDepth})`)
+		if (__DEV__) {
+			allInitializers.length > 0 && console.error(`Not all bootloaders are initiated (depth = ${startDepth})`);
 		}
 	}
 
 	async function load(name: string | string[]): Promise<void> {
 		const initializers: Initializer[] = [];
-		(typeof name === "string" ? [name] : name).forEach(name => {
-			if(namedInitializers.hasOwnProperty(name)) {
+		(typeof name === "string" ? [name] : name).forEach((name) => {
+			if (namedInitializers.hasOwnProperty(name)) {
 				initializers.push(namedInitializers[name]);
-			} else if(!defined(name)) {
-				throw new Error(`The "${name}" component is not defined`)
+			} else if (!defined(name)) {
+				throw new Error(`The "${name}" component is not defined`);
 			}
 		});
-		if(initializers.length) {
+		if (initializers.length) {
 			await promiseAll(initializers);
 		}
 	}
@@ -239,19 +241,19 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 	}
 
 	function component(name: string): Type {
-		if(!defined(name)) {
-			throw new Error(`The "${name}" component is not defined`)
+		if (!defined(name)) {
+			throw new Error(`The "${name}" component is not defined`);
 		}
 		return named[name];
 	}
 
 	function del(name: string) {
-		if(!defined(name)) {
+		if (!defined(name)) {
 			return false;
 		}
 		delete named[name];
 		delete namedId[name];
-		if(namedInitializers.hasOwnProperty(name)) {
+		if (namedInitializers.hasOwnProperty(name)) {
 			delFrom(allInitializers, namedInitializers[name]);
 			delete namedInitializers[name];
 		}
@@ -260,13 +262,13 @@ export default function createLoadable<Type, Element, FallbackProps>(options: Cr
 	}
 
 	function reset(name: string | string[]) {
-		if(!Array.isArray(name)) {
+		if (!Array.isArray(name)) {
 			name = [name];
 		}
 		let count = 0;
-		name.forEach(name => {
-			if(del(name)) {
-				count ++;
+		name.forEach((name) => {
+			if (del(name)) {
+				count++;
 			}
 		});
 		return count;

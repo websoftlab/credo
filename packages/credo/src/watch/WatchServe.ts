@@ -1,26 +1,26 @@
-import {newError} from "@credo-js/cli-color";
+import { newError } from "@credo-js/cli-color";
 import compiler from "../compiler";
 import createWatch from "../rollup/createWatch";
-import type {RollupWatcher} from "rollup";
-import type {CredoPlugin, Watch} from "../types";
+import type { RollupWatcher } from "rollup";
+import type { CredoPlugin, Watch } from "../types";
 import isWindows from "is-windows";
-import {RollupBuild, RollupWatcherEvent} from "rollup";
-import {ChildProcessByStdio, fork} from "child_process";
-import {cwdPath} from "../utils";
-import {EventEmitter} from "events";
+import { RollupBuild, RollupWatcherEvent } from "rollup";
+import { ChildProcessByStdio, fork } from "child_process";
+import { cwdPath } from "../utils";
+import { EventEmitter } from "events";
 
-function isEventResult(event: any): event is {result: RollupBuild} {
+function isEventResult(event: any): event is { result: RollupBuild } {
 	return event && event.result != null;
 }
 
 function getConfigCluster(id: string | undefined, options: CredoPlugin.RootOptions) {
-	const {clusters} = options;
-	if(clusters && clusters.length) {
-		if(!id) {
+	const { clusters } = options;
+	if (clusters && clusters.length) {
+		if (!id) {
 			return clusters[0];
 		}
-		for(const cluster of clusters) {
-			if(cluster.id === id) {
+		for (const cluster of clusters) {
+			if (cluster.id === id) {
 				return cluster;
 			}
 		}
@@ -31,7 +31,7 @@ function getConfigCluster(id: string | undefined, options: CredoPlugin.RootOptio
 
 function abortWatcher(serve: WatchServe) {
 	const watcher = serve.watcher;
-	if(!watcher) {
+	if (!watcher) {
 		return;
 	}
 	serve.watcher = null;
@@ -44,7 +44,7 @@ function abortWatcher(serve: WatchServe) {
 }
 
 function killChildProcess(child: ChildProcessByStdio<any, any, any>, throwable: boolean = true) {
-	if(!child.killed && !child.kill() && throwable) {
+	if (!child.killed && !child.kill() && throwable) {
 		throw new Error("Cannot kill last server process");
 	}
 	child.removeAllListeners("error");
@@ -55,7 +55,7 @@ function killChildProcess(child: ChildProcessByStdio<any, any, any>, throwable: 
 
 function abortChildProcess(serve: WatchServe) {
 	const child = serve.child;
-	if(!child) {
+	if (!child) {
 		return false;
 	}
 	serve.child = null;
@@ -71,19 +71,33 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 	_bundleID = 1;
 
 	watcher: RollupWatcher | null = null;
-	child: ChildProcessByStdio<any, any, any> | null = null
+	child: ChildProcessByStdio<any, any, any> | null = null;
 	factory: CredoPlugin.Factory | null = null;
 
-	get progress(): boolean { return !this._options.noBoard; }
-	get port(): number { return this._options.port; }
-	get devPort(): number { return this._options.devPort; }
-	get host(): string { return this._options.host; }
-	get devHost(): string { return this._options.devHost; }
-	get ssr(): boolean { return this._options.ssr; }
-	get clusterId(): string | null { return this._options.cluster || null; }
+	get progress(): boolean {
+		return !this._options.noBoard;
+	}
+	get port(): number {
+		return this._options.port;
+	}
+	get devPort(): number {
+		return this._options.devPort;
+	}
+	get host(): string {
+		return this._options.host;
+	}
+	get devHost(): string {
+		return this._options.devHost;
+	}
+	get ssr(): boolean {
+		return this._options.ssr;
+	}
+	get clusterId(): string | null {
+		return this._options.cluster || null;
+	}
 	get cluster(): CredoPlugin.RootClusterOptions | undefined {
 		const id = this._options.cluster;
-		if(id && this.factory) {
+		if (id && this.factory) {
 			return getConfigCluster(id, this.factory.options);
 		}
 		return undefined;
@@ -98,8 +112,8 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 		const {
 			port = 1278,
 			devPort = 1277,
-			host = isWindows() ? '127.0.0.1' : '0.0.0.0',
-			devHost = isWindows() ? '127.0.0.1' : '0.0.0.0',
+			host = isWindows() ? "127.0.0.1" : "0.0.0.0",
+			devHost = isWindows() ? "127.0.0.1" : "0.0.0.0",
 			ssr = false,
 			cluster = "",
 		} = options;
@@ -116,7 +130,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 	}
 
 	async start() {
-		if(this.started) {
+		if (this.started) {
 			return true;
 		}
 		return this.restart();
@@ -126,15 +140,15 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 		const id = this._bundleID;
 		const isAbort = () => id !== this._bundleID;
 
-		if(err) {
+		if (err) {
 			this.emit("error", err);
 		}
 
-		if(abortChildProcess(this)) {
+		if (abortChildProcess(this)) {
 			this.emit("stop");
 		}
 
-		if(err) {
+		if (err) {
 			return;
 		}
 
@@ -142,14 +156,14 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 
 		const serverFile = cwdPath("./dev/server/server.js");
 		const env: Record<string, string> = {
-			... process.env,
+			...process.env,
 			DEV_SERVER_HOST: this.devHost,
 			DEV_SERVER_PORT: String(this.devPort),
 			CREDO_HOST: this.host,
 			CREDO_PORT: String(this.port),
 		};
 
-		if(this.clusterId) {
+		if (this.clusterId) {
 			env.APP_ID = this.clusterId;
 		}
 
@@ -159,12 +173,12 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 				stdio: "pipe",
 				env,
 			});
-		} catch(err: any) {
+		} catch (err: any) {
 			this.emit("error", err);
 		}
 
-		if(isAbort() || !child) {
-			if(child) {
+		if (isAbort() || !child) {
+			if (child) {
 				child.kill();
 			}
 			return;
@@ -173,17 +187,17 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 		this.child = child;
 
 		child.stdout.on("data", (data: string | Buffer) => {
-			this.emit("debug", {message: data.toString(), context: "system", error: false});
+			this.emit("debug", { message: data.toString(), context: "system", error: false });
 		});
 
 		child.stderr.on("data", (data: string | Buffer) => {
-			this.emit("debug", {message: data.toString(), context: "system", error: true});
+			this.emit("debug", { message: data.toString(), context: "system", error: true });
 		});
 
 		child.on("error", (err) => {
-			if(!isAbort()) {
+			if (!isAbort()) {
 				this.emit("error", err);
-				if(child) {
+				if (child) {
 					killChildProcess(child, false);
 					child = null;
 				}
@@ -200,11 +214,10 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 	}
 
 	private _emitDebug(message: string, error: boolean = false) {
-		this.emit("debug", {message, context: "server", error});
+		this.emit("debug", { message, context: "server", error });
 	}
 
 	private async _tryStart() {
-
 		this.emit("onBeforeBuild");
 
 		this.factory = await compiler("development");
@@ -218,59 +231,61 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 			progressLine: this.progress,
 			debug: (message: string, error?: boolean) => {
 				this._emitDebug(message, error);
-			}
+			},
 		});
 
 		let lastError: Error | false = false;
 		let init = false;
 		let ok: Function;
 
-		const waiter = new Promise<void>((resolve) => { ok = resolve; });
+		const waiter = new Promise<void>((resolve) => {
+			ok = resolve;
+		});
 		const restart = (err?: Error) => {
-			if(err) {
+			if (err) {
 				lastError = err;
 			}
-			if(this._bundleID === Number.MAX_SAFE_INTEGER) {
+			if (this._bundleID === Number.MAX_SAFE_INTEGER) {
 				this._bundleID = 1;
 			} else {
-				this._bundleID ++;
+				this._bundleID++;
 			}
-			if(!init) {
+			if (!init) {
 				init = true;
 				ok();
 			}
-			if(this.progress) {
+			if (this.progress) {
 				this._emitDebug("[progress 100%] Bundle complete");
-				if(err) {
+				if (err) {
 					this._emitDebug(`[status error] ${err.message}`);
 				} else {
 					this._emitDebug(`[status wait] Watching...`);
 				}
 			}
-			this._restartServe(err).catch(err => {
+			this._restartServe(err).catch((err) => {
 				this.emit("error", err);
 			});
-		}
+		};
 
 		this.watcher = watcher;
 
 		watcher.on("event", (event: RollupWatcherEvent) => {
-			if(this.watcher !== watcher) {
+			if (this.watcher !== watcher) {
 				return;
 			}
 
-			if(event.code === "BUNDLE_START") {
+			if (event.code === "BUNDLE_START") {
 				lastError = false;
 				this._emitDebug("[status wait] Bundle start");
-			} else if(event.code === "ERROR") {
+			} else if (event.code === "ERROR") {
 				restart(event.error as Error);
-			} else if(event.code === "BUNDLE_END" && !lastError) {
+			} else if (event.code === "BUNDLE_END" && !lastError) {
 				restart();
 			}
 
 			// This will make sure that bundles are properly closed after each run
 			if (isEventResult(event)) {
-				event.result.close().catch(err => {
+				event.result.close().catch((err) => {
 					this.emit("error", err);
 				});
 			}
@@ -280,8 +295,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 	}
 
 	private _tryStop() {
-
-		if(abortChildProcess(this)) {
+		if (abortChildProcess(this)) {
 			this.emit("stop");
 		}
 
@@ -292,7 +306,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 	}
 
 	async restart() {
-		if(this._restartWaiter) {
+		if (this._restartWaiter) {
 			this._restartRepeat = true;
 			this._restartStop = false;
 			return this._restartWaiter;
@@ -307,7 +321,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 		this._restartWaiter = waiter;
 
 		const done = (result: boolean, err?: Error) => {
-			if(err) {
+			if (err) {
 				this.emit("error", err);
 			}
 			setTimeout(() => {
@@ -328,30 +342,29 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 
 			try {
 				this._tryStop();
-			} catch(err: any) {
+			} catch (err: any) {
 				return done(false, err);
 			}
 
-			if(this._restartStop) {
+			if (this._restartStop) {
 				return done(false);
 			}
 
 			try {
 				await this._tryStart();
-			} catch(err: any) {
+			} catch (err: any) {
 				this.emit("error", err);
 				continue;
 			}
 
 			isOk = true;
-
-		} while(this._restartRepeat || this._restartStop);
+		} while (this._restartRepeat || this._restartStop);
 
 		return done(isOk);
 	}
 
 	async stop() {
-		if(this._restartWaiter) {
+		if (this._restartWaiter) {
 			this._restartRepeat = false;
 			this._restartStop = true;
 			return this._restartWaiter.then(() => {
@@ -361,7 +374,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 
 		try {
 			this._tryStop();
-		} catch(err: any) {
+		} catch (err: any) {
 			this.emit("error", err);
 			return false;
 		}
@@ -370,18 +383,18 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 	}
 
 	emit(name: string, event?: any): boolean {
-		if(name === "debug") {
-			if(typeof event === "string") {
+		if (name === "debug") {
+			if (typeof event === "string") {
 				event = {
 					message: event,
 				};
-			} else if(event instanceof Error) {
+			} else if (event instanceof Error) {
 				event = {
 					message: event.stack || event.message,
 					error: true,
 				};
 			}
-			if(!event) {
+			if (!event) {
 				return false;
 			}
 		}

@@ -7,7 +7,7 @@
  */
 
 function isObject(o: any): boolean {
-	return Object.prototype.toString.call(o) === '[object Object]';
+	return Object.prototype.toString.call(o) === "[object Object]";
 }
 
 export default function isPlainObject(o: any): boolean {
@@ -22,7 +22,7 @@ export default function isPlainObject(o: any): boolean {
 	if (!isObject(proto)) return false;
 
 	// If constructor does not have an Object-specific method
-	if (!proto.hasOwnProperty('isPrototypeOf')) return false;
+	if (!proto.hasOwnProperty("isPrototypeOf")) return false;
 
 	// Most likely a plain Object
 	return true;

@@ -11,9 +11,9 @@ export default class Group {
 
 	get delta() {
 		let calc = 0;
-		this.items.forEach(item => {
+		this.items.forEach((item) => {
 			const delta = item.delta;
-			if(delta > calc) {
+			if (delta > calc) {
 				calc = delta;
 			}
 		});

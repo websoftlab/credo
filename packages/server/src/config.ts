@@ -1,15 +1,15 @@
-import type {ConfigHandler, EnvMode}  from "./types";
-import {join} from "path";
+import type { ConfigHandler, EnvMode } from "./types";
+import { join } from "path";
 import deepmerge from "deepmerge";
-import {readdirSync, existsSync, statSync} from "fs";
+import { readdirSync, existsSync, statSync } from "fs";
 
 const tree: {
-	id?: string,
-	mode: EnvMode,
-	loaded: boolean,
-	priority: string[],
-	loaders: Record<string, <T>(file: string) => T>,
-	path: Record<string, { loader: string, file: string }>,
+	id?: string;
+	mode: EnvMode;
+	loaded: boolean;
+	priority: string[];
+	loaders: Record<string, <T>(file: string) => T>;
+	path: Record<string, { loader: string; file: string }>;
 } = {
 	id: "",
 	mode: process.env.NODE_ENV === "production" ? "production" : "development",
@@ -24,11 +24,11 @@ const tree: {
 			return require(file);
 		},
 	},
-	path: {}
+	path: {},
 };
 
 function info(file: string, checkExists: boolean = false) {
-	if(checkExists && !existsSync(file)) {
+	if (checkExists && !existsSync(file)) {
 		return null;
 	}
 	return statSync(file);
@@ -36,27 +36,27 @@ function info(file: string, checkExists: boolean = false) {
 
 function loadTreeNode(prefix: string, parent: string[]): void {
 	let base = "config";
-	if(prefix) {
+	if (prefix) {
 		base += `/${prefix}`;
 	}
 	const fullPath = join(process.cwd(), base);
 	const all = readdirSync(fullPath);
-	for(let file of all) {
+	for (let file of all) {
 		// ignore hidden
-		if(file.charAt(0) === ".") {
+		if (file.charAt(0) === ".") {
 			continue;
 		}
 
 		// read only current cluster directory
-		if(prefix === "" && file === "cluster") {
-			if(!tree.id) {
+		if (prefix === "" && file === "cluster") {
+			if (!tree.id) {
 				continue;
 			}
 
 			file = `cluster/${tree.id}`;
 			const clusterPath = join(process.cwd(), file);
 			const stat = info(clusterPath, true);
-			if(!stat || !stat.isDirectory()) {
+			if (!stat || !stat.isDirectory()) {
 				continue;
 			}
 
@@ -67,13 +67,13 @@ function loadTreeNode(prefix: string, parent: string[]): void {
 
 		const readPath = join(fullPath, file);
 		const stat = info(readPath);
-		if(!stat) {
+		if (!stat) {
 			continue;
 		}
 
 		const resolvePath = require.resolve(readPath);
-		if(stat.isDirectory()) {
-			if(parent.includes(resolvePath)) {
+		if (stat.isDirectory()) {
+			if (parent.includes(resolvePath)) {
 				continue;
 			}
 
@@ -83,48 +83,48 @@ function loadTreeNode(prefix: string, parent: string[]): void {
 		}
 
 		const match = file.match(/^(.+?)\.([a-z]+)$/);
-		if(!match) {
+		if (!match) {
 			continue;
 		}
 
 		const [, name, loader] = match;
 		const priority = tree.priority.indexOf(loader);
-		if(priority === -1) {
+		if (priority === -1) {
 			continue;
 		}
 
 		const key = prefix ? `${prefix}/${name}` : name;
-		if(!tree.path.hasOwnProperty(key) || priority < tree.priority.indexOf(tree.path[key].loader) ) {
+		if (!tree.path.hasOwnProperty(key) || priority < tree.priority.indexOf(tree.path[key].loader)) {
 			tree.path[key] = { loader, file: resolvePath };
 		}
 	}
 }
 
 export function loadTree(id?: string, mode?: EnvMode, loaders?: Record<string, <T>(file: string) => T>): void {
-	if(!tree.loaded) {
-		if(id != null) {
+	if (!tree.loaded) {
+		if (id != null) {
 			tree.id = id;
 		}
 
-		if(mode && tree.mode !== mode) {
+		if (mode && tree.mode !== mode) {
 			tree.mode = mode === "production" ? "production" : "development";
 		}
 
 		// add loaders
-		if(loaders != null && typeof loaders === "object") {
+		if (loaders != null && typeof loaders === "object") {
 			const keys = Object.keys(loaders);
-			for(let ix = 0; ix < keys.length; ix++) {
+			for (let ix = 0; ix < keys.length; ix++) {
 				const key = keys[ix];
 				const loader = loaders[key];
-				if(typeof loader !== "function") {
+				if (typeof loader !== "function") {
 					continue;
 				}
 
 				// change index priority
 				const index = tree.priority.indexOf(key);
-				if(index === -1) {
+				if (index === -1) {
 					tree.priority.push(key);
-				} else if(ix !== index) {
+				} else if (ix !== index) {
 					tree.priority.splice(index, 1);
 					tree.priority.splice(ix, 0, key);
 				}
@@ -146,31 +146,29 @@ function isMode<T>(data: any, mode: EnvMode): data is Record<EnvMode, T> {
 }
 
 function get<T extends object = any>(name: string, def?: Partial<T>): T {
-	const {path, mode, loaders} = tree;
+	const { path, mode, loaders } = tree;
 	const info = path.hasOwnProperty(name) ? path[name] : null;
-	if(!info) {
+	if (!info) {
 		return def as T;
 	}
 	let data = loaders[info.loader]<T>(info.file);
-	if(isMode<T>(data, mode)) {
+	if (isMode<T>(data, mode)) {
 		data = data[mode];
 	}
-	if(def) {
+	if (def) {
 		return deepmerge(def, data);
 	}
 	return data as T;
 }
 
 export const config: ConfigHandler = function config<T extends object = any>(name: string, def?: Partial<T>): T {
-	if(!tree.loaded) {
+	if (!tree.loaded) {
 		throw new Error("Config tree is not loaded");
 	}
 
-	if(name.startsWith("cluster/")) {
+	if (name.startsWith("cluster/")) {
 		throw new Error("Cluster access denied");
 	}
 
-	return ((tree.id
-		? get(`cluster/${tree.id}/${name}`, get(name, def))
-		: get(name, def)) || {}) as T;
-}
+	return ((tree.id ? get(`cluster/${tree.id}/${name}`, get(name, def)) : get(name, def)) || {}) as T;
+};

@@ -1,20 +1,10 @@
-import {
-	addColors,
-	createLogger,
-	format as winstonFormat,
-	transports as winstonTransports,
-} from "winston";
-import type {Logger, LoggerOptions} from "winston";
-import type {Format} from "logform";
+import { addColors, createLogger, format as winstonFormat, transports as winstonTransports } from "winston";
+import type { Logger, LoggerOptions } from "winston";
+import type { Format } from "logform";
 
 let winstonLogger: Logger | null = null;
 
-const transportTypes = [
-	"file",
-	"console",
-	"http",
-	"stream",
-];
+const transportTypes = ["file", "console", "http", "stream"];
 
 const formatTypes = [
 	"json",
@@ -24,33 +14,32 @@ const formatTypes = [
 	"logstash",
 	"label",
 	"timestamp",
-	"prettyPrint", "pretty-print",
+	"prettyPrint",
+	"pretty-print",
 	"uncolorize",
 	"metadata",
 	"errors",
 ];
 
 function createTransport(transport: any) {
-	if(typeof transport === "string") {
+	if (typeof transport === "string") {
 		transport = {
 			type: transport,
 		};
 	}
 
-	if(transportTypes.includes(transport.type)) {
-		const {type, options = {}} = transport;
+	if (transportTypes.includes(transport.type)) {
+		const { type, options = {} } = transport;
 
-		if(options.format) {
+		if (options.format) {
 			options.format = createFormat(options.format);
-		} else if(type === "console") {
+		} else if (type === "console") {
 			options.format = createFormat("simple");
 		} else {
-			options.format = createFormat([
-				"uncolorize",
-				"json"
-			]);
+			options.format = createFormat(["uncolorize", "json"]);
 		}
 
+		// prettier-ignore
 		switch(type) {
 			case "file": return new winstonTransports.File(options);
 			case "console": return new winstonTransports.Console(options);
@@ -64,17 +53,18 @@ function createTransport(transport: any) {
 }
 
 function createFormat(format: any): Format {
-	if(Array.isArray(format)) {
-		return winstonFormat.combine(... format.map(createFormat));
+	if (Array.isArray(format)) {
+		return winstonFormat.combine(...format.map(createFormat));
 	}
 
-	if(typeof format === "string") {
+	if (typeof format === "string") {
 		format = {
 			type: format,
 		};
 	}
 
-	if(format.type && formatTypes.includes(format.type)) {
+	if (format.type && formatTypes.includes(format.type)) {
+		// prettier-ignore
 		switch(format.type) {
 			case "json": return winstonFormat.json(format.options);
 			case "colorize": return winstonFormat.colorize(format.options);
@@ -98,13 +88,13 @@ export function getLogger() {
 }
 
 export function createWinstonLogger(options: any) {
-	if(winstonLogger) {
+	if (winstonLogger) {
 		throw new Error("Winston is already configured, use the winston() function to add more options");
 	}
 
 	const transports: LoggerOptions["transports"] = [];
 	let {
-		level = 'info',
+		level = "info",
 		defaultMeta = {},
 		levels,
 		colors,
@@ -113,11 +103,11 @@ export function createWinstonLogger(options: any) {
 		transports: transportsOption = [],
 	} = options;
 
-	if(transportsOption) {
-		if(!Array.isArray(transportsOption)) {
+	if (transportsOption) {
+		if (!Array.isArray(transportsOption)) {
 			transportsOption = [transportsOption];
 		}
-		for(const transport of transportsOption) {
+		for (const transport of transportsOption) {
 			transports.push(createTransport(transport));
 		}
 	} else {
@@ -133,7 +123,7 @@ export function createWinstonLogger(options: any) {
 		format: formatOption ? createFormat(formatOption) : undefined,
 	});
 
-	if(colors) {
+	if (colors) {
 		addColors(colors);
 	}
 

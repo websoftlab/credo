@@ -1,20 +1,28 @@
-import {createCwdDirectoryIfNotExists, writeBundleFile} from "../../utils";
-import {CmpJS} from "@credo-js/cli-cmp";
+import { createCwdDirectoryIfNotExists, writeBundleFile } from "../../utils";
+import { CmpJS } from "@credo-js/cli-cmp";
 import createRelativePath from "./createRelativePath";
-import type {CredoPlugin} from "../../types";
+import type { CredoPlugin } from "../../types";
 
 export async function buildPages(factory: CredoPlugin.Factory) {
-
-	const {options: {renderDriver}} = factory;
-	if(!renderDriver) {
+	const {
+		options: { renderDriver },
+	} = factory;
+	if (!renderDriver) {
 		return;
 	}
 
-	let {options: {pages, ssr, clusters, components}} = factory;
+	let {
+		options: { pages, ssr, clusters, components },
+	} = factory;
 	const renderComponentImport = `${renderDriver.modulePath}/component`;
 	const extensions = renderDriver.extensions?.all;
 
-	async function create(options: { mid?: number, ssr: boolean, pages?: string | false | null, components?: Record<string, string> }) {
+	async function create(options: {
+		mid?: number;
+		ssr: boolean;
+		pages?: string | false | null;
+		components?: Record<string, string>;
+	}) {
 		const { mid, components, ssr } = options;
 		const cJs = new CmpJS();
 		const relative = mid ? ".credo/pages" : ".credo";
@@ -22,19 +30,23 @@ export async function buildPages(factory: CredoPlugin.Factory) {
 
 		cJs.set(renderComponentImport, "define");
 
-		if(options.pages) {
+		if (options.pages) {
 			cJs.impOnly(createRelativePath(options.pages, relative, extensions));
 		}
 
-		if(components) {
-			for(let name in components) {
-				cJs.append(`${cJs.get("define")}(${cJs.tool.esc(name)}, ${cJs.imp(createRelativePath(components[name], relative, extensions))});`);
+		if (components) {
+			for (let name in components) {
+				cJs.append(
+					`${cJs.get("define")}(${cJs.tool.esc(name)}, ${cJs.imp(
+						createRelativePath(components[name], relative, extensions)
+					)});`
+				);
 			}
 		}
 
 		await writeBundleFile(file, cJs.toJS("import"));
-		if(ssr) {
-			if(mid) {
+		if (ssr) {
+			if (mid) {
 				await writeBundleFile(`pages/server-page-${mid}.js`, `import "./page-${mid}.js";`);
 			} else {
 				await writeBundleFile(`server-page.js`, `import "./pages.js";`);
@@ -42,11 +54,11 @@ export async function buildPages(factory: CredoPlugin.Factory) {
 		}
 	}
 
-	if(clusters && clusters.length > 0) {
+	if (clusters && clusters.length > 0) {
 		await createCwdDirectoryIfNotExists(".credo/pages");
-		for(let cluster of clusters) {
-			const {mid, ssr, mode, pages, components} = cluster;
-			if(mode === "app") {
+		for (let cluster of clusters) {
+			const { mid, ssr, mode, pages, components } = cluster;
+			if (mode === "app") {
 				await create({
 					mid,
 					ssr,
@@ -56,6 +68,6 @@ export async function buildPages(factory: CredoPlugin.Factory) {
 			}
 		}
 	} else {
-		await create({ssr, pages, components});
+		await create({ ssr, pages, components });
 	}
 }

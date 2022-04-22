@@ -1,8 +1,8 @@
-import type {Configuration} from "webpack";
-import type {BuildConfigure} from "../types";
+import type { Configuration } from "webpack";
+import type { BuildConfigure } from "../types";
 
 // @ts-ignore
-import TerserJSPlugin from 'terser-webpack-plugin';
+import TerserJSPlugin from "terser-webpack-plugin";
 
 const cacheGroupsStyles: any = {
 	name: "styles",
@@ -13,40 +13,42 @@ const cacheGroupsStyles: any = {
 };
 
 export default async function optimization(config: BuildConfigure): Promise<Configuration["optimization"]> {
-	const {isServer, isProd} = config;
-	if(isServer) {
+	const { isServer, isProd } = config;
+	if (isServer) {
 		return {
 			minimize: false,
 			splitChunks: {
 				cacheGroups: {
-					styles: cacheGroupsStyles
-				}
-			}
+					styles: cacheGroupsStyles,
+				},
+			},
 		};
 	}
 
 	const optimization: Configuration["optimization"] = {
 		minimize: false,
 		runtimeChunk: {
-			name: 'runtime',
+			name: "runtime",
 		},
 		splitChunks: {
 			cacheGroups: {
 				commons: {
 					test: /[\\/]node_modules[\\/]/,
-					name: 'vendor',
-					chunks: 'initial',
+					name: "vendor",
+					chunks: "initial",
 				},
 			},
-		}
+		},
 	};
 
-	if(isProd) {
+	if (isProd) {
 		optimization.minimize = true;
 		optimization.minimizer = [
-			new TerserJSPlugin(await config.fireOnOptionsHook("plugin.terser", {
-				parallel: true,
-			})),
+			new TerserJSPlugin(
+				await config.fireOnOptionsHook("plugin.terser", {
+					parallel: true,
+				})
+			),
 		];
 		(optimization.splitChunks as any).cacheGroups.styles = cacheGroupsStyles;
 	}

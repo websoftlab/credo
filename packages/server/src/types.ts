@@ -1,24 +1,24 @@
-import type {Job as JobSchedule, RecurrenceSpecDateRange, RecurrenceSpecObjLit} from "node-schedule";
+import type { Job as JobSchedule, RecurrenceSpecDateRange, RecurrenceSpecObjLit } from "node-schedule";
 import type Koa from "koa";
-import type {Options as KoaBodyparserOptions} from "koa-bodyparser";
-import type {RedisClientOptions} from "redis";
-import type {opts as KoaSessionOptions} from "koa-session";
-import type {Debugger} from "@credo-js/cli-debug";
-import type {OnMakeURLHook} from "@credo-js/make-url";
-import type {PatternInterface} from "@credo-js/path-to-pattern";
-import type {Worker as WorkerThreads} from "worker_threads";
-import type {Worker as WorkerCluster} from "cluster";
-import type {BootManager} from "./credo";
-import type {LocalStoreData} from "./store";
-import type {Stats} from "fs";
-import type {CredoJSCmd, OnBuildHook, CommanderCtor} from "./cmd/types";
-import type {RouteManager} from "./route";
-import type {Command} from "@credo-js/cli-commander";
-import type {Promisify} from "./helpTypes";
+import type { Options as KoaBodyparserOptions } from "koa-bodyparser";
+import type { RedisClientOptions } from "redis";
+import type { opts as KoaSessionOptions } from "koa-session";
+import type { Debugger } from "@credo-js/cli-debug";
+import type { OnMakeURLHook } from "@credo-js/make-url";
+import type { PatternInterface } from "@credo-js/path-to-pattern";
+import type { Worker as WorkerThreads } from "worker_threads";
+import type { Worker as WorkerCluster } from "cluster";
+import type { BootManager } from "./credo";
+import type { LocalStoreData } from "./store";
+import type { Stats } from "fs";
+import type { CredoJSCmd, OnBuildHook, CommanderCtor } from "./cmd/types";
+import type { RouteManager } from "./route";
+import type { Command } from "@credo-js/cli-commander";
+import type { Promisify } from "./helpTypes";
 
 export type EnvMode = "development" | "production";
 
-export {CredoJSCmd, OnBuildHook, CommanderCtor};
+export { CredoJSCmd, OnBuildHook, CommanderCtor };
 
 interface PType {
 	id: string;
@@ -112,9 +112,9 @@ export interface EnvVar extends Record<string, Function> {
 
 export type Env = Record<string, EnvVar> & {
 	set(name: string, value: any): Env;
-	get(... names: string[]): EnvVar;
+	get(...names: string[]): EnvVar;
 	all(): any;
-}
+};
 
 export interface ConfigHandler {
 	<T extends object = any>(name: string, def?: Partial<T>): T;
@@ -163,7 +163,7 @@ export namespace Config {
 	export type Cron = {
 		enabled?: boolean;
 		jobs: Array<Cron.Job | Cron.Service>;
-	}
+	};
 
 	export interface Redis extends RedisClientOptions {
 		enabled?: boolean;
@@ -181,7 +181,9 @@ export namespace Config {
 export namespace Server {
 	export type HookName = string;
 
-	export type HookListener<Event = any, Name extends string = string> = ((event: Event & {name: Name}) => Promisify<void>) | (() => Promisify<void>);
+	export type HookListener<Event = any, Name extends string = string> =
+		| ((event: Event & { name: Name }) => Promisify<void>)
+		| (() => Promisify<void>);
 
 	export type HookUnsubscribe = () => void;
 
@@ -193,13 +195,28 @@ export namespace Server {
 		subscribe(action: "onBuild", event: HookListener<OnBuildHook, "onBuild">): HookUnsubscribe;
 		subscribe(action: "onLoad", event: HookListener<OnLoadHook, "onLoad">): HookUnsubscribe;
 		subscribe(action: "onBoot", event: HookListener<OnBootHook, "onBoot">): HookUnsubscribe;
-		subscribe(action: "onMakeURLServer", event: HookListener<OnMakeURLServerHook, "onMakeURLServer">): HookUnsubscribe;
+		subscribe(
+			action: "onMakeURLServer",
+			event: HookListener<OnMakeURLServerHook, "onMakeURLServer">
+		): HookUnsubscribe;
 		subscribe(action: "onAppState", event: HookListener<OnAppStateHook, "onAppState">): HookUnsubscribe;
 		subscribe(action: "onResponse", event: HookListener<OnResponseHook, "onResponse">): HookUnsubscribe;
-		subscribe(action: "onResponseRoute", event: HookListener<OnResponseRouteHook, "onResponseRoute">): HookUnsubscribe;
-		subscribe(action: "onResponseComplete", event: HookListener<OnResponseCompleteHook, "onResponseComplete">): HookUnsubscribe;
-		subscribe(action: "onResponseController", event: HookListener<OnResponseControllerHook, "onResponseController">): HookUnsubscribe;
-		subscribe(action: "onResponseError", event: HookListener<OnResponseErrorHook, "onResponseError">): HookUnsubscribe;
+		subscribe(
+			action: "onResponseRoute",
+			event: HookListener<OnResponseRouteHook, "onResponseRoute">
+		): HookUnsubscribe;
+		subscribe(
+			action: "onResponseComplete",
+			event: HookListener<OnResponseCompleteHook, "onResponseComplete">
+		): HookUnsubscribe;
+		subscribe(
+			action: "onResponseController",
+			event: HookListener<OnResponseControllerHook, "onResponseController">
+		): HookUnsubscribe;
+		subscribe(
+			action: "onResponseError",
+			event: HookListener<OnResponseErrorHook, "onResponseError">
+		): HookUnsubscribe;
 
 		once<T = any>(action: HookName, listener: HookListener<T>): HookUnsubscribe;
 		once(action: HookName[], listener: HookListener): HookUnsubscribe;
@@ -210,8 +227,14 @@ export namespace Server {
 		once(action: "onAppState", event: HookListener<OnAppStateHook, "onAppState">): HookUnsubscribe;
 		once(action: "onResponse", event: HookListener<OnResponseHook, "onResponse">): HookUnsubscribe;
 		once(action: "onResponseRoute", event: HookListener<OnResponseRouteHook, "onResponseRoute">): HookUnsubscribe;
-		once(action: "onResponseComplete", event: HookListener<OnResponseCompleteHook, "onResponseComplete">): HookUnsubscribe;
-		once(action: "onResponseController", event: HookListener<OnResponseControllerHook, "onResponseController">): HookUnsubscribe;
+		once(
+			action: "onResponseComplete",
+			event: HookListener<OnResponseCompleteHook, "onResponseComplete">
+		): HookUnsubscribe;
+		once(
+			action: "onResponseController",
+			event: HookListener<OnResponseControllerHook, "onResponseController">
+		): HookUnsubscribe;
 		once(action: "onResponseError", event: HookListener<OnResponseErrorHook, "onResponseError">): HookUnsubscribe;
 
 		emit(action: HookName): Promise<void>;
@@ -245,11 +268,10 @@ export namespace Server {
 
 // Workers
 export namespace Worker {
-
 	export interface Cluster extends PType {
-		mode: "cron" | "app",
-		count: number,
-		env?: Record<string, string>,
+		mode: "cron" | "app";
+		count: number;
+		env?: Record<string, string>;
 	}
 
 	export interface Data extends PType {
@@ -269,7 +291,6 @@ export namespace Worker {
 
 // Routes
 export namespace RouteConfig {
-
 	interface RouteBase {
 		group?: boolean;
 		cache?: Cache;
@@ -281,10 +302,10 @@ export namespace RouteConfig {
 	export type ExtraMiddlewareType<MProps = any> = string | [string, MProps] | [null, string];
 
 	export type NRPCType<RProps = any, CProps = any, Details = any> =
-		string |
-		[string, RProps] |
-		[string, RProps, CProps] |
-		[string, RProps, CProps, Details];
+		| string
+		| [string, RProps]
+		| [string, RProps, CProps]
+		| [string, RProps, CProps, Details];
 
 	export type Method = string | string[];
 
@@ -299,52 +320,58 @@ export namespace RouteConfig {
 		match?: Route.Match<Params>;
 		matchToPath?: Route.MatchToPath<Params>;
 	}
-	export interface PathPattern { type: "pattern", pattern: string }
+	export interface PathPattern {
+		type: "pattern";
+		pattern: string;
+	}
 
 	export type Path<Params extends { [K in keyof Params]?: string } = {}> =
-		string |
-		PathHandler<Params> |
-		PathDynamic<Params> |
-		PathPattern;
+		| string
+		| PathHandler<Params>
+		| PathDynamic<Params>
+		| PathPattern;
 
 	export type Route =
-		NRPCType |
-		RouteBase & {
-			method?: Method;
-			name?: string;
-			responder?: string | [string, any];
-			path?: Path;
-			controller: Controller;
-		} |
-		RouteBase & {
-			nrpc: string; // [method:]name@responder[|path|controller]
-		}
+		| NRPCType
+		| (RouteBase & {
+				method?: Method;
+				name?: string;
+				responder?: string | [string, any];
+				path?: Path;
+				controller: Controller;
+		  })
+		| (RouteBase & {
+				nrpc: string; // [method:]name@responder[|path|controller]
+		  });
 
 	export type EmptyRoute =
-		NRPCType |
-		Omit<RouteBase, "routes" | "group"> & {
-			method?: Method;
-			name?: string;
-			responder?: string | [string, any];
-			controller: Controller;
-		} |
-		Omit<RouteBase, "routes" | "group"> & {
-			nrpc: NRPCType;
-		}
+		| NRPCType
+		| (Omit<RouteBase, "routes" | "group"> & {
+				method?: Method;
+				name?: string;
+				responder?: string | [string, any];
+				controller: Controller;
+		  })
+		| (Omit<RouteBase, "routes" | "group"> & {
+				nrpc: NRPCType;
+		  });
 
 	export type Cache = boolean | number | "body" | "controller" | Partial<Route.CacheOptions>;
 
 	export type Controller<ControllerProps = any, ControllerResult = any> =
-		string |
-		[string, ControllerProps] |
-		Route.ControllerFunction<ControllerProps, ControllerResult>;
+		| string
+		| [string, ControllerProps]
+		| Route.ControllerFunction<ControllerProps, ControllerResult>;
 }
 
 export namespace Route {
+	export type MatchToPath<Params extends { [K in keyof Params]?: string } = {}> = (
+		params?: Params
+	) => Promisify<string>;
 
-	export type MatchToPath<Params extends { [K in keyof Params]?: string } = {}> = (params?: Params) => Promisify<string>;
-
-	export type Match<Params extends { [K in keyof Params]?: string } = {}> = (ctx: Koa.Context) => Promisify<Params | false>;
+	export type Match<Params extends { [K in keyof Params]?: string } = {}> = (
+		ctx: Koa.Context
+	) => Promisify<Params | false>;
 
 	export interface RoutePattern {
 		pattern?: PatternInterface;
@@ -382,8 +409,9 @@ export namespace Route {
 	}
 
 	export type ControllerFunction<ControllerProps = any, ControllerResult = any> = (
-		(ctx: Koa.Context, props?: ControllerProps) => Promisify<ControllerResult>
-	);
+		ctx: Koa.Context,
+		props?: ControllerProps
+	) => Promisify<ControllerResult>;
 
 	export interface Context<ControllerProps = any, ResponderProps = any, RouteDetails = any> {
 		name: string;
@@ -402,24 +430,32 @@ export namespace Route {
 	}
 
 	export type ResponderFunction<ControllerResult = any, ResponderProps = any> = (
-		(ctx: Koa.Context, result: ControllerResult, props?: ResponderProps) => Promisify<void>
-	);
+		ctx: Koa.Context,
+		result: ControllerResult,
+		props?: ResponderProps
+	) => Promisify<void>;
 
 	export interface Responder<ControllerResult = any, ResponderProps = any> {
 		name: string;
-		middleware?: ((ctx: Koa.Context, next: Koa.Next) => Promisify<void>);
-		error?: ((ctx: Koa.Context, error: Error) => Promisify<void>);
+		middleware?: (ctx: Koa.Context, next: Koa.Next) => Promisify<void>;
+		error?: (ctx: Koa.Context, error: Error) => Promisify<void>;
 		depth?: number;
 		responder: ResponderFunction<ControllerResult, ResponderProps>;
 	}
 
-	export interface ExtraMiddleware<MProps = any> { name: string, props?: MProps }
+	export interface ExtraMiddleware<MProps = any> {
+		name: string;
+		props?: MProps;
+	}
 
-	export type ExtraMiddlewareFunction<MProps = never> = (ctx: Koa.Context, next: Koa.Next, props?: MProps) => Promisify<void>;
+	export type ExtraMiddlewareFunction<MProps = never> = (
+		ctx: Koa.Context,
+		next: Koa.Next,
+		props?: MProps
+	) => Promisify<void>;
 }
 
 export namespace Ctor {
-
 	type CtorHandler<Result = void, Opt = unknown> = (credo: CredoJS, options?: Opt) => Promisify<Result>;
 
 	export type Commander<Opt = unknown> = (credo: CredoJSCmd, command: Command, opt?: Opt) => void;
@@ -434,19 +470,20 @@ export namespace Ctor {
 
 	export type Responder<Conf = unknown> = (credo: CredoJS, name: string, config?: Conf) => Route.Responder;
 
-	export type ExtraMiddleware<MProps = unknown> = Route.ExtraMiddlewareFunction | ((credo: CredoJS) => Promisify<Route.ExtraMiddlewareFunction<MProps>>);
+	export type ExtraMiddleware<MProps = unknown> =
+		| Route.ExtraMiddlewareFunction
+		| ((credo: CredoJS) => Promisify<Route.ExtraMiddlewareFunction<MProps>>);
 }
 
 // Cron
 export namespace Cron {
-
 	type Base = {
 		name?: string;
 		rule: string | RecurrenceSpecDateRange | RecurrenceSpecObjLit | Date;
 		bootstrap?: boolean;
 		overload?: Overload;
 		overloadTimeout?: number;
-	}
+	};
 
 	export type Overload = "ignore" | "abort" | "wait";
 
@@ -472,44 +509,59 @@ export namespace Cron {
 
 // local store
 export namespace LocalStore {
-
 	export type FStats = {
 		base: string;
 		file: string;
 		path: string | null;
 		fullPath: string;
 		stats: Stats;
-	}
+	};
 
 	export type ReadOptions<R = string> = {
 		live?: (name: string, data: R) => boolean;
 		builder?: () => Promisify<R>;
 		json?: boolean;
-	}
+	};
 
 	export type RequireOptions<R = any> = {
 		builder?: () => Promisify<string>;
 		clearCache?: boolean;
 		hash?: [keyof R, string];
-	}
+	};
 
 	export type ListOptions = {
 		path?: string;
 		depth?: number;
 		mask?: string | RegExp | ((file: string, path: string | null) => boolean);
 		hidden?: boolean;
-	}
+	};
 }
 
 // hooks
-export interface CtxHook { ctx: Koa.Context }
-
-export interface OnMakeURLServerHook extends OnMakeURLHook, CtxHook { name?: string }
-export interface OnAppStateHook<State = any> extends CtxHook { ctx: Koa.Context, state: State }
+export interface CtxHook {
+	ctx: Koa.Context;
+}
+export interface OnMakeURLServerHook extends OnMakeURLHook, CtxHook {
+	name?: string;
+}
+export interface OnAppStateHook<State = any> extends CtxHook {
+	ctx: Koa.Context;
+	state: State;
+}
 export interface OnResponseHook extends CtxHook {}
-export interface OnResponseRouteHook extends CtxHook { notFound: boolean }
+export interface OnResponseRouteHook extends CtxHook {
+	notFound: boolean;
+}
 export interface OnResponseCompleteHook extends CtxHook {}
-export interface OnResponseControllerHook<Result = any> extends CtxHook { result: Result; }
-export interface OnResponseErrorHook extends CtxHook { route?: Route.Context, code?: string, error: Error }
-export interface OnLoadHook { complete(handler: Function): void }
-export interface OnBootHook { }
+export interface OnResponseControllerHook<Result = any> extends CtxHook {
+	result: Result;
+}
+export interface OnResponseErrorHook extends CtxHook {
+	route?: Route.Context;
+	code?: string;
+	error: Error;
+}
+export interface OnLoadHook {
+	complete(handler: Function): void;
+}
+export interface OnBootHook {}

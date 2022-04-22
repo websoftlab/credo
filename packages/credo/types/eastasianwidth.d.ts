@@ -1,4 +1,3 @@
-
 declare module "eastasianwidth" {
 	export declare function slice(text: string, start?: number, end?: number): string;
 	export declare function length(text: string): number;
@@ -9,5 +8,5 @@ declare module "eastasianwidth" {
 		length,
 		characterLength,
 		eastAsianWidth,
-	}
+	};
 }

@@ -1,19 +1,22 @@
 import type {
 	OnPageHTMLBeforeRenderHook,
-	OnPageJSONBeforeRenderHook, ResponderPageHandlerProps,
-	ResponderPageOptions, ResponderPageResult, ResponderPageResultFound,
-	LoadManifestOptions
+	OnPageJSONBeforeRenderHook,
+	ResponderPageHandlerProps,
+	ResponderPageOptions,
+	ResponderPageResult,
+	ResponderPageResultFound,
+	LoadManifestOptions,
 } from "./types";
-import type {CredoJS, Ctor, Route} from "@credo-js/server";
-import type {Context} from "koa";
-import {isHttpStatus, isRedirectCode} from "./utils/status";
-import {htmlEscape} from "@credo-js/utils";
+import type { CredoJS, Ctor, Route } from "@credo-js/server";
+import type { Context } from "koa";
+import { isHttpStatus, isRedirectCode } from "./utils/status";
+import { htmlEscape } from "@credo-js/utils";
 import HtmlDocument from "./HtmlDocument";
-import {loadManifest} from "./utils/manifest";
+import { loadManifest } from "./utils/manifest";
 import HttpRedirect from "./HttpRedirect";
 import HttpPage from "./HttpPage";
 import createHttpError from "http-errors";
-import {buildQuery} from "@credo-js/make-url";
+import { buildQuery } from "@credo-js/make-url";
 import getRenderDriver from "./getRenderDriver";
 
 function createRoute(result: any, name: string): Route.Context {
@@ -30,12 +33,11 @@ function createRoute(result: any, name: string): Route.Context {
 }
 
 export default (function responder(credo: CredoJS, name: string) {
-
-	if(!credo.isApp()) {
+	if (!credo.isApp()) {
 		throw new Error("CredoJS not starting in application mode");
 	}
 
-	if(!credo.renderHTMLDriver) {
+	if (!credo.renderHTMLDriver) {
 		throw new Error("CredoJS.renderHTMLDriver is not defined");
 	}
 
@@ -48,21 +50,17 @@ export default (function responder(credo: CredoJS, name: string) {
 		devServerPort: credo.env.get("devServerPort").value,
 	};
 
-	if(credo.process) {
+	if (credo.process) {
 		manifestOptions.mid = credo.process.mid;
 	}
 
-	const {
-		ssr = true,
-		getQueryId = "query",
-		baseUrl = "/",
-	} = options;
+	const { ssr = true, getQueryId = "query", baseUrl = "/" } = options;
 
 	credo.hooks.subscribe("onResponse", (evn) => {
-		const {ctx} = evn;
+		const { ctx } = evn;
 		const redirectNative = ctx.redirect;
 		ctx.redirect = (url: string, alt?: string) => {
-			if(isPageJSON(ctx)) {
+			if (isPageJSON(ctx)) {
 				ctx.bodyEnd({
 					redirect: {
 						location: url,
@@ -75,22 +73,25 @@ export default (function responder(credo: CredoJS, name: string) {
 	});
 
 	credo.hooks.subscribe("onResponseRoute", (evn) => {
-		const {ctx, notFound} = evn;
-		const {route} = ctx;
+		const { ctx, notFound } = evn;
+		const { route } = ctx;
 
-		if(!isPageJSON(ctx) || route && route.responder.name === "page") {
+		if (!isPageJSON(ctx) || (route && route.responder.name === "page")) {
 			return;
 		}
 
-		if(!route || notFound) {
-			ctx.route = createRoute(createHttpError(ctx.store.translate("system.page.notFound", "Page not found"), 404), "404");
+		if (!route || notFound) {
+			ctx.route = createRoute(
+				createHttpError(ctx.store.translate("system.page.notFound", "Page not found"), 404),
+				"404"
+			);
 		} else {
 			// redirect
 			let location = ctx.path;
-			let {t, ... query} = ctx.query;
-			if(query) {
+			let { t, ...query } = ctx.query;
+			if (query) {
 				const search = buildQuery(query);
-				if(search) {
+				if (search) {
 					location += `?${search}`;
 				}
 			}
@@ -105,25 +106,25 @@ export default (function responder(credo: CredoJS, name: string) {
 	const IS_PAGE_KEY = Symbol("is-page");
 
 	function isPageQueryId(query: any = {}) {
-		return Object.keys(query).some(key => {
-			return !query[key] && key.startsWith(getQueryId) ? /^-\d+$/.test(key.substring(getQueryId.length)) : false
+		return Object.keys(query).some((key) => {
+			return !query[key] && key.startsWith(getQueryId) ? /^-\d+$/.test(key.substring(getQueryId.length)) : false;
 		});
 	}
 
 	function isPageJSON(ctx: Context): boolean {
 		let test: boolean | undefined = ctx[IS_PAGE_KEY as never];
-		if(typeof test === "boolean") {
+		if (typeof test === "boolean") {
 			return test;
 		}
 		test = false;
-		if(ctx.accepts('html', 'json') === "json") {
-			if(ctx.method === "GET") {
+		if (ctx.accepts("html", "json") === "json") {
+			if (ctx.method === "GET") {
 				test = isPageQueryId(ctx.query);
-			} else if(ctx.method === "POST") {
+			} else if (ctx.method === "POST") {
 				test = isPageQueryId(ctx.request.body);
 			}
 		}
-		Object.defineProperty(ctx, IS_PAGE_KEY, {value: test});
+		Object.defineProperty(ctx, IS_PAGE_KEY, { value: test });
 		return test;
 	}
 
@@ -141,7 +142,11 @@ export default (function responder(credo: CredoJS, name: string) {
 		} else {
 			ctx.redirect(location);
 			ctx.bodyEnd(
-				`<html lang="${htmlEscape(ctx.language)}"><head><title>Redirect...</title><meta http-equiv="refresh" content="0; url=${htmlEscape(location)}" /></head></html>`,
+				`<html lang="${htmlEscape(
+					ctx.language
+				)}"><head><title>Redirect...</title><meta http-equiv="refresh" content="0; url=${htmlEscape(
+					location
+				)}" /></head></html>`,
 				code && isRedirectCode(code) ? code : undefined,
 				"text/html; charset=utf-8"
 			);
@@ -161,7 +166,7 @@ export default (function responder(credo: CredoJS, name: string) {
 		document.scripts = manifest.scripts.slice();
 
 		// fire hook
-		await credo.hooks.emit<OnPageHTMLBeforeRenderHook>("onPageHTMLBeforeRender", {ctx, document});
+		await credo.hooks.emit<OnPageHTMLBeforeRenderHook>("onPageHTMLBeforeRender", { ctx, document });
 		if (ctx.isBodyEnded) {
 			return;
 		}
@@ -177,14 +182,14 @@ export default (function responder(credo: CredoJS, name: string) {
 	async function sendJSON(ctx: Context, code: number, body: any) {
 		body = {
 			code,
-			...body
+			...body,
 		};
 
 		// fire hook
 		await credo.hooks.emit<OnPageJSONBeforeRenderHook>("onPageJSONBeforeRender", {
 			ctx,
 			body,
-			isError: "message" in body
+			isError: "message" in body,
 		});
 
 		ctx.bodyEnd(body, body.code);
@@ -195,42 +200,49 @@ export default (function responder(credo: CredoJS, name: string) {
 			message = ctx.store.translate("system.page.unknownServerError", "Unknown server error");
 		}
 		if (isPageJSON(ctx)) {
-			return sendJSON(ctx, code, {message});
+			return sendJSON(ctx, code, { message });
 		} else {
-			return sendHtml(ctx, {
-				found: false,
-				code,
-				message,
-			}, ssr);
+			return sendHtml(
+				ctx,
+				{
+					found: false,
+					code,
+					message,
+				},
+				ssr
+			);
 		}
 	}
 
-	function sendPage(ctx: Context, response: { page: string, data: any, props: any }, code: number, ssr?: boolean) {
+	function sendPage(ctx: Context, response: { page: string; data: any; props: any }, code: number, ssr?: boolean) {
 		if (isPageJSON(ctx)) {
-			return sendJSON(ctx, code, {response});
+			return sendJSON(ctx, code, { response });
 		} else {
-			return sendHtml(ctx, {
-				found: true,
-				code,
-				response,
-			}, ssr);
+			return sendHtml(
+				ctx,
+				{
+					found: true,
+					code,
+					response,
+				},
+				ssr
+			);
 		}
 	}
 
 	async function responder(ctx: Context, result: ResponderPageResult, props: ResponderPageHandlerProps = {}) {
-
 		if (renderHTMLDriver == null) {
 			throw new Error("renderHTMLDriver is not defined");
 		}
 
-		const {page: pagePage = "Index", props: pageProps = {}, ssr} = props;
+		const { page: pagePage = "Index", props: pageProps = {}, ssr } = props;
 
 		if (result == null) {
-			throw new Error('Responder result is empty');
+			throw new Error("Responder result is empty");
 		}
 
-		if(typeof result !== "object") {
-			throw new Error('Invalid page responder type, object expected');
+		if (typeof result !== "object") {
+			throw new Error("Invalid page responder type, object expected");
 		}
 
 		if (HttpRedirect.isHttpRedirect(result)) {
@@ -238,14 +250,19 @@ export default (function responder(credo: CredoJS, name: string) {
 		}
 
 		if (HttpPage.isHttpPage(result)) {
-			return sendPage(ctx, {
-				data: result.data,
-				page: result.page || pagePage,
-				props: {
-					...result.props,
-					...props,
-				}
-			}, result.status, typeof result.ssr === "boolean" ? result.ssr : ssr);
+			return sendPage(
+				ctx,
+				{
+					data: result.data,
+					page: result.page || pagePage,
+					props: {
+						...result.props,
+						...props,
+					},
+				},
+				result.status,
+				typeof result.ssr === "boolean" ? result.ssr : ssr
+			);
 		}
 
 		if (createHttpError.isHttpError(result)) {
@@ -254,11 +271,11 @@ export default (function responder(credo: CredoJS, name: string) {
 
 		// redirect page
 		if ("redirect" in result) {
-			const {code, redirect} = result;
-			return sendRedirect(ctx, typeof redirect === "string" ? redirect : (redirect.location || "/"), code);
+			const { code, redirect } = result;
+			return sendRedirect(ctx, typeof redirect === "string" ? redirect : redirect.location || "/", code);
 		}
 
-		let {code} = result;
+		let { code } = result;
 		if (isRedirectCode(code)) {
 			if ("location" in result) {
 				return sendRedirect(ctx, (result as any).location || "/", code);
@@ -274,26 +291,27 @@ export default (function responder(credo: CredoJS, name: string) {
 		// page found
 		if (isFound(result)) {
 			if ("data" in result) {
-				return sendPage(ctx, {data: result.data, page: pagePage, props: pageProps}, code);
+				return sendPage(ctx, { data: result.data, page: pagePage, props: pageProps }, code);
 			}
 			if ("response" in result && typeof result.response === "object") {
 				const {
-					response: {
-						data,
-						page,
-						props,
-					}
+					response: { data, page, props },
 				} = result;
-				return sendPage(ctx, {
-					data,
-					page: page || pagePage,
-					props: {
-						...pageProps,
-						...props,
-					}
-				}, code, ssr);
+				return sendPage(
+					ctx,
+					{
+						data,
+						page: page || pagePage,
+						props: {
+							...pageProps,
+							...props,
+						},
+					},
+					code,
+					ssr
+				);
 			}
-			throw new Error("Invalid request (data or response not found)")
+			throw new Error("Invalid request (data or response not found)");
 
 			// page not found
 		} else {
@@ -321,6 +339,6 @@ export default (function responder(credo: CredoJS, name: string) {
 			} else {
 				throw error;
 			}
-		}
-	}
-}) as Ctor.Responder;
+		},
+	};
+} as Ctor.Responder);

@@ -1,5 +1,5 @@
 import util from "util";
-import type {ColorName, ModifierColorName} from "./types";
+import type { ColorName, ModifierColorName } from "./types";
 
 const regColor = /{([a-zA-Z.]+) (.+?)}/g;
 
@@ -23,23 +23,32 @@ const set = (name: ModifierColorName, code: number) => {
 
 const setMx = (color: ModifierColorName, index: number) => {
 	set(color, 30 + index);
-	set("bg" + color[0].toUpperCase() + color.slice(1) as ModifierColorName, 40 + index);
-	set("bg" + color[0].toUpperCase() + color.slice(1) + "Bright" as ModifierColorName, 100 + index);
+	set(("bg" + color[0].toUpperCase() + color.slice(1)) as ModifierColorName, 40 + index);
+	set(("bg" + color[0].toUpperCase() + color.slice(1) + "Bright") as ModifierColorName, 100 + index);
 };
 
 const clr1: ColorName[] = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "gray"];
-const clr2: ColorName[] = ["darkGray", "lightRed", "lightGreen", "lightYellow", "lightBlue", "lightMagenta", "lightCyan", "white"];
+const clr2: ColorName[] = [
+	"darkGray",
+	"lightRed",
+	"lightGreen",
+	"lightYellow",
+	"lightBlue",
+	"lightMagenta",
+	"lightCyan",
+	"white",
+];
 
 clr1.forEach((color, index) => {
 	setMx(color, index);
-	if(color === "gray") {
+	if (color === "gray") {
 		setMx("grey", index);
 	}
 });
 
 clr2.forEach((color, index) => {
 	set(color, 90 + index);
-	if(color === "darkGray") {
+	if (color === "darkGray") {
 		set("darkGrey", 90 + index);
 	}
 });
@@ -52,33 +61,33 @@ function colorRs(full: string, a: string, b: string) {
 	let n = 0;
 	let text = "";
 	const repeat: string[] = [];
-	a.split(".").forEach(color => {
-		if(isModifierColorName(color) && !repeat.includes(color)) {
-			n ++;
+	a.split(".").forEach((color) => {
+		if (isModifierColorName(color) && !repeat.includes(color)) {
+			n++;
 			text += colors[color];
 			repeat.push(color);
 		}
 	});
-	if(n < 1) {
+	if (n < 1) {
 		return full;
 	}
-	if(!process.stdout.isTTY) {
+	if (!process.stdout.isTTY) {
 		return b;
 	}
 	return text + b + colorReset;
 }
 
-export function newError(message: string, ... args: (string | number)[] | [(string | number)[]]): Error {
-	return new Error( format(message, ... args) );
+export function newError(message: string, ...args: (string | number)[] | [(string | number)[]]): Error {
+	return new Error(format(message, ...args));
 }
 
 // ex. color("text {red text}")
 // ex. color("text {bgWhite.red.bold %s}", ["text"]);
 
-export function format(message: string, ... args: any[]) {
+export function format(message: string, ...args: any[]) {
 	message = message.replace(regColor, colorRs);
-	if(args.length) {
-		if(args.length === 1 && Array.isArray(args[0])) {
+	if (args.length) {
+		if (args.length === 1 && Array.isArray(args[0])) {
 			args = args[0];
 		}
 		message = util.format(message, ...args);

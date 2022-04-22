@@ -1,6 +1,6 @@
-import type {App, Page} from "@credo-js/app";
-import type {Action, History, Location} from "history";
-import type {ElementType} from "react";
+import type { App, Page } from "@credo-js/app";
+import type { Action, History, Location } from "history";
+import type { ElementType } from "react";
 
 export interface OnAppMountHook {
 	app: App.StoreInterface;

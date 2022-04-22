@@ -1,4 +1,4 @@
-import type {DaemonCPUValue} from "./types";
+import type { DaemonCPUValue } from "./types";
 
 export default function createCPUTick(
 	delay: number,
@@ -33,15 +33,15 @@ export default function createCPUTick(
 	}
 
 	function stop(code: number) {
-		if(abort) {
+		if (abort) {
 			return;
 		}
 		abort = true;
-		if(mid) {
+		if (mid) {
 			clearInterval(mid);
 			mid = null;
 		}
-		if(typeof onExit === "function") {
+		if (typeof onExit === "function") {
 			onExit(code !== 0 && err ? err.message : null);
 		}
 	}
@@ -63,7 +63,7 @@ export default function createCPUTick(
 
 	return (msg?: string) => {
 		let code = 0;
-		if(msg) {
+		if (msg) {
 			err = new Error(msg);
 			code = 1;
 		}
@@ -74,7 +74,7 @@ export default function createCPUTick(
 		process.off("SIGINT", stopExit);
 		process.off("uncaughtExceptionMonitor", setError);
 
-		for(const stopListener of stopListeners) {
+		for (const stopListener of stopListeners) {
 			stopListener();
 		}
 	};

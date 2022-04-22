@@ -1,16 +1,15 @@
-import type {AxiosInstance} from "axios";
-import type {Lexicon} from "@credo-js/lexicon";
-import type {URL, OnMakeURLHook} from "@credo-js/make-url";
+import type { AxiosInstance } from "axios";
+import type { Lexicon } from "@credo-js/lexicon";
+import type { URL, OnMakeURLHook } from "@credo-js/make-url";
 
 export namespace API {
-
 	export interface Services extends Record<string, any> {
 		http: AxiosInstance;
 		translator: Lexicon.Translator;
 	}
 
 	export interface ApiInterface<ComponentType, State = any> extends Record<string, any> {
-		mode: "client" | "server",
+		mode: "client" | "server";
 		app: App.StoreInterface<State>;
 		page: Page.StoreInterface<ComponentType>;
 		services: Services;
@@ -38,7 +37,7 @@ export namespace API {
 		new (
 			mode: "client" | "server",
 			app: App.StoreInterface<State>,
-			page: Page.StoreInterface<ComponentType>,
+			page: Page.StoreInterface<ComponentType>
 		): ApiInterface<ComponentType>;
 	}
 
@@ -48,7 +47,6 @@ export namespace API {
 }
 
 export namespace App {
-
 	export interface StoreCtor {
 		new (state?: any): StoreInterface;
 	}
@@ -60,12 +58,14 @@ export namespace App {
 }
 
 export namespace Page {
-
-	export type ClientRenderHandler<ComponentType> = (node: HTMLElement, options?: ClientOptions<ComponentType>) => Promise<void>
+	export type ClientRenderHandler<ComponentType> = (
+		node: HTMLElement,
+		options?: ClientOptions<ComponentType>
+	) => Promise<void>;
 
 	export type ClientOptions<ComponentType> = {
-		bootloader?: ((api: API.ApiInterface<ComponentType>) => void)[]
-	}
+		bootloader?: ((api: API.ApiInterface<ComponentType>) => void)[];
+	};
 
 	export interface ComponentResponse<ComponentType, Data = any, Props = any> {
 		Component: ComponentType;
@@ -91,7 +91,7 @@ export namespace Page {
 	}
 
 	export interface Loader<ComponentType> {
-		load(name: string): Promise<void>
+		load(name: string): Promise<void>;
 		loaded(name: string): boolean;
 		component(name: string): ComponentType;
 	}
@@ -130,6 +130,6 @@ export namespace Page {
 }
 
 export interface HttpJsonServiceOptions {
-	host?: string,
-	protocol?: string,
+	host?: string;
+	protocol?: string;
 }

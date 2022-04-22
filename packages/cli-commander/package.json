@@ -1,31 +1,28 @@
 {
-  "name": "@credo-js/cli-commander",
-  "version": "1.0.0",
-  "author": "credo@websoftlab.com",
-  "license": "MIT",
-  "scripts": {
-    "build": "node ../../scripts/lib/build.js"
-  },
-  "dependencies": {
-    "@credo-js/cli-color": "*"
-  },
-  "devDependencies": {},
-  "peerDependencies": {},
-  "exports": {
-    "./": "./build/",
-    ".": {
-      "require": "./build/index.js"
-    }
-  },
-  "types": "build/index.d.ts",
-  "typesVersions": {
-    "*": {
-      "build/index.d.ts": [
-        "src/index.ts"
-      ],
-      "*": [
-        "src/*"
-      ]
-    }
-  }
+	"name": "@credo-js/cli-commander",
+	"version": "1.0.0",
+	"author": "credo@websoftlab.com",
+	"license": "MIT",
+	"scripts": {
+		"build": "node ../../scripts/lib/build.js",
+		"prettier": "node ../../scripts/lib/build-prettier.js"
+	},
+	"dependencies": {
+		"@credo-js/cli-color": "*"
+	},
+	"devDependencies": {},
+	"peerDependencies": {},
+	"exports": {
+		"./": "./build/",
+		".": {
+			"require": "./build/index.js"
+		}
+	},
+	"types": "build/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"build/index.d.ts": ["src/index.ts"],
+			"*": ["src/*"]
+		}
+	}
 }

@@ -1,8 +1,7 @@
-import readLine from 'readline';
-import {EventEmitter} from 'events';
+import readLine from "readline";
+import { EventEmitter } from "events";
 
 export class Terminal extends EventEmitter {
-
 	stream: NodeJS.WriteStream & { fd: 1 };
 	write: (message: string) => void;
 	native: (call: (stream: NodeJS.WriteStream & { fd: 1 }) => void) => void;
@@ -26,7 +25,8 @@ export class Terminal extends EventEmitter {
 			}
 		});
 
-		let w = 0, h = 0;
+		let w = 0,
+			h = 0;
 		const resize = () => {
 			w = this.stream.columns;
 			h = this.stream.rows;
@@ -34,9 +34,10 @@ export class Terminal extends EventEmitter {
 
 		resize();
 		process.stdout.on("resize", () => {
-			const prevW = w, prevH = h;
+			const prevW = w,
+				prevH = h;
 			resize();
-			this.emit("resize", {prevW, prevH, w, h});
+			this.emit("resize", { prevW, prevH, w, h });
 		});
 
 		let prevent = false;
@@ -45,45 +46,53 @@ export class Terminal extends EventEmitter {
 		const nativeWrite = process.stdout.write;
 		const nativeErrWrite = process.stderr.write;
 
-		const nativeWriteEvn = function(... args: any[]) { return nativeWrite.apply(process.stdout, args as never); };
-		const nativeErrWriteEvn = function(... args: any[]) { return nativeErrWrite.apply(process.stderr, args as never); };
+		const nativeWriteEvn = function (...args: any[]) {
+			return nativeWrite.apply(process.stdout, args as never);
+		};
+		const nativeErrWriteEvn = function (...args: any[]) {
+			return nativeErrWrite.apply(process.stderr, args as never);
+		};
 
 		// @ts-ignore
-		process.stdout.write = function(... args: any[]) {
-			if(prevent) {
-				nativeWriteEvn(... args);
+		process.stdout.write = function (...args: any[]) {
+			if (prevent) {
+				nativeWriteEvn(...args);
 			} else {
 				self.emit("data", {
 					data: args[0],
 					error: false,
 					native: nativeWriteEvn,
-					nativeWrite() { nativeWriteEvn(... args); }
+					nativeWrite() {
+						nativeWriteEvn(...args);
+					},
 				});
 			}
-		}
+		};
 
 		// @ts-ignore
-		process.stderr.write = function (... args: any[]) {
+		process.stderr.write = function (...args: any[]) {
 			self.emit("data", {
 				data: args[0],
 				error: true,
 				native: nativeErrWriteEvn,
-				nativeWrite() { nativeErrWriteEvn(... args); }
+				nativeWrite() {
+					nativeErrWriteEvn(...args);
+				},
 			});
-		}
+		};
 
 		// write content to output stream
 		this.write = (message: string) => {
 			prevent = true;
 			process.stdout.write(message);
 			prevent = false;
-		}
+		};
 
 		this.native = (func: Function) => {
 			prevent = true;
 			func(process.stdout);
 			prevent = false;
-		}
+		};
 	}
 
 	// get terminal width & height
@@ -97,20 +106,20 @@ export class Terminal extends EventEmitter {
 
 	// save cursor position + settings
 	cursorSave() {
-		this.write('\x1B7');
+		this.write("\x1B7");
 	}
 
 	// restore last cursor position + settings
 	cursorRestore() {
-		this.write('\x1B8');
+		this.write("\x1B8");
 	}
 
 	// show/hide cursor
 	cursor(enabled: boolean) {
 		if (enabled) {
-			this.write('\x1B[?25h');
+			this.write("\x1B[?25h");
 		} else {
-			this.write('\x1B[?25l');
+			this.write("\x1B[?25l");
 		}
 	}
 
@@ -137,14 +146,14 @@ export class Terminal extends EventEmitter {
 
 	// add new line; increment counter
 	newline() {
-		this.write('\n');
+		this.write("\n");
 	}
 }
 
 const TERM_KEY = Symbol();
 
 function getTerm(stream: any): Terminal {
-	if(!stream[TERM_KEY]) {
+	if (!stream[TERM_KEY]) {
 		stream[TERM_KEY] = new Terminal();
 	}
 	return stream[TERM_KEY];
@@ -152,4 +161,4 @@ function getTerm(stream: any): Terminal {
 
 export default function getTerminal() {
 	return getTerm(process.stdout);
-};
+}

@@ -1,13 +1,15 @@
-import type {HeadTag} from "@credo-js/html-head";
-import {createElement} from "react";
-import {renderToStaticMarkup} from "react-dom/server";
+import type { HeadTag } from "@credo-js/html-head";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 export default function renderToString(headTags: HeadTag[], separator: string = "") {
-	if(!headTags.length) {
+	if (!headTags.length) {
 		return "";
 	}
-	return headTags.map((headTag) => {
-		const {tagName, props} = headTag;
-		return renderToStaticMarkup(createElement(tagName, {...props, "data-ssr": "head"}));
-	}).join(separator);
+	return headTags
+		.map((headTag) => {
+			const { tagName, props } = headTag;
+			return renderToStaticMarkup(createElement(tagName, { ...props, "data-ssr": "head" }));
+		})
+		.join(separator);
 }

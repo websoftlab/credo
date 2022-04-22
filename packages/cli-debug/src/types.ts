@@ -5,7 +5,7 @@ export interface Debugger {
 
 export type DebugLogger = (formatter: any, ...args: any[]) => void;
 
-export type DebugListener = (event: DebugEvent) => (void | Promise<void>);
+export type DebugListener = (event: DebugEvent) => void | Promise<void>;
 
 export interface DebugEvent {
 	namespace: string;

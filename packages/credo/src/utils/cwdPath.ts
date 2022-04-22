@@ -1,5 +1,5 @@
-import {join} from "path";
+import { join } from "path";
 
-export default function cwdPath(... args: string[]) {
+export default function cwdPath(...args: string[]) {
 	return join(process.cwd(), ...args);
 }

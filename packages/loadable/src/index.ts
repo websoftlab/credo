@@ -1,5 +1,5 @@
-export {default as createLoadable} from "./createLoadable";
-export {default as TimeoutError} from "./TimeoutError";
+export { default as createLoadable } from "./createLoadable";
+export { default as TimeoutError } from "./TimeoutError";
 
 export type {
 	CreateLoadableOptions,
@@ -9,5 +9,5 @@ export type {
 	Options,
 	Loader,
 	FallbackHandler,
-	RenderHandler
+	RenderHandler,
 } from "./types";

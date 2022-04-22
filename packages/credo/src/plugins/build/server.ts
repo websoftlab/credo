@@ -1,14 +1,16 @@
-import {debugError} from "../../debug";
-import {CmpJS} from "@credo-js/cli-cmp";
-import {buildPath, createCwdDirectoryIfNotExists, exists, writeBundleFile, writeJsonFile} from "../../utils";
-import {CredoPlugin} from "../../types";
-import {writeFile} from "fs/promises";
+import { debugError } from "../../debug";
+import { CmpJS } from "@credo-js/cli-cmp";
+import { buildPath, createCwdDirectoryIfNotExists, exists, writeBundleFile, writeJsonFile } from "../../utils";
+import { CredoPlugin } from "../../types";
+import { writeFile } from "fs/promises";
 import createRelativePath from "./createRelativePath";
 
 async function writeLoadable() {
 	const file = buildPath("./loadable.js");
-	if(!await exists(file)) {
-		await writeFile(file, `import {join, dirname, sep} from "path";
+	if (!(await exists(file))) {
+		await writeFile(
+			file,
+			`import {join, dirname, sep} from "path";
 import {watchFile, unwatchFile} from "fs";
 
 async function load(file, loadable) {
@@ -58,14 +60,17 @@ export default async function loadable(credo, file, importer) {
 			unwatchFile(file);
 		});
 	}
-}`);
+}`
+		);
 	}
 }
 
 async function writeDevPingPong() {
 	const file = buildPath("./ping-pong.js");
-	if(!await exists(file)) {
-		await writeFile(file, `import {randomBytes} from "crypto";
+	if (!(await exists(file))) {
+		await writeFile(
+			file,
+			`import {randomBytes} from "crypto";
 function send(message) {
 	if(process.send) {
 		process.send(message);
@@ -96,13 +101,15 @@ export default async function pingPong(server) {
 			server.close(exit);
 		}
 	});
-}`);
+}`
+		);
 	}
 }
 
 export async function buildServer(factory: CredoPlugin.Factory) {
-
-	const {options: {ssr, clusters, configLoaders, renderDriver, pages}} = factory;
+	const {
+		options: { ssr, clusters, configLoaders, renderDriver, pages },
+	} = factory;
 
 	const cJs = new CmpJS();
 	const srv = cJs.imp("@credo-js/server", "*");
@@ -112,7 +119,9 @@ export async function buildServer(factory: CredoPlugin.Factory) {
 
 	// cluster.isPrimary or isMaster
 	const clusterName = cJs.imp("cluster");
-	cJs.append(`function isPrimaryCluster() { return "isPrimary" in ${clusterName} ? ${clusterName}.isPrimary : ${clusterName}.isMaster; }`);
+	cJs.append(
+		`function isPrimaryCluster() { return "isPrimary" in ${clusterName} ? ${clusterName}.isPrimary : ${clusterName}.isMaster; }`
+	);
 
 	type XType = "service" | "controller" | "responder" | "middleware" | "extraMiddleware" | "cmd";
 
@@ -129,19 +138,23 @@ export async function buildServer(factory: CredoPlugin.Factory) {
 		reg: [],
 	};
 
-	function isAcs(func: { path: string, importer: string }, typeName: [XType | "bootstrap", string], append: boolean = true) {
+	function isAcs(
+		func: { path: string; importer: string },
+		typeName: [XType | "bootstrap", string],
+		append: boolean = true
+	) {
 		const key = `${func.path}@${func.importer}`;
-		if(rk.reg.includes(key)) {
+		if (rk.reg.includes(key)) {
 			return false;
 		}
 		const [type, name] = typeName;
-		if(rk[type].includes(name)) {
-			type !== "middleware"
-			&& type !== "bootstrap"
-			&& debugError(`WARNING! Duplicate %s name: {yellow %s}`, type, name);
+		if (rk[type].includes(name)) {
+			type !== "middleware" &&
+				type !== "bootstrap" &&
+				debugError(`WARNING! Duplicate %s name: {yellow %s}`, type, name);
 			return false;
 		}
-		if(append) {
+		if (append) {
 			rk.reg.push(key);
 			rk[type].push(name);
 		}
@@ -149,18 +162,20 @@ export async function buildServer(factory: CredoPlugin.Factory) {
 	}
 
 	function register(type: XType, data: any, name: string) {
-		let {path, importer, options} = data[name];
+		let { path, importer, options } = data[name];
 		const func = cJs.imp(createRelativePath(path, ".credo"), importer);
-		if(isAcs(data[name], [type, name])) {
-			cJs.append(`registrar.${type}(${cJs.tool.esc(name)}, ${func}${options ? `, ${cJs.tool.esc(options)}` : ""});`);
+		if (isAcs(data[name], [type, name])) {
+			cJs.append(
+				`registrar.${type}(${cJs.tool.esc(name)}, ${func}${options ? `, ${cJs.tool.esc(options)}` : ""});`
+			);
 		}
 	}
 
 	// set ENV
 	cJs.nl().append([
-		`const IS_SSR = __SSR__${isClusterMode ? '' : ' && !process.argv.includes("--cron")'};`,
+		`const IS_SSR = __SSR__${isClusterMode ? "" : ' && !process.argv.includes("--cron")'};`,
 		`const data = ${srv}.env();`,
-		'Object.keys(data).forEach(key => { process.env[key] = data[key]; });',
+		"Object.keys(data).forEach(key => { process.env[key] = data[key]; });",
 		`${srv}.defineGlobal(__ENV__, IS_SSR);`,
 		`${cJs.imp("@credo-js/cli-debug", "debugEnable")}(data.DEBUG);`,
 	]);
@@ -173,65 +188,72 @@ export async function buildServer(factory: CredoPlugin.Factory) {
 		`let clusterId = null;`,
 	]);
 
-	if(clusters && clusters.length > 0) {
-		cJs
-			.nl()
-			.group('if(!isCmd && (__DEV__ || !isPrimaryCluster()))', '', () => {
-
-				// define cluster obj
-				cJs.group('Object.assign(clusters,', ');', () => {
-					clusters.forEach(cluster => {
-						cJs.append(`${cJs.tool.esc(cluster.id)}: ${cluster.mid},`);
-					});
-				});
-
-				cJs.group('if(__PROD__)', '', () => {
-					cJs.group('if(process.env.APP_MODE !== "cluster" || ! clusters.hasOwnProperty(process.env.APP_ID))', '', () => {
-						cJs.append(`throw new Error("Invalid or empty cluster ID");`);
-					}).group("else", "", () => {
-						cJs.append(`clusterId = process.env.APP_ID;`);
-					});
-				}).group(`else`, '', () => {
-					cJs.append(`clusterId = clusters.hasOwnProperty(process.env.APP_ID) ? process.env.APP_ID : ${cJs.tool.esc(clusters[0].id)};`);
+	if (clusters && clusters.length > 0) {
+		cJs.nl().group("if(!isCmd && (__DEV__ || !isPrimaryCluster()))", "", () => {
+			// define cluster obj
+			cJs.group("Object.assign(clusters,", ");", () => {
+				clusters.forEach((cluster) => {
+					cJs.append(`${cJs.tool.esc(cluster.id)}: ${cluster.mid},`);
 				});
 			});
+
+			cJs.group("if(__PROD__)", "", () => {
+				cJs.group(
+					'if(process.env.APP_MODE !== "cluster" || ! clusters.hasOwnProperty(process.env.APP_ID))',
+					"",
+					() => {
+						cJs.append(`throw new Error("Invalid or empty cluster ID");`);
+					}
+				).group("else", "", () => {
+					cJs.append(`clusterId = process.env.APP_ID;`);
+				});
+			}).group(`else`, "", () => {
+				cJs.append(
+					`clusterId = clusters.hasOwnProperty(process.env.APP_ID) ? process.env.APP_ID : ${cJs.tool.esc(
+						clusters[0].id
+					)};`
+				);
+			});
+		});
 	}
 
-
 	// set config loaders
-	if(configLoaders) {
-		cJs.nl().group('Object.assign(configLoaders,', ');', () => {
-			Object.keys(configLoaders).forEach(key => {
-				const {path, importer} = configLoaders[key];
+	if (configLoaders) {
+		cJs.nl().group("Object.assign(configLoaders,", ");", () => {
+			Object.keys(configLoaders).forEach((key) => {
+				const { path, importer } = configLoaders[key];
 				cJs.append(`${cJs.tool.esc(key)}: ${cJs.imp(createRelativePath(path, ".credo"), importer)},`);
 			});
 		});
 	}
 
-	cJs.nl()
-		.append(`${cJs.imp("@credo-js/server/config", "loadTree")}(clusterId, __ENV__, configLoaders);`);
+	cJs.nl().append(`${cJs.imp("@credo-js/server/config", "loadTree")}(clusterId, __ENV__, configLoaders);`);
 
 	cJs.nl()
-		.append(`const {enabled: credoDebugConfigEnabled = false, ... credoDebugConfig} = ${cJs.imp("@credo-js/server/config", "config")}("debug", {namespacePrefix: "credo:"});`)
-		.group('if(credoDebugConfigEnabled)', '', () => {
+		.append(
+			`const {enabled: credoDebugConfigEnabled = false, ... credoDebugConfig} = ${cJs.imp(
+				"@credo-js/server/config",
+				"config"
+			)}("debug", {namespacePrefix: "credo:"});`
+		)
+		.group("if(credoDebugConfigEnabled)", "", () => {
 			cJs.append(`${cJs.imp("@credo-js/cli-debug", "debugConfig")}(credoDebugConfig);`);
 		})
-		.group('else', '', () => {
-			cJs.append(`${cJs.imp("@credo-js/cli-debug", "debugSetNamespacePrefix")}(credoDebugConfig.namespacePrefix);`);
+		.group("else", "", () => {
+			cJs.append(
+				`${cJs.imp("@credo-js/cli-debug", "debugSetNamespacePrefix")}(credoDebugConfig.namespacePrefix);`
+			);
 		});
 
 	// create error function
-	cJs.nl().group('function error(err)', '', () => {
-		cJs.append([
-			'console.error("server failure", err);',
-			'process.exit(1);',
-		]);
+	cJs.nl().group("function error(err)", "", () => {
+		cJs.append(['console.error("server failure", err);', "process.exit(1);"]);
 	});
 
 	// create loadOptions function
-	if(clusters && clusters.length > 0) {
-		cJs.nl().group(`function loadOptions(options, id)`, '', () => {
-			cJs.append('if(id == null) return options;');
+	if (clusters && clusters.length > 0) {
+		cJs.nl().group(`function loadOptions(options, id)`, "", () => {
+			cJs.append("if(id == null) return options;");
 			cJs.append('return require("./srv/server-" + id + ".js").load(options);');
 		});
 	}
@@ -240,11 +262,11 @@ export async function buildServer(factory: CredoPlugin.Factory) {
 		cJs.append(`const registrar = new ${srv}.BootManager();`);
 
 		// load ./server-page
-		if(isPage) {
+		if (isPage) {
 			const load = cJs.imp("./loadable");
 			const loadable = `${renderDriver?.modulePath}/loadable`;
 			let args = `__BUNDLE__ + "/server-page/server-page.js"`;
-			if(loadable) {
+			if (loadable) {
 				args += `, ${cJs.tool.esc(loadable)}`;
 			}
 			cJs.append(`registrar.bootstrap((credo) => ${load}(credo, ${args}));`);
@@ -252,72 +274,72 @@ export async function buildServer(factory: CredoPlugin.Factory) {
 
 		cJs.append(`registrar.bootstrap((credo) => import("./lexicon-server").then(l => l.default(credo)));`);
 
-		factory.plugins.forEach(plugin => {
-
-			plugin.middleware.forEach(mwr => {
-				let {path, importer, options} = mwr;
+		factory.plugins.forEach((plugin) => {
+			plugin.middleware.forEach((mwr) => {
+				let { path, importer, options } = mwr;
 				const func = cJs.imp(createRelativePath(path, ".credo"), importer);
-				if(isAcs(mwr, ["middleware", func])) {
+				if (isAcs(mwr, ["middleware", func])) {
 					cJs.append(`registrar.middleware(${func}${options ? `, ${cJs.tool.esc(options)}` : ""});`);
 				}
 			});
 
-			if(plugin.public) {
+			if (plugin.public) {
 				publicPath.push(createRelativePath(plugin.public));
 			}
 
-			if(plugin.bootstrap) {
-				let {path, importer, options} = plugin.bootstrap;
+			if (plugin.bootstrap) {
+				let { path, importer, options } = plugin.bootstrap;
 				const func = cJs.imp(createRelativePath(path, ".credo"), importer);
-				if(isAcs(plugin.bootstrap, ["bootstrap", func])) {
+				if (isAcs(plugin.bootstrap, ["bootstrap", func])) {
 					cJs.append(`registrar.bootstrap(${func}${options ? `, ${cJs.tool.esc(options)}` : ""});`);
 				}
 			}
 
-			Object.keys(plugin.services).forEach(name => register("service", plugin.services, name));
-			Object.keys(plugin.controllers).forEach(name => register("controller", plugin.controllers, name));
-			Object.keys(plugin.responders).forEach(name => register("responder", plugin.responders, name));
-			Object.keys(plugin.extraMiddleware).forEach(name => register("extraMiddleware", plugin.extraMiddleware, name));
-			Object.keys(plugin.cmd).forEach(name => register("cmd", plugin.cmd, name));
+			Object.keys(plugin.services).forEach((name) => register("service", plugin.services, name));
+			Object.keys(plugin.controllers).forEach((name) => register("controller", plugin.controllers, name));
+			Object.keys(plugin.responders).forEach((name) => register("responder", plugin.responders, name));
+			Object.keys(plugin.extraMiddleware).forEach((name) =>
+				register("extraMiddleware", plugin.extraMiddleware, name)
+			);
+			Object.keys(plugin.cmd).forEach((name) => register("cmd", plugin.cmd, name));
 		});
 
-		cJs.group('const options =', ';', (t) => {
+		cJs.group("const options =", ";", (t) => {
 			cJs.append([
-				'mode: __ENV__,',
-				'registrar,',
-				`renderHTMLDriver: ${renderHTMLDriver === null ? 'null' : t.esc(renderHTMLDriver)},`,
+				"mode: __ENV__,",
+				"registrar,",
+				`renderHTMLDriver: ${renderHTMLDriver === null ? "null" : t.esc(renderHTMLDriver)},`,
 				`publicPath: ${t.esc(publicPath)},`,
 			]);
-			if(!isClusterMode) {
-				cJs.append(`ssr: ${ssr ? 'IS_SSR' : 'false'},`);
+			if (!isClusterMode) {
+				cJs.append(`ssr: ${ssr ? "IS_SSR" : "false"},`);
 			}
 		});
 
-		cJs
-			.nl()
-			.group('if(isCmd)', '', () => {
+		cJs.nl()
+			.group("if(isCmd)", "", () => {
 				cJs.append(`${srv}.cmdServer(options).catch(error);`);
 			})
-			.group('else', '', () => {
-				if(isClusterMode) {
-					cJs.group('if(__PROD__ && !isPrimaryCluster())', '', () => {
+			.group("else", "", () => {
+				if (isClusterMode) {
+					cJs.group("if(__PROD__ && !isPrimaryCluster())", "", () => {
 						cJs.append(`${srv}.childProcess(loadOptions(options, clusters[clusterId])).catch(error);`);
-					}).group('else', '', () => {
+					}).group("else", "", () => {
 						cJs.append(`${srv}.server(loadOptions(options, clusters[clusterId])).catch(error);`);
 					});
 				} else {
-					cJs.group('function isCron()', '', () => {
+					cJs.group("function isCron()", "", () => {
 						const name = cJs.get("workerData");
 						cJs.append(`return ${name} && ${name}.appMode === "cron";`);
 					});
-					cJs.group(`if(! ${cJs.get("isMainThread")} && isCron())`, '', () => {
+					cJs.group(`if(! ${cJs.get("isMainThread")} && isCron())`, "", () => {
 						cJs.append(`${srv}.cronServer({ ... options, cronMode: "worker" }).catch(error);`);
 					});
-					cJs.group('else if(__DEV__)', '', () => {
+					cJs.group("else if(__DEV__)", "", () => {
 						const pingPong = cJs.imp("./ping-pong.js");
 						cJs.append(`${srv}.server(options).then(${pingPong}).catch(error);`);
 					});
-					cJs.group('else', '', () => {
+					cJs.group("else", "", () => {
 						cJs.append('if(process.argv.includes("--cron")) { options.cronMode = "service"; }');
 						cJs.append('else if(process.argv.includes("--no-cron")) { options.cronMode = "disabled"; }');
 						cJs.append(`${srv}.server(options).catch(error);`);
@@ -328,92 +350,100 @@ export async function buildServer(factory: CredoPlugin.Factory) {
 
 	cJs.nl();
 
-	if(clusters && clusters.length > 0) {
-		cJs
-			.group(`if(!isCmd && __PROD__ && isPrimaryCluster())`, '', (tool) => {
-				const conf = clusters.map(item => ({
-					id: item.id,
-					mid: item.mid,
-					mode: item.mode,
-					count: item.count,
-					env: item.env,
-				}));
-				cJs.append(`${srv}.masterProcess(${tool.esc(conf)});`);
-			})
-			.group('else', '', () => {
-				create();
-			});
+	if (clusters && clusters.length > 0) {
+		cJs.group(`if(!isCmd && __PROD__ && isPrimaryCluster())`, "", (tool) => {
+			const conf = clusters.map((item) => ({
+				id: item.id,
+				mid: item.mid,
+				mode: item.mode,
+				count: item.count,
+				env: item.env,
+			}));
+			cJs.append(`${srv}.masterProcess(${tool.esc(conf)});`);
+		}).group("else", "", () => {
+			create();
+		});
 	} else {
-		if(ssr) {
+		if (ssr) {
 			await writeLoadable();
 		}
 		create(ssr, renderDriver && pages !== false ? renderDriver.modulePath : null);
 	}
 
 	// write main server
-	await writeBundleFile("./server.js", `const NODE_ENV = String.fromCharCode(78) + "ODE_ENV";
+	await writeBundleFile(
+		"./server.js",
+		`const NODE_ENV = String.fromCharCode(78) + "ODE_ENV";
 if(!process.env[NODE_ENV]) {
 	process.env[NODE_ENV] = __ENV__;
 }
 
-${cJs.toJS("import")}`);
+${cJs.toJS("import")}`
+	);
 
 	// ping-pong file
 	await writeDevPingPong();
 
 	// write cmd file
-	await writeBundleFile("cmd.js", `if(process.argv[1] === __filename) {
+	await writeBundleFile(
+		"cmd.js",
+		`if(process.argv[1] === __filename) {
 	process.env.APP_MODE = "cmd";
 	require("./server");
 } else {
 	throw new Error("Access denied");
-}`);
+}`
+	);
 
 	// make cluster files
-	if(clusters && clusters.length > 0) {
+	if (clusters && clusters.length > 0) {
 		await createCwdDirectoryIfNotExists(".credo/srv");
-		for(let cl of clusters) {
-			const {ssr, mid, mode, publicPath, bootstrap, pages} = cl;
+		for (let cl of clusters) {
+			const { ssr, mid, mode, publicPath, bootstrap, pages } = cl;
 			const cJs = new CmpJS();
 
-			if(mode === "app" && ssr) {
+			if (mode === "app" && ssr) {
 				await writeLoadable();
 			}
 
-			cJs.group('export function load(options)', '', (t) => {
-				cJs.append(`options.process = ${t.esc({mid, id: cl.id})};`);
-				if(renderDriver && pages !== false) {
+			cJs.group("export function load(options)", "", (t) => {
+				cJs.append(`options.process = ${t.esc({ mid, id: cl.id })};`);
+				if (renderDriver && pages !== false) {
 					cJs.append(`options.renderHTMLDriver = ${t.esc(renderDriver.modulePath)};`);
 				}
-				if(publicPath) {
+				if (publicPath) {
 					cJs.append(`options.publicPath.unshift(${t.esc(publicPath)});`);
 				}
-				if(bootstrap) {
-					let {path, importer, options} = bootstrap;
+				if (bootstrap) {
+					let { path, importer, options } = bootstrap;
 					const func = cJs.imp(createRelativePath(path, ".credo/srv"), importer);
-					if(isAcs(bootstrap, ["bootstrap", func], false)) {
-						cJs.append(`options.registrar.prepend(r => r.bootstrap(${func}${options ? `, ${cJs.tool.esc(options)}` : ""}));`);
+					if (isAcs(bootstrap, ["bootstrap", func], false)) {
+						cJs.append(
+							`options.registrar.prepend(r => r.bootstrap(${func}${
+								options ? `, ${cJs.tool.esc(options)}` : ""
+							}));`
+						);
 					}
 				}
 
 				let isSSR = mode === "app" ? ssr : false;
-				if(mode === "app") {
-					if(ssr) {
+				if (mode === "app") {
+					if (ssr) {
 						const load = cJs.imp("../loadable");
 						const loadable = `${renderDriver?.modulePath}/loadable`;
 						let args = `__BUNDLE__ .concat("/server-page-${mid}/server-page.js")`;
-						if(loadable) {
+						if (loadable) {
 							args += `, ${t.esc(loadable)}`;
 						}
 						cJs.append(`options.registrar.prepend(r => r.bootstrap(() => ${load}(${args})));`);
 					} else {
 						cJs.append(`global[String.fromCharCode(95,95,83,83,82,95,95)] = false;`);
 					}
-				} else if(mode === "cron") {
+				} else if (mode === "cron") {
 					cJs.append('options.cronMode = "service";');
 				}
-				cJs.append(`options.ssr = ${isSSR ? '__SSR__' : 'false'};`);
-				cJs.append('return options;');
+				cJs.append(`options.ssr = ${isSSR ? "__SSR__" : "false"};`);
+				cJs.append("return options;");
 			});
 
 			await writeBundleFile(`./srv/server-${mid}.js`, cJs.toJS("import"));
@@ -422,6 +452,8 @@ ${cJs.toJS("import")}`);
 }
 
 export async function buildServerDaemon(factory: CredoPlugin.Factory) {
-	const {options: {daemon = {}}} = factory;
+	const {
+		options: { daemon = {} },
+	} = factory;
 	await writeJsonFile(buildPath("credo-daemon.json"), daemon);
 }

@@ -4,12 +4,12 @@ import Option from "../Option";
 import Help from "./Help";
 import Group from "./Group";
 import GroupItem from "./GroupItem";
-import {newError} from "@credo-js/cli-color";
-import {commands, titles} from "../constants";
+import { newError } from "@credo-js/cli-color";
+import { commands, titles } from "../constants";
 
 function createGroupItem(option: Option) {
 	const item = new GroupItem(option.name, option.description);
-	if(option.multiple || option.isSingleValue) {
+	if (option.multiple || option.isSingleValue) {
 		item.property = option.propertyName;
 		item.required = option.isRequired;
 		item.multiple = option.multiple;
@@ -18,9 +18,8 @@ function createGroupItem(option: Option) {
 }
 
 function helpGroup(help: Help, command: Command, option?: Option) {
-
 	const argument = command.commandArgument;
-	if(argument) {
+	if (argument) {
 		const group = new Group(titles.arguments);
 		const item = new GroupItem("", argument.description);
 		item.property = argument.propertyName;
@@ -31,13 +30,13 @@ function helpGroup(help: Help, command: Command, option?: Option) {
 	}
 
 	const options = command.commandOptionList;
-	if(option) {
+	if (option) {
 		options.push(option);
 	}
 
-	if(options.length) {
+	if (options.length) {
 		const group = new Group(titles.options);
-		options.forEach(option => {
+		options.forEach((option) => {
 			group.addItem(createGroupItem(option));
 		});
 		help.addGroup(group);
@@ -45,9 +44,8 @@ function helpGroup(help: Help, command: Command, option?: Option) {
 }
 
 export async function helpCommand(commander: Commander, commandName: string) {
-
-	const command = commander.commands.find(cmd => cmd.name === commandName);
-	if(!command) {
+	const command = commander.commands.find((cmd) => cmd.name === commandName);
+	if (!command) {
 		throw newError(commands.notFound, commandName);
 	}
 
@@ -60,13 +58,18 @@ export async function helpCommand(commander: Commander, commandName: string) {
 	});
 
 	const argument = command.commandArgument;
-	if(argument) {
+	if (argument) {
 		help.addProp("argument", argument.required, argument.multiple, "blue");
 	}
 
 	const options = command.commandOptionList;
-	if(options.length) {
-		help.addProp("option", options.some(item => item.isRequired), options.length > 1, "yellow");
+	if (options.length) {
+		help.addProp(
+			"option",
+			options.some((item) => item.isRequired),
+			options.length > 1,
+			"yellow"
+		);
 	}
 
 	helpGroup(help, command);
@@ -75,7 +78,6 @@ export async function helpCommand(commander: Commander, commandName: string) {
 }
 
 export async function helpCommandList(commander: Commander) {
-
 	const commands = commander.commands;
 	const help = new Help({
 		description: commander.description,
@@ -84,11 +86,11 @@ export async function helpCommandList(commander: Commander) {
 		version: commander.version,
 	});
 
-	const helpOption = new Option("--help", {type: ["flag", "value"], name: "command", description: titles.help});
+	const helpOption = new Option("--help", { type: ["flag", "value"], name: "command", description: titles.help });
 	const root = commander.find("*");
 	const group = new Group(titles.commands);
 
-	if(root) {
+	if (root) {
 		helpGroup(help, root, helpOption);
 	} else {
 		const group = new Group(titles.options);
@@ -105,29 +107,29 @@ export async function helpCommandList(commander: Commander) {
 	let prevPref = "";
 	let prevItem: GroupItem;
 
-	commands.forEach(command => {
+	commands.forEach((command) => {
 		const name = command.name;
 		const item = new GroupItem(name, command.commandDescription);
 		const prefIndex = name.indexOf(":");
 		const pref = prefIndex > 0 ? name.substring(0, prefIndex + 1) : "--";
 
-		if(prevPref !== pref) {
+		if (prevPref !== pref) {
 			prevPref = pref;
-			if(prevItem) {
+			if (prevItem) {
 				prevItem.br = true;
 			}
 		}
 
 		const arg = command.commandArgument;
-		if(arg) {
+		if (arg) {
 			item.property = arg.propertyName;
 			item.required = arg.isRequired;
 			item.multiple = arg.multiple;
 		} else {
 			const optionList = command.commandOptionList;
-			if(optionList.length) {
+			if (optionList.length) {
 				item.property = "option";
-				item.required = optionList.some(item => item.isRequired);
+				item.required = optionList.some((item) => item.isRequired);
 				item.multiple = optionList.length > 1;
 			}
 		}

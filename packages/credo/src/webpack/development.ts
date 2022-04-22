@@ -1,28 +1,25 @@
-import type {BuildConfigure} from "../types";
-import type {Configuration} from "webpack";
-import {devServer} from './config';
-import {cleanWebpackPlugin, miniCssExtractPlugin} from './plugins';
+import type { BuildConfigure } from "../types";
+import type { Configuration } from "webpack";
+import { devServer } from "./config";
+import { cleanWebpackPlugin, miniCssExtractPlugin } from "./plugins";
 
-export default function(config: BuildConfigure): Configuration & {devServer?: any} {
-	const {isDevServer} = config;
-	if(!isDevServer) {
+export default function (config: BuildConfigure): Configuration & { devServer?: any } {
+	const { isDevServer } = config;
+	if (!isDevServer) {
 		return {
 			output: {
-				publicPath: "/"
+				publicPath: "/",
 			},
-			plugins: [
-				cleanWebpackPlugin(config),
-				miniCssExtractPlugin(config) as any,
-			],
-		}
+			plugins: [cleanWebpackPlugin(config), miniCssExtractPlugin(config) as any],
+		};
 	}
 	const dev = devServer(config);
 	return {
 		output: {
-			publicPath: dev.url
+			publicPath: dev.url,
 		},
-		devtool: 'cheap-module-source-map',
+		devtool: "cheap-module-source-map",
 		plugins: [],
 		devServer: dev.config,
 	};
-};
+}

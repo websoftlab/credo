@@ -1,4 +1,4 @@
-import type {CredoPlugin} from "credo";
+import type { CredoPlugin } from "credo";
 import prepareBabelConfig from "./prepareBabelConfig";
 import onWebpackConfigure from "./onWebpackConfigure";
 import tsConfigCompilerOptionsJSX from "./tsConfigCompilerOptionsJSX";
@@ -17,7 +17,7 @@ export default <Omit<CredoPlugin.RenderDriver, "modulePath">>{
 		"@types/react-router-dom": "^5.1.8",
 		"@babel/preset-react": "^7.16.7",
 		"@pmmmwh/react-refresh-webpack-plugin": "^0.5.4",
-		"react-refresh": "^0.10.0"
+		"react-refresh": "^0.10.0",
 	},
 	clientDependencies: [
 		"@credo-js/html-head",
@@ -32,8 +32,9 @@ export default <Omit<CredoPlugin.RenderDriver, "modulePath">>{
 		onWebpackConfigure,
 		onOptions<T = any>(event: { name: string; option: T }): void {
 			switch (event.name) {
-				case "config.babel": return prepareBabelConfig(event.option);
+				case "config.babel":
+					return prepareBabelConfig(event.option);
 			}
-		}
-	}
+		},
+	},
 };

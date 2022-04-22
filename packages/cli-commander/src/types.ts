@@ -1,9 +1,8 @@
-
 export type Formatter = "int" | "float" | "boolean" | "port" | "time-interval";
 export type FormatType = ((value: string, index: number) => any) | Formatter | (Formatter | RegExp)[] | RegExp;
 export type ValType<T> = {
-	name: string,
-	value: T,
+	name: string;
+	value: T;
 };
 
 export interface MinOptionInterface {

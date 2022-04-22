@@ -1,24 +1,23 @@
-import {existsSync, writeFileSync, readFileSync} from "fs";
-import {join} from "path";
-import {isMainProcess} from "../utils";
+import { existsSync, writeFileSync, readFileSync } from "fs";
+import { join } from "path";
+import { isMainProcess } from "../utils";
 import cluster from "cluster";
-import {isMainThread, workerData, parentPort} from "worker_threads";
-import {debug} from "@credo-js/cli-debug";
-import {newError} from "@credo-js/cli-color";
-import {spawn} from "child_process";
+import { isMainThread, workerData, parentPort } from "worker_threads";
+import { debug } from "@credo-js/cli-debug";
+import { newError } from "@credo-js/cli-color";
+import { spawn } from "child_process";
 import createCPUTick from "./createCPUTick";
-import type {DaemonCPUValue, DaemonSendCPU, DaemonSendData, DaemonPIDFileData, DaemonOptions} from "./types";
+import type { DaemonCPUValue, DaemonSendCPU, DaemonSendData, DaemonPIDFileData, DaemonOptions } from "./types";
 
 function parent(): number {
-
-	if(cluster.isWorker) {
+	if (cluster.isWorker) {
 		const pid = cluster.worker?.workerData?.pid || null;
-		if(pid) {
+		if (pid) {
 			return pid;
 		}
 	}
 
-	if(!isMainThread && workerData && typeof workerData.pid === "number") {
+	if (!isMainThread && workerData && typeof workerData.pid === "number") {
 		return workerData.pid;
 	}
 
@@ -28,7 +27,6 @@ function parent(): number {
 type SendCallback = (message: DaemonSendData) => void;
 
 export default class Daemon {
-
 	private _send: SendCallback | null = null;
 	private _init: boolean = false;
 	private _stop: Function | null = null;
@@ -51,7 +49,7 @@ export default class Daemon {
 			pid: join(process.cwd(), "./credo-pid.json"),
 		};
 		const confFile = join(process.cwd(), "credo-daemon.json");
-		if(existsSync(confFile)) {
+		if (existsSync(confFile)) {
 			Object.assign(options, JSON.parse(readFileSync(confFile).toString()));
 		}
 		this._options = options;
@@ -59,9 +57,9 @@ export default class Daemon {
 	}
 
 	private _update(upd?: Partial<DaemonPIDFileData>) {
-		if(upd) {
+		if (upd) {
 			Object.assign(this._data, upd);
-			if(upd.start) {
+			if (upd.start) {
 				this._data.end = -1;
 				this._data.lastError = null;
 			}
@@ -71,7 +69,7 @@ export default class Daemon {
 	}
 
 	private _updateStop(end?: number, lastError: string | null = null) {
-		if(!end) {
+		if (!end) {
 			end = Date.now();
 		}
 		this._update({
@@ -82,8 +80,8 @@ export default class Daemon {
 	}
 
 	private _sendSignal(signal?: string) {
-		const {pid} = this._data;
-		if(!pid) {
+		const { pid } = this._data;
+		if (!pid) {
 			return 0;
 		}
 
@@ -96,29 +94,29 @@ export default class Daemon {
 	}
 
 	send(message: DaemonSendData) {
-		if(!this._init || message.pid !== this.pid) {
+		if (!this._init || message.pid !== this.pid) {
 			return;
 		}
 
-		if(this._send) {
+		if (this._send) {
 			return this._send(message);
 		}
 
-		if(!this.isPrimary) {
+		if (!this.isPrimary) {
 			return;
 		}
 
 		const id = `${message.id}/${message.part}`;
 
 		let row = this._data.cpu[id];
-		if(message.type === "restart") {
-			if(row) {
-				row.restarted ++;
+		if (message.type === "restart") {
+			if (row) {
+				row.restarted++;
 			}
 			return;
 		}
 
-		if(!row) {
+		if (!row) {
 			row = {
 				id: message.id,
 				part: message.part,
@@ -135,7 +133,7 @@ export default class Daemon {
 
 		row.pid = message.cid;
 
-		if(message.type === "detail") {
+		if (message.type === "detail") {
 			row.port = message.port || null;
 			row.host = message.host || null;
 			row.mode = message.mode || null;
@@ -144,12 +142,12 @@ export default class Daemon {
 
 			// add cpu
 			row.cpu.push(message.cpu);
-			while(row.cpu.length > this._options.cpuPoint) {
+			while (row.cpu.length > this._options.cpuPoint) {
 				row.cpu.shift();
 			}
 
 			// update data
-			if(row.pid === this.pid) {
+			if (row.pid === this.pid) {
 				this._update();
 			}
 		}
@@ -158,16 +156,16 @@ export default class Daemon {
 	start(args: string[], env: Record<string, string>, background: boolean = true) {
 		this.update();
 
-		if(this.started) {
+		if (this.started) {
 			throw new Error("Server already started!");
 		}
 
-		if(!isMainProcess()) {
+		if (!isMainProcess()) {
 			throw new Error("It is permissible to stop the server only in the main thread!");
 		}
 
 		const file = join(process.cwd(), "build/server/server.js");
-		if(!existsSync(file)) {
+		if (!existsSync(file)) {
 			throw new Error("Build server file not found");
 		}
 
@@ -179,7 +177,7 @@ export default class Daemon {
 		});
 
 		const pid = subprocess.pid;
-		if(background) {
+		if (background) {
 			subprocess.unref();
 		}
 
@@ -193,15 +191,15 @@ export default class Daemon {
 	init(server: boolean = false) {
 		this.update();
 
-		if(!this.started) {
-			if(process.argv.includes("--no-pid")) {
+		if (!this.started) {
+			if (process.argv.includes("--no-pid")) {
 				return debug("Warning: PID ignore...");
 			}
 			throw newError("Use {cyan --no-pid} flag for run server");
 		}
 
 		const it = this;
-		if(it._init) {
+		if (it._init) {
 			return;
 		}
 
@@ -211,10 +209,10 @@ export default class Daemon {
 			stopListeners: Function[] = []
 		) {
 			const onExit = (err?: Error) => {
-				if(main) {
+				if (main) {
 					it._updateStop(undefined, err ? err.message : null);
 				}
-			}
+			};
 
 			const onSend = (value: DaemonCPUValue) => {
 				it.send(callback(value));
@@ -231,9 +229,8 @@ export default class Daemon {
 			};
 		}
 
-		if(this.isChild) {
-
-			if(!isMainThread && workerData && workerData.pid === it.pid && parentPort) {
+		if (this.isChild) {
+			if (!isMainThread && workerData && workerData.pid === it.pid && parentPort) {
 				it._send = (msg: DaemonSendData) => {
 					parentPort?.postMessage(msg);
 				};
@@ -247,17 +244,17 @@ export default class Daemon {
 						host: null,
 						mode: null,
 						port: null,
-						cpu
+						cpu,
 					};
 				});
 			}
 
 			const wData = cluster.worker.workerData;
 			const send = process.send;
-			if(!wData) {
+			if (!wData) {
 				throw newError("Child process error: {cyan %s} is not defined", "cluster.worker.workerData");
 			}
-			if(!send) {
+			if (!send) {
 				throw newError("Child process error: {cyan %s} function not defined", "process.send");
 			}
 
@@ -274,58 +271,62 @@ export default class Daemon {
 					host: null,
 					mode: null,
 					port: null,
-					cpu
+					cpu,
 				};
 			});
 		}
 
-		if(!this.isPrimary) {
+		if (!this.isPrimary) {
 			throw new Error("Server already started!");
 		}
 
 		const stopListeners: Function[] = [];
 
-		if(server) {
+		if (server) {
 			function message(_: any, msg: any) {
-				if(msg && msg.pid === it.pid && (msg.type === "fork" || msg.type === "detail")) {
+				if (msg && msg.pid === it.pid && (msg.type === "fork" || msg.type === "detail")) {
 					it.send(msg);
 				}
 			}
 			cluster.addListener("message", message);
 			stopListeners.push(() => {
 				cluster.removeListener("message", message);
-			})
+			});
 		}
 
-		createListener((cpu: DaemonCPUValue) => {
-			return {
-				type: server ? "cluster" : "main",
-				id: "main",
-				pid: it.pid,
-				cid: process.pid,
-				part: 1,
-				host: null,
-				mode: null,
-				port: null,
-				cpu,
-			};
-		}, true, stopListeners);
+		createListener(
+			(cpu: DaemonCPUValue) => {
+				return {
+					type: server ? "cluster" : "main",
+					id: "main",
+					pid: it.pid,
+					cid: process.pid,
+					part: 1,
+					host: null,
+					mode: null,
+					port: null,
+					cpu,
+				};
+			},
+			true,
+			stopListeners
+		);
 	}
 
 	stop() {
 		this.update();
 
-		if(!this.started) {
+		if (!this.started) {
 			return;
 		}
 
-		if(!isMainProcess()) {
+		if (!isMainProcess()) {
 			throw new Error("It is permissible to stop the server only in the main thread!");
 		}
 
-		if(this.isPrimary) {
+		if (this.isPrimary) {
 			let code = 0;
-			if(this._stop) {
+			if (this._stop) {
 				this._stop("System aborted...");
 			} else {
 				code = 1;
@@ -333,33 +334,33 @@ export default class Daemon {
 			return process.exit(code);
 		}
 
-		if(this._stop) {
+		if (this._stop) {
 			return this._stop("System aborted...");
 		}
 
 		this._sendSignal(this._options.killSignal);
 
 		this.update();
-		if(this.started && this._sendSignal() === 0) {
+		if (this.started && this._sendSignal() === 0) {
 			this._updateStop();
 		}
 	}
 
 	update() {
-		if(this._data.pid === process.pid) {
+		if (this._data.pid === process.pid) {
 			return this;
 		}
-		if(!existsSync(this._options.pid)) {
+		if (!existsSync(this._options.pid)) {
 			return this;
 		}
 		const text = readFileSync(this._options.pid).toString();
-		if(!text) {
+		if (!text) {
 			return this;
 		}
 		Object.assign(this._data, JSON.parse(text));
-		if(
+		if (
 			this._data.pid !== 0 &&
-			Date.now() - this._data.latest > (this._options.delay + 5000) &&
+			Date.now() - this._data.latest > this._options.delay + 5000 &&
 			this._sendSignal() === 0
 		) {
 			this._updateStop(this._data.latest, "Unknown error, process stopped responding");
@@ -373,11 +374,11 @@ export default class Daemon {
 
 	get isChild() {
 		const data = this._data;
-		if(data.pid === 0) {
+		if (data.pid === 0) {
 			return false;
 		}
 		const cid = parent();
-		if(data.pid === cid) {
+		if (data.pid === cid) {
 			return isMainThread ? cluster.isWorker && data.pid !== process.pid : cid === process.pid;
 		}
 		return false;
@@ -412,6 +413,6 @@ export default class Daemon {
 	}
 
 	get delta() {
-		return this.started ? (Date.now() - this.startTime) : 0;
+		return this.started ? Date.now() - this.startTime : 0;
 	}
 }

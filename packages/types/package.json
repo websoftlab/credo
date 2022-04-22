@@ -1,10 +1,11 @@
 {
-  "name": "@credo-js/types",
-  "version": "1.0.0",
-  "author": "credo@websoftlab.com",
-  "license": "MIT",
-  "scripts": {
-    "build": "node ../../scripts/lib/build.js"
-  },
-  "types": "index.d.ts"
+	"name": "@credo-js/types",
+	"version": "1.0.0",
+	"author": "credo@websoftlab.com",
+	"license": "MIT",
+	"scripts": {
+		"build": "node ../../scripts/lib/build.js",
+		"prettier": "node ../../scripts/lib/build-prettier.js"
+	},
+	"types": "index.d.ts"
 }

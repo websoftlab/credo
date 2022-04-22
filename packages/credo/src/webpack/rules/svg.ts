@@ -1,5 +1,5 @@
-import type {BuildRule} from "../types";
-import type {BuildConfigure} from "../../types";
+import type { BuildRule } from "../types";
+import type { BuildConfigure } from "../../types";
 
 /**
  * Using file-loader for handling svg files
@@ -9,18 +9,16 @@ async function svgRule(config: BuildConfigure): Promise<BuildRule> {
 	return config.fireOnOptionsHook("module.rule.svg", {
 		test: /\.svg$/,
 		exclude: /\.component\.svg$/,
-		type: 'asset',
+		type: "asset",
 		generator: {
 			filename: "images/[name].[hash][ext]",
 		},
 		parser: {
 			dataUrlCondition: {
-				maxSize: 4 * 1024 // 4kb
-			}
+				maxSize: 4 * 1024, // 4kb
+			},
 		},
 	});
 }
 
-export {
-	svgRule,
-}
+export { svgRule };

@@ -3,12 +3,7 @@
 	"compilerOptions": {
 		"outDir": "./build",
 		"rootDir": "./src",
-		"types": [
-			"node"
-		]
+		"types": ["node"]
 	},
-	"include": [
-		"./src/**/*",
-		"./global.d.ts"
-	]
+	"include": ["./src/**/*", "./global.d.ts"]
 }

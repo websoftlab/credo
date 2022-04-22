@@ -1,9 +1,9 @@
-import {lstat, stat} from "fs/promises";
+import { lstat, stat } from "fs/promises";
 import exists from "./exists";
-import type {EStat} from "../types";
+import type { EStat } from "../types";
 
 export default async function existsStat(file: string, link = false): Promise<EStat | null> {
-	if(!await exists(file)) {
+	if (!(await exists(file))) {
 		return null;
 	}
 	const info = link ? await lstat(file) : await stat(file);

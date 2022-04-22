@@ -1,8 +1,8 @@
-import {makeUrl} from "@credo-js/make-url";
-import {createPlainEvent, subscribe, has} from "@credo-js/utils/events";
-import type {API, App, Page} from "./types";
-import type {URL, OnMakeURLHook} from "@credo-js/make-url";
-import type {Evn} from "@credo-js/utils/events";
+import { makeUrl } from "@credo-js/make-url";
+import { createPlainEvent, subscribe, has } from "@credo-js/utils/events";
+import type { API, App, Page } from "./types";
+import type { URL, OnMakeURLHook } from "@credo-js/make-url";
+import type { Evn } from "@credo-js/utils/events";
 
 type ListenersData = Record<API.HookName, Evn[]>;
 
@@ -10,10 +10,10 @@ function observe(evn: Evn) {
 	evn.emit = (self: any, event: any) => {
 		try {
 			evn.listener.call(self, event);
-		} catch(err) {
+		} catch (err) {
 			console.log(`The ${evn.name} hook error`, err);
 		} finally {
-			if(evn.once) {
+			if (evn.once) {
 				evn.unsubscribe();
 			}
 		}
@@ -21,7 +21,6 @@ function observe(evn: Evn) {
 }
 
 export default class Api<ComponentType, Store = any> implements API.ApiInterface<ComponentType> {
-
 	title: string = "";
 	ssr: boolean = false;
 	baseUrl: string = "/";
@@ -32,7 +31,7 @@ export default class Api<ComponentType, Store = any> implements API.ApiInterface
 	constructor(
 		public mode: "client" | "server",
 		public app: App.StoreInterface<Store>,
-		public page: Page.StoreInterface<ComponentType>,
+		public page: Page.StoreInterface<ComponentType>
 	) {
 		this.services = {
 			translator: app.translator,
@@ -41,10 +40,10 @@ export default class Api<ComponentType, Store = any> implements API.ApiInterface
 	}
 
 	makeUrl: URL.Handler = (url): string => {
-		if(typeof url === "string" || Array.isArray(url)) {
-			url = {path: url};
+		if (typeof url === "string" || Array.isArray(url)) {
+			url = { path: url };
 		}
-		const event = {url};
+		const event = { url };
 		this.emit<OnMakeURLHook>("onMakeURL", event);
 		return makeUrl(event.url);
 	};
@@ -62,7 +61,7 @@ export default class Api<ComponentType, Store = any> implements API.ApiInterface
 	}
 
 	emit<T = any>(action: API.HookName, event?: T) {
-		if(this._listeners.hasOwnProperty(action)) {
+		if (this._listeners.hasOwnProperty(action)) {
 			event = createPlainEvent(action, event);
 			this._listeners[action].slice().forEach((evn: Evn) => {
 				evn.emit(this, event);

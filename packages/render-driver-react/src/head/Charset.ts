@@ -1,5 +1,5 @@
 import createHeadComponent from "./createHeadComponent";
-import type {HeadTagProps} from "./types";
+import type { HeadTagProps } from "./types";
 
 export type CharsetProps = HeadTagProps<{
 	charSet: string;
@@ -8,7 +8,5 @@ export type CharsetProps = HeadTagProps<{
 export default createHeadComponent<CharsetProps>("charset", {
 	singleton: true,
 	tagName: "meta",
-	attributes: [
-		"charSet"
-	]
+	attributes: ["charSet"],
 });

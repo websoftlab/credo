@@ -1,7 +1,7 @@
-import type {Context} from "koa";
+import type { Context } from "koa";
 import type HttpJSON from "./HttpJSON";
 
-type ContextType<T> = T | ((ctx: Context) => (T | Promise<T>));
+type ContextType<T> = T | ((ctx: Context) => T | Promise<T>);
 
 export interface ResponderJsonCorsOptions {
 	enabled?: boolean;

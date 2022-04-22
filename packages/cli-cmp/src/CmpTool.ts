@@ -1,4 +1,4 @@
-import type {StringifyOptions} from "./types";
+import type { StringifyOptions } from "./types";
 import stringify from "./stringify";
 import keyVar from "./keyVar";
 import CmpValue from "./CmpValue";
@@ -6,7 +6,6 @@ import CmpValue from "./CmpValue";
 const TOOL_NAME_ID = Symbol();
 
 export default class CmpTool {
-
 	[TOOL_NAME_ID]: Record<string, number> = {};
 
 	clone() {
@@ -17,7 +16,7 @@ export default class CmpTool {
 
 	tmp(name: string = "tmp") {
 		const tmp = this[TOOL_NAME_ID];
-		if(!tmp[name]) {
+		if (!tmp[name]) {
 			tmp[name] = 1;
 			return name;
 		} else {

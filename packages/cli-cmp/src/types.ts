@@ -1,4 +1,3 @@
-
 export type ReplacerFunction = (name: string, value: any) => any;
 
 export interface StringifyOptions {

@@ -1,9 +1,9 @@
-import {Route} from "../types";
-import {Context} from "koa";
+import { Route } from "../types";
+import { Context } from "koa";
 import RouteEntity from "./RouteEntity";
-import {constants} from "./constants";
-import {createMethods, trimSegment} from "./utils";
-import type {RouteVariant} from "./types";
+import { constants } from "./constants";
+import { createMethods, trimSegment } from "./utils";
+import type { RouteVariant } from "./types";
 
 export default class RouteGroup extends RouteEntity implements Route.RouteGroup {
 	methods?: string[];
@@ -19,12 +19,12 @@ export default class RouteGroup extends RouteEntity implements Route.RouteGroup 
 		super(constants.group);
 
 		path = trimSegment(path);
-		if(!path.length || path.includes("//")) {
+		if (!path.length || path.includes("//")) {
 			throw new Error(`Invalid group path [${path}]`);
 		}
 		this.path = `/${path}/`;
 		this.segments = path.split("/");
-		if(methods) {
+		if (methods) {
 			this.methods = createMethods(methods);
 		}
 	}
@@ -34,14 +34,14 @@ export default class RouteGroup extends RouteEntity implements Route.RouteGroup 
 	}
 
 	match(ctx: Context, withMethod: boolean = true): boolean {
-		if(withMethod && !this.method(ctx.method)) {
+		if (withMethod && !this.method(ctx.method)) {
 			return false;
 		}
 		let path = ctx.path;
-		if(path.startsWith(this.path)) {
+		if (path.startsWith(this.path)) {
 			return true;
 		}
-		if(!path.endsWith("/")) {
+		if (!path.endsWith("/")) {
 			path += "/";
 		}
 		return path === this.path;

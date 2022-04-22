@@ -1,11 +1,11 @@
-import type {ModifierColorName} from "@credo-js/cli-color";
-import {color, format} from "@credo-js/cli-color";
+import type { ModifierColorName } from "@credo-js/cli-color";
+import { color, format } from "@credo-js/cli-color";
 import daemon from "../daemon";
 
 type RowOutType = {
-	text: string,
-	length: number,
-	color?: ModifierColorName
+	text: string;
+	length: number;
+	color?: ModifierColorName;
 };
 
 export default function CmdStat(_args: never, _option: never, stream: NodeJS.WriteStream) {
@@ -16,25 +16,13 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 
 	const cpuStat = dmn.cpu;
 	const keys = Object.keys(cpuStat);
-	if(!keys.length) {
+	if (!keys.length) {
 		return writeln("No CPU data");
 	}
 
-	const names = [
-		"ID",
-		"PID",
-		"Part",
-		"Type",
-		"Restart",
-		"Mode",
-		"Host",
-		"Port",
-		"CPU",
-		"CPU min",
-		"CPU max",
-	];
+	const names = ["ID", "PID", "Part", "Type", "Restart", "Mode", "Host", "Port", "CPU", "CPU min", "CPU max"];
 
-	const calc: number[] = names.map(n => n.length);
+	const calc: number[] = names.map((n) => n.length);
 	const data: RowOutType[][] = [];
 	const colorType: Record<string, ModifierColorName> = {
 		main: "yellow",
@@ -44,10 +32,10 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 		error: "red",
 	};
 
-	for(const key of keys) {
+	for (const key of keys) {
 		const row: RowOutType[] = [];
 		const item = cpuStat[key];
-		const {id, part, type, cpu, mode, port, restarted, host, pid} = item;
+		const { id, part, type, cpu, mode, port, restarted, host, pid } = item;
 
 		// ID
 		row.push(outRow(id));
@@ -74,7 +62,7 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 		row.push(outRow(port || "-"));
 
 		// CPU, min, max ...
-		if(cpu.length < 1) {
+		if (cpu.length < 1) {
 			row.push(outRow("-"));
 			row.push(outRow("-"));
 			row.push(outRow("-"));
@@ -87,41 +75,43 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 			}
 			function getPrc(value: number) {
 				let color: ModifierColorName = "white";
-				if(value > 75) color = "red";
-				else if(value > 50) color = "yellow";
-				else if(value > 25) color = "green";
+				if (value > 75) color = "red";
+				else if (value > 50) color = "yellow";
+				else if (value > 25) color = "green";
 
 				value = Math.round(value * 100) / 100;
 				return outRow(`${value}%`, color);
 			}
 
 			// calculate CPU ...
-			let min = 0, max = 0, calc = 0, count = 0;
+			let min = 0,
+				max = 0,
+				calc = 0,
+				count = 0;
 
-			for(const info of cpu) {
-
+			for (const info of cpu) {
 				// u - user time
 				// s - system time
 				// c - second (hrtime)
 				// n - nano seconds (hrtime)
 
 				const elapTimeMS = secNSec2ms(info.c, info.n);
-				const elapUserMS = secMs(info.u)
-				const elapSystMS = secMs(info.s)
-				const cpuPercent = 100 * (elapUserMS + elapSystMS) / elapTimeMS;
+				const elapUserMS = secMs(info.u);
+				const elapSystMS = secMs(info.s);
+				const cpuPercent = (100 * (elapUserMS + elapSystMS)) / elapTimeMS;
 
-				if(min > cpuPercent) {
+				if (min > cpuPercent) {
 					min = cpuPercent;
 				}
-				if(max < cpuPercent) {
+				if (max < cpuPercent) {
 					max = cpuPercent;
 				}
-				if(count === 0) {
+				if (count === 0) {
 					calc = cpuPercent;
 				} else {
 					calc = (calc * count + cpuPercent) / (count + 1);
 				}
-				count ++;
+				count++;
 			}
 
 			row.push(getPrc(calc));
@@ -133,9 +123,9 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 		data.push(row);
 
 		// recalculate
-		for(let i = 0; i < row.length; i++) {
+		for (let i = 0; i < row.length; i++) {
 			const line = row[i];
-			if(calc[i] < line.length) {
+			if (calc[i] < line.length) {
 				calc[i] = line.length;
 			}
 		}
@@ -144,18 +134,18 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 	const calcLength = calc.reduce((prev, cur) => prev + cur + 3, 1);
 	const columns = stream.columns || 80;
 
-	if(calcLength > columns) {
+	if (calcLength > columns) {
 		// plain format
-		for(const row of data) {
+		for (const row of data) {
 			writeln();
 			writePlainRow(row);
 		}
 	} else {
 		// table format
 		writeBorder("┌", "┬", "┐");
-		writeRow(names.map(name => outRow(name)));
+		writeRow(names.map((name) => outRow(name)));
 		writeBorder("├", "┼", "┤");
-		for(const row of data) {
+		for (const row of data) {
 			writeRow(row);
 		}
 		writeBorder("└", "┴", "┘");
@@ -164,16 +154,15 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 	// -----------
 
 	function outRow(text: string | number | boolean, colorName?: ModifierColorName): RowOutType {
-
-		if(!colorName) {
-			if(typeof text === "number") {
+		if (!colorName) {
+			if (typeof text === "number") {
 				colorName = "yellow";
-			} else if(typeof text === "boolean") {
+			} else if (typeof text === "boolean") {
 				colorName = text ? "green" : "red";
 			}
 		}
 
-		if(typeof text === "boolean") {
+		if (typeof text === "boolean") {
 			text = text ? "yes" : "no";
 		}
 
@@ -181,7 +170,7 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 		return {
 			text,
 			length: text.length,
-			color: colorName
+			color: colorName,
 		};
 	}
 
@@ -192,7 +181,7 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 
 	function writeBorder(left: string, br: string, right: string) {
 		let txt = left;
-		for(let i = 0; i < calc.length; i++) {
+		for (let i = 0; i < calc.length; i++) {
 			txt += "".padEnd(calc[i] + 2, "─");
 			txt += i + 1 === calc.length ? right : br;
 		}
@@ -201,10 +190,10 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 
 	function writeRow(row: RowOutType[]) {
 		let txt = "│";
-		for(let i = 0; i < calc.length; i++) {
+		for (let i = 0; i < calc.length; i++) {
 			const cell = row[i];
 			let text = cell.text;
-			if(cell.color) {
+			if (cell.color) {
 				text = color(cell.color, text);
 			}
 			txt += " ";
@@ -217,10 +206,10 @@ export default function CmdStat(_args: never, _option: never, stream: NodeJS.Wri
 
 	function writePlainRow(row: RowOutType[]) {
 		writeln("- ID: " + color.white(row[0].text));
-		for(let i = 1; i < row.length; i++) {
+		for (let i = 1; i < row.length; i++) {
 			const cell = row[i];
 			let text = cell.text;
-			if(cell.color) {
+			if (cell.color) {
 				text = color(cell.color, text);
 			}
 			writeln("  " + names[i] + ": " + text);

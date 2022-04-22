@@ -1,4 +1,3 @@
-
 export default class GroupItem {
 	property: string = "";
 	multiple: boolean = false;
@@ -9,15 +8,15 @@ export default class GroupItem {
 
 	get delta() {
 		let delta = 2;
-		if(this.name) {
+		if (this.name) {
 			delta += this.name.length + 2;
 		}
-		if(this.property) {
+		if (this.property) {
 			delta += this.property.length + 4;
-			if(this.multiple) {
+			if (this.multiple) {
 				delta += 6; // ... dots[]
 			}
-			if(!this.required)  {
+			if (!this.required) {
 				delta += 2;
 			}
 		}

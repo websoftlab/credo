@@ -1,3 +1,4 @@
+// prettier-ignore
 export const PRIVATE_JS_NAME = [
 	"constructor", "hasOwnProperty", "Infinity", "Array", "Date", "eval", "function",
 	"isPrototypeOf", "length", "Math", "NaN", "Number", "Object", "prototype",

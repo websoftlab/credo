@@ -1,7 +1,7 @@
-import type {BuildConfigure} from "../../types";
-const WebpackManifestPlugin = require('../utils/manifest-webpack-plugin');
+import type { BuildConfigure } from "../../types";
+const WebpackManifestPlugin = require("../utils/manifest-webpack-plugin");
 
-export default function(_: BuildConfigure) {
+export default function (_: BuildConfigure) {
 	return new WebpackManifestPlugin({
 		filename: "manifest.json",
 	});

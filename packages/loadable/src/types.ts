@@ -1,4 +1,3 @@
-
 export type Initializer = () => Promise<void>;
 
 export type Loader<T = any> = () => Promise<T>;
@@ -9,7 +8,7 @@ export type RenderHandler<Element, Result = any, Props = any> = (loadResult: Res
 
 export interface Options<Element, FallbackProps> {
 	name: string;
-	loader: Loader | Loader[] | Record<string, Loader>,
+	loader: Loader | Loader[] | Record<string, Loader>;
 	throwable?: boolean;
 	fallback?: FallbackHandler<Element, FallbackProps>;
 	delay?: number | null;
@@ -18,14 +17,14 @@ export interface Options<Element, FallbackProps> {
 }
 
 export interface ObserverOptions<Element, FallbackProps> {
-	name: string,
-	init(): Promise<any>
-	isDone(): boolean,
-	isLoading(): boolean,
-	reset(): void,
-	done(error: Error | false, props: any, createFallbackProps: (err: Error | false) => FallbackProps ): Element;
-	delay?: null | number,
-	timeout?: null | number,
+	name: string;
+	init(): Promise<any>;
+	isDone(): boolean;
+	isLoading(): boolean;
+	reset(): void;
+	done(error: Error | false, props: any, createFallbackProps: (err: Error | false) => FallbackProps): Element;
+	delay?: null | number;
+	timeout?: null | number;
 }
 
 export interface CreateLoadableOptions<Type, Element, FallbackProps> {

@@ -1,6 +1,6 @@
-import type {ElementType} from "react";
-import type {HeadTagName} from "@credo-js/html-head";
-import {createElement} from "react";
+import type { ElementType } from "react";
+import type { HeadTagName } from "@credo-js/html-head";
+import { createElement } from "react";
 import HeadTagComponent from "./HeadTagComponent";
 
 const defaultAttributes: string[] = [
@@ -21,35 +21,34 @@ const defaultAttributes: string[] = [
 ];
 
 const renameAttributes: Record<string, string> = {
-	"class": "className",
-	"contenteditable": "contentEditable",
-	"spellcheck": "spellCheck",
-	"tabindex": "tabIndex",
-	"accesskey": "accessKey",
-	"crossorigin": "crossOrigin",
-	"hreflang": "hrefLang",
-	"referrerpolicy": "referrerPolicy",
-	"httpequiv": "httpEquiv",
+	class: "className",
+	contenteditable: "contentEditable",
+	spellcheck: "spellCheck",
+	tabindex: "tabIndex",
+	accesskey: "accessKey",
+	crossorigin: "crossOrigin",
+	hreflang: "hrefLang",
+	referrerpolicy: "referrerPolicy",
+	httpequiv: "httpEquiv",
 	"http-equiv": "httpEquiv",
-	"charset": "charSet",
+	charset: "charSet",
 };
 
 function filterAttributes(props: any, attributes: string[], child: boolean) {
 	const rest: any = {};
 
-	if(child && typeof props.children === "string") {
+	if (child && typeof props.children === "string") {
 		rest.children = props.children;
 	}
 
 	Object.keys(props).forEach((name: string) => {
-
 		// normalize attribute name
-		if(renameAttributes[name]) {
+		if (renameAttributes[name]) {
 			name = renameAttributes[name];
 		}
 
 		const pref = name.substring(0, 5);
-		if(
+		if (
 			pref === "data-" ||
 			pref === "aria-" ||
 			attributes.indexOf(name) !== -1 ||
@@ -72,14 +71,7 @@ export default function createHeadComponent<T = {}>(
 		requiredProps?: any;
 	}
 ): ElementType<T> {
-
-	const {
-		tagName = name,
-		singleton = false,
-		child = false,
-		attributes = [],
-		requiredProps = null
-	} = options;
+	const { tagName = name, singleton = false, child = false, attributes = [], requiredProps = null } = options;
 
 	class HeadElm extends HeadTagComponent {
 		typeName: HeadTagName = name;
@@ -87,8 +79,8 @@ export default function createHeadComponent<T = {}>(
 		singleton: boolean = singleton;
 	}
 
-	const Elm = function(props: any) {
-		if(requiredProps != null) {
+	const Elm = function (props: any) {
+		if (requiredProps != null) {
 			Object.assign(props, requiredProps);
 		}
 		return createElement(HeadElm, filterAttributes(props, attributes, child));

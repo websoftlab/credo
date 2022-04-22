@@ -1,4 +1,4 @@
-import type {Env, EnvVar} from "./types";
+import type { Env, EnvVar } from "./types";
 
 const base64Regex = /^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$/;
 const accessors: Record<string, (value: any, ...args: any[]) => any> = {
@@ -8,7 +8,7 @@ const accessors: Record<string, (value: any, ...args: any[]) => any> = {
 		}
 		if (value == null) {
 			return [];
-		} else if(typeof value === "string") {
+		} else if (typeof value === "string") {
 			return value.length ? String(value).split(delimiter).filter(Boolean) : [];
 		} else {
 			return [value];
@@ -17,112 +17,107 @@ const accessors: Record<string, (value: any, ...args: any[]) => any> = {
 	toInt(value) {
 		if (typeof value === "number") {
 			if (isNaN(value)) {
-				throw new Error('should be a valid float');
+				throw new Error("should be a valid float");
 			}
 			return value;
 		}
 		const n = parseInt(value, 10);
 		if (isNaN(n) || n.toString(10) !== String(value)) {
-			throw new Error('should be a valid integer');
+			throw new Error("should be a valid integer");
 		}
 		return n;
 	},
 	toIntPositive(value) {
 		const ret = accessors.toInt(value);
 		if (ret < 0) {
-			throw new Error('should be a positive integer');
+			throw new Error("should be a positive integer");
 		}
 		return ret;
 	},
 	toIntNegative(value) {
 		const ret = accessors.toInt(value);
 		if (ret > 0) {
-			throw new Error('should be a negative integer');
+			throw new Error("should be a negative integer");
 		}
 		return ret;
 	},
 	toFloat(value) {
 		if (typeof value === "number") {
 			if (isNaN(value)) {
-				throw new Error('should be a valid float');
+				throw new Error("should be a valid float");
 			}
 			return value;
 		}
 		const n = parseFloat(value);
 		if (isNaN(n) || n.toString() !== String(value)) {
-			throw new Error('should be a valid float');
+			throw new Error("should be a valid float");
 		}
 		return n;
 	},
 	toFloatPositive(value) {
 		const ret = accessors.toFloat(value);
 		if (ret < 0) {
-			throw new Error('should be a positive float');
+			throw new Error("should be a positive float");
 		}
 		return ret;
 	},
 	toFloatNegative(value) {
 		const ret = accessors.toFloat(value);
 		if (ret > 0) {
-			throw new Error('should be a negative float');
+			throw new Error("should be a negative float");
 		}
 		return ret;
 	},
 	toJson(value) {
-		if(value != null && typeof value === "object") {
+		if (value != null && typeof value === "object") {
 			return value;
 		}
 		try {
-			return JSON.parse(value)
+			return JSON.parse(value);
 		} catch (e) {
-			throw new Error('should be valid (parseable) JSON');
+			throw new Error("should be valid (parseable) JSON");
 		}
 	},
 	toJsonArray(value) {
 		value = accessors.toJson(value);
 		if (!Array.isArray(value)) {
-			throw new Error('should be a parseable JSON Array');
+			throw new Error("should be a parseable JSON Array");
 		}
 		return value;
 	},
 	toJsonObject(value) {
 		value = accessors.toJson(value);
 		if (Array.isArray(value)) {
-			throw new Error('should be a parseable JSON Object');
+			throw new Error("should be a parseable JSON Object");
 		}
 		return value;
 	},
 	toBool(value) {
-		if(typeof value === "boolean") {
+		if (typeof value === "boolean") {
 			return value;
 		}
 		const val = String(value).toLowerCase();
-		const allowedValues = [
-			'false',
-			'0',
-			'true',
-			'1'
-		];
+		const allowedValues = ["false", "0", "true", "1"];
 		if (allowedValues.indexOf(val) === -1) {
 			throw new Error('should be either "true", "false", "TRUE", "FALSE", 1, or 0');
 		}
-		return !(((val === '0') || (val === 'false')));
+		return !(val === "0" || val === "false");
 	},
 	toPortNumber(value) {
 		value = accessors.toIntPositive(value);
 		if (value > 65535) {
-			throw new Error('cannot assign a port number greater than 65535');
+			throw new Error("cannot assign a port number greater than 65535");
 		}
 		return value;
 	},
 	toUrlObject(value) {
-		if(value instanceof URL) {
+		if (value instanceof URL) {
 			return value;
 		}
 		try {
 			return new URL(String(value));
 		} catch (e) {
-			throw new Error('should be a valid URL');
+			throw new Error("should be a valid URL");
 		}
 	},
 	toUrlString(value) {
@@ -134,11 +129,11 @@ const accessors: Record<string, (value: any, ...args: any[]) => any> = {
 		// errors except by using string comparisons.
 
 		// Test the flags
-		if(flags != null) {
+		if (flags != null) {
 			try {
 				RegExp("", flags);
 			} catch (err) {
-				throw new Error('invalid regexp flags');
+				throw new Error("invalid regexp flags");
 			}
 		} else {
 			flags = undefined;
@@ -148,13 +143,12 @@ const accessors: Record<string, (value: any, ...args: any[]) => any> = {
 			return new RegExp(value, flags);
 		} catch (err) {
 			// We know that the regexp is the issue because we tested the flags earlier
-			throw new Error('should be a valid RegExp');
+			throw new Error("should be a valid RegExp");
 		}
-	}
+	},
 };
 
 function getEnv(value: any, keyName: string): EnvVar {
-
 	let format = value;
 	let defaultValue: any = undefined;
 	let isRequired = false;
@@ -168,15 +162,17 @@ function getEnv(value: any, keyName: string): EnvVar {
 		get value() {
 			let val = isNil() ? defaultValue : format;
 
-			if (isRequired && (val == null || typeof val === "string" && val.trim().length === 0)) {
+			if (isRequired && (val == null || (typeof val === "string" && val.trim().length === 0))) {
 				throw new Error(`is a required ENV variable (${keyName}), but its value was empty`);
 			}
 
 			if (isBase64) {
 				if (typeof val !== "string" || !val.match(base64Regex)) {
-					throw new Error(`should be a valid base64 string if using convertFromBase64 for the (${keyName}) ENV variable`);
+					throw new Error(
+						`should be a valid base64 string if using convertFromBase64 for the (${keyName}) ENV variable`
+					);
 				}
-				val = Buffer.from(value, 'base64').toString();
+				val = Buffer.from(value, "base64").toString();
 			}
 
 			if (isMap) {
@@ -211,18 +207,18 @@ function getEnv(value: any, keyName: string): EnvVar {
 	};
 
 	const formatValue = (func: Function, args: any[]) => {
-		if(isNil()) {
+		if (isNil()) {
 			format = defaultValue;
 			defaultValue = undefined;
 		}
-		if(isMap) {
+		if (isMap) {
 			isMap = false;
-			if(!Array.isArray(format)) {
+			if (!Array.isArray(format)) {
 				format = accessors.toArray(format);
 			}
-			format = format.map((value: any) => func(value, ... args));
+			format = format.map((value: any) => func(value, ...args));
 		} else {
-			format = func(format, ... args);
+			format = func(format, ...args);
 		}
 		return result;
 	};
@@ -230,15 +226,15 @@ function getEnv(value: any, keyName: string): EnvVar {
 	Object.defineProperty(result, "toString", {
 		enumerable: true,
 		value() {
-			return formatValue((value: any) => typeof value === "string" ? value : String(value), []);
+			return formatValue((value: any) => (typeof value === "string" ? value : String(value)), []);
 		},
 	});
 
-	Object.keys(accessors).forEach(key => {
+	Object.keys(accessors).forEach((key) => {
 		const func = accessors[key];
 		Object.defineProperty(result, key, {
 			enumerable: true,
-			value(... args: any[]) {
+			value(...args: any[]) {
 				return formatValue(func, args);
 			},
 		});
@@ -248,13 +244,12 @@ function getEnv(value: any, keyName: string): EnvVar {
 }
 
 export function registerEnvAccessor<T = any>(name: string, accessor: (value: string) => T) {
-	if(typeof accessor === "function") {
+	if (typeof accessor === "function") {
 		accessors[name] = accessor;
 	}
 }
 
 export function createEnv(data = {}): Env {
-
 	const saved: Record<string, EnvVar> = {};
 
 	const get = (target: any, p: string) => {
@@ -269,12 +264,12 @@ export function createEnv(data = {}): Env {
 	};
 
 	const getter = (target: any) => {
-		return (... args: string[]) => {
-			for(let p of args) {
-				if(target[p] != null) {
+		return (...args: string[]) => {
+			for (let p of args) {
+				if (target[p] != null) {
 					return getEnv(target[p], p);
 				}
-				if(process.env[p] != null) {
+				if (process.env[p] != null) {
 					return getEnv(process.env[p], p);
 				}
 			}
@@ -285,27 +280,27 @@ export function createEnv(data = {}): Env {
 	const proxy: Env = new Proxy<Env>(data as Env, {
 		set(target, p: string, value: any, _receiver): boolean {
 			target[p] = value;
-			if(saved[p] && saved[p].originValue !== value) {
+			if (saved[p] && saved[p].originValue !== value) {
 				delete saved[p];
 			}
 			return true;
 		},
 		get(target, p: string, _receiver) {
-			if(p === "get") {
+			if (p === "get") {
 				return getter(target);
 			}
-			if(p === "set") {
+			if (p === "set") {
 				return setter(target, proxy);
 			}
-			if(p === "all") {
+			if (p === "all") {
 				return () => {
 					return {
-						... process.env,
-						... target,
+						...process.env,
+						...target,
 					};
 				};
 			}
-			if(!saved[p]) {
+			if (!saved[p]) {
 				saved[p] = get(target, p as string);
 			}
 			return saved[p];

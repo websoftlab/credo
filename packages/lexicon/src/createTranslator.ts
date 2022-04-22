@@ -1,16 +1,15 @@
 import translate from "./translate";
-import {replace, plural} from "./replace";
-import type {Lexicon} from "./types";
+import { replace, plural } from "./replace";
+import type { Lexicon } from "./types";
 
 export default function createTranslator(store: Lexicon.LanguageStoreInterface): Lexicon.Translator {
-
 	const translator: Lexicon.Translator = function translator(key: string | Lexicon.TranslateOptions): string {
-		if(typeof key === "string") {
-			key = {id: key};
+		if (typeof key === "string") {
+			key = { id: key };
 		}
 
 		const value = store.translate(key.id, key.alternative);
-		if(value === key.id) {
+		if (value === key.id) {
 			return value;
 		}
 
@@ -27,8 +26,8 @@ export default function createTranslator(store: Lexicon.LanguageStoreInterface):
 
 	translator.lambda = (name: string, value: any, replacement?: any) => {
 		const func = store.lambda[name];
-		if(typeof func === "function") {
-			return func(value, {name, translator, data: replacement});
+		if (typeof func === "function") {
+			return func(value, { name, translator, data: replacement });
 		}
 		return `() => [${name}]`;
 	};

@@ -1,4 +1,3 @@
-
 export const commands = {
 	notFound: "The {cyan %s} command not found",
 	duplicateName: "Duplicate command name {cyan %s}",

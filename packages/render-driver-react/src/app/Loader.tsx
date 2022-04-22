@@ -1,34 +1,30 @@
 import React from "react";
-import {useLocation} from "react-router-dom";
-import {observer} from "mobx-react-lite";
-import {component, defined} from "../component";
-import type {Page} from "@credo-js/app";
-import type {CSSProperties, ElementType, ReactNode} from "react";
+import { useLocation } from "react-router-dom";
+import { observer } from "mobx-react-lite";
+import { component, defined } from "../component";
+import type { Page } from "@credo-js/app";
+import type { CSSProperties, ElementType, ReactNode } from "react";
 
 const errorStyle: CSSProperties = {
 	padding: 15,
 	margin: 30,
-	backgroundColor: 'darkred',
-	color: 'white',
+	backgroundColor: "darkred",
+	color: "white",
 	borderRadius: 4,
 };
 
-const PageLayout = (props: {children: ReactNode}) => props.children as JSX.Element;
+const PageLayout = (props: { children: ReactNode }) => props.children as JSX.Element;
 const PageSpinner = () => null;
-const PageError = (props: {message: string}) => (
-	<div style={errorStyle}>
-		{props.message}
-	</div>
-);
+const PageError = (props: { message: string }) => <div style={errorStyle}>{props.message}</div>;
 
-function Loader(props: {page: Page.StoreInterface<ElementType>, onMount: () => void}) {
-	const {page, onMount} = props;
+function Loader(props: { page: Page.StoreInterface<ElementType>; onMount: () => void }) {
+	const { page, onMount } = props;
 	const location = useLocation();
-	const {key = "", pathname, search} = location;
+	const { key = "", pathname, search } = location;
 	const url = pathname + search;
-	const {response: Rs} = page;
+	const { response: Rs } = page;
 
-	if(__WEB__) {
+	if (__WEB__) {
 		React.useEffect(() => {
 			if (page.url !== url || page.key !== key) {
 				page.load(url, key);
@@ -38,28 +34,17 @@ function Loader(props: {page: Page.StoreInterface<ElementType>, onMount: () => v
 		React.useEffect(onMount);
 	}
 
-	const Layout: ElementType  = defined("layout")  ? component("layout")  : PageLayout;
+	const Layout: ElementType = defined("layout") ? component("layout") : PageLayout;
 	const Spinner: ElementType = defined("spinner") ? component("spinner") : PageSpinner;
-	const Error: ElementType   = defined("error")   ? component("error")   : PageError;
+	const Error: ElementType = defined("error") ? component("error") : PageError;
 
 	return (
 		<Layout page={page}>
-			<Spinner
-				spin={page.loading}
-			/>
-			{!page.loading && page.error && (
-				<Error
-					message={page.errorMessage}
-				/>
-			)}
-			{Rs && (
-				<Rs.Component
-					{...Rs.props}
-					pageData={Rs.data}
-				/>
-			)}
+			<Spinner spin={page.loading} />
+			{!page.loading && page.error && <Error message={page.errorMessage} />}
+			{Rs && <Rs.Component {...Rs.props} pageData={Rs.data} />}
 		</Layout>
-	)
+	);
 }
 
 export default observer(Loader);

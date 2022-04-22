@@ -1,26 +1,26 @@
-import type {LocalStore} from "./types";
-import {mkdir, access, lstat, readdir, unlink, rmdir, opendir, writeFile, readFile} from "fs/promises";
-import {dirname, sep, join as joinPath, resolve} from "path";
+import type { LocalStore } from "./types";
+import { mkdir, access, lstat, readdir, unlink, rmdir, opendir, writeFile, readFile } from "fs/promises";
+import { dirname, sep, join as joinPath, resolve } from "path";
 import asyncResult from "@credo-js/utils/asyncResult";
 
 const pathType = Symbol();
 
 function resolvePath(store: LocalStoreData, path?: string | string[]) {
 	const root = store[pathType];
-	if(!path) {
+	if (!path) {
 		return root;
 	}
-	if(!Array.isArray(path)) {
+	if (!Array.isArray(path)) {
 		path = [path];
 	}
-	if(path.length === 0) {
+	if (path.length === 0) {
 		return root;
 	}
-	path = joinPath(root, ... path);
-	if(path === root) {
+	path = joinPath(root, ...path);
+	if (path === root) {
 		return path;
 	}
-	if(!path.startsWith(root + sep)) {
+	if (!path.startsWith(root + sep)) {
 		throw new Error("Error accessing local storage");
 	}
 	return path;
@@ -36,20 +36,20 @@ async function checkExists(path: string) {
 }
 
 async function checkDirectory(dir: string, dirname = "dirname") {
-	if(!await checkExists(dir)) {
-		await mkdir(dir, {recursive: true});
+	if (!(await checkExists(dir))) {
+		await mkdir(dir, { recursive: true });
 	} else {
 		const stat = await lstat(dir);
-		if(!stat.isDirectory()) {
+		if (!stat.isDirectory()) {
 			throw new Error(`The ${dirname} is not directory (${dir})`);
 		}
 	}
 }
 
 async function checkFileOrNotExists(file: string) {
-	if(await checkExists(file)) {
+	if (await checkExists(file)) {
 		const stat = await lstat(file);
-		if(!stat.isFile()) {
+		if (!stat.isFile()) {
 			throw new Error(`The ${file} path is not file`);
 		}
 		return true;
@@ -74,69 +74,69 @@ async function listFiles(
 	const fullPath = path ? joinPath(base, path) : base;
 	const all = await readdir(fullPath);
 
-	for(let file of all) {
-		if(hidden && file.charAt(0) === ".") {
+	for (let file of all) {
+		if (hidden && file.charAt(0) === ".") {
 			continue;
 		}
 		const filePath = joinPath(fullPath, file);
 		const stat = await lstat(filePath);
-		if(stat.isFile()) {
-			if(mask(file, path)) {
+		if (stat.isFile()) {
+			if (mask(file, path)) {
 				files.push({
 					base,
 					file,
 					path,
 					fullPath: filePath,
-					stats: stat
+					stats: stat,
 				});
 			}
-		} else if(stat.isDirectory() && depth > 0) {
+		} else if (stat.isDirectory() && depth > 0) {
 			const resolvePath = resolve(fullPath);
-			if(!history.includes(resolvePath)) {
+			if (!history.includes(resolvePath)) {
 				history.push(resolvePath);
-				await listFiles(files, mask, hidden, base, (path ? `${path}/${file}` : file), depth - 1, history);
+				await listFiles(files, mask, hidden, base, path ? `${path}/${file}` : file, depth - 1, history);
 			}
 		}
 	}
 }
 
-async function list(store: LocalStoreData, stats: LocalStore.FStats[], history: string[], options: LocalStore.ListOptions) {
-	let {
-		path,
-		mask,
-		depth = 0,
-		hidden = false,
-	} = options;
+async function list(
+	store: LocalStoreData,
+	stats: LocalStore.FStats[],
+	history: string[],
+	options: LocalStore.ListOptions
+) {
+	let { path, mask, depth = 0, hidden = false } = options;
 
 	path = resolvePath(store, path);
-	if(!await checkExists(path)) {
+	if (!(await checkExists(path))) {
 		return stats;
 	}
 
 	const stat = await lstat(path);
-	if(!stat.isDirectory()) {
+	if (!stat.isDirectory()) {
 		throw new Error(`The list path is not directory (${path})`);
 	}
 
-	if(mask) {
-		if(typeof mask === "string") {
+	if (mask) {
+		if (typeof mask === "string") {
 			const regExp = new RegExp(mask);
 			mask = (file: string) => {
 				return regExp.test(file);
 			};
-		} else if(mask instanceof RegExp) {
+		} else if (mask instanceof RegExp) {
 			const regExp = mask;
 			mask = (file: string) => {
 				return regExp.test(file);
 			};
-		} else if(typeof mask !== "function") {
+		} else if (typeof mask !== "function") {
 			throw new Error("Invalid mask parameter");
 		}
 	} else {
 		mask = () => true;
 	}
 
-	if(typeof depth !== "number" || depth < 1 || isNaN(depth) || !isFinite(depth)) {
+	if (typeof depth !== "number" || depth < 1 || isNaN(depth) || !isFinite(depth)) {
 		depth = 0;
 	}
 
@@ -156,14 +156,13 @@ function createNotFoundError(file: string) {
 }
 
 export class LocalStoreData {
-
 	[pathType]: string;
 
 	constructor(path: string) {
-		if(!path) {
+		if (!path) {
 			path = "./data";
 		}
-		if(path.charAt(0) === ".") {
+		if (path.charAt(0) === ".") {
 			path = joinPath(process.cwd(), path);
 		}
 		this[pathType] = path;
@@ -179,34 +178,34 @@ export class LocalStoreData {
 		const exists = await checkFileOrNotExists(file);
 
 		// json option
-		let {json = "auto"} = options;
-		if(json === "auto") {
+		let { json = "auto" } = options;
+		if (json === "auto") {
 			json = /\.json/.test(originFile);
 		}
 
-		if(exists) {
+		if (exists) {
 			let data: string | R = (await readFile(file)).toString();
-			if(json === "auto") {
+			if (json === "auto") {
 				json = /\.json/.test(file);
 			}
-			if(json) {
+			if (json) {
 				data = JSON.parse(data);
 			}
-			const {live} = options;
-			if(typeof live === "function" && !live(originFile, data as R)) {
+			const { live } = options;
+			if (typeof live === "function" && !live(originFile, data as R)) {
 				await this.remove(file);
 			} else {
 				return data as R;
 			}
 		}
 
-		const {builder} = options;
-		if(typeof builder === "function") {
+		const { builder } = options;
+		if (typeof builder === "function") {
 			let data: R | string = await asyncResult(builder());
-			if(data == null) {
+			if (data == null) {
 				data = json ? "{}" : "";
 			}
-			if(json && typeof data === "object") {
+			if (json && typeof data === "object") {
 				data = JSON.stringify(data, null, 2);
 			} else {
 				data = String(data);
@@ -220,17 +219,16 @@ export class LocalStoreData {
 		throw createNotFoundError(file);
 	}
 
-	async require<R extends {[key: string]: any} = any>(file: string, options: LocalStore.RequireOptions<R> = {}): Promise<R> {
+	async require<R extends { [key: string]: any } = any>(
+		file: string,
+		options: LocalStore.RequireOptions<R> = {}
+	): Promise<R> {
 		file = resolvePath(this, file);
 		const exists = await checkFileOrNotExists(file);
-		const {
-			builder,
-			hash,
-			clearCache = false
-		} = options;
+		const { builder, hash, clearCache = false } = options;
 
 		const rebuild = async () => {
-			if(typeof builder === "function") {
+			if (typeof builder === "function") {
 				const data = await asyncResult(builder());
 				await checkFileDirectory(file);
 				await writeFile(file, data);
@@ -241,8 +239,8 @@ export class LocalStoreData {
 			throw createNotFoundError(file);
 		};
 
-		if(exists) {
-			if(clearCache) {
+		if (exists) {
+			if (clearCache) {
 				delete require.cache[require.resolve(file)];
 			}
 			let update = false;
@@ -250,25 +248,25 @@ export class LocalStoreData {
 
 			try {
 				data = require(file);
-			} catch(err) {
-				if(typeof builder !== "function") {
+			} catch (err) {
+				if (typeof builder !== "function") {
 					throw err;
 				}
 				return rebuild();
 			}
 
-			if(hash && Array.isArray(hash) && hash.length === 2) {
+			if (hash && Array.isArray(hash) && hash.length === 2) {
 				const [key, value] = hash;
-				if(data[key] !== value) {
+				if (data[key] !== value) {
 					update = true;
-					if(!clearCache) {
+					if (!clearCache) {
 						delete require.cache[require.resolve(file)];
 					}
 				}
 			}
 
-			if(update) {
-				if(typeof builder !== "function") {
+			if (update) {
+				if (typeof builder !== "function") {
 					throw new Error("Builder option is not defined");
 				}
 			} else {
@@ -297,36 +295,36 @@ export class LocalStoreData {
 		let removed = 0;
 		const errorFiles: LocalStore.FStats[] = [];
 
-		for(let stat of stats) {
+		for (let stat of stats) {
 			try {
 				await unlink(stat.fullPath);
-				removed ++;
-			} catch(err) {
+				removed++;
+			} catch (err) {
 				errorFiles.push(stat);
 			}
 		}
 
-		if(history.length > 0) {
+		if (history.length > 0) {
 			history = history.sort((a, b) => b.length - a.length);
-			for(let dir of history) {
+			for (let dir of history) {
 				let isEmpty = false;
 				try {
 					const dr = await opendir(dir);
-					if(!await dr.read()) {
+					if (!(await dr.read())) {
 						isEmpty = true;
 					}
 					await dr.close();
-				} catch(err) {}
+				} catch (err) {}
 
-				if(isEmpty) {
+				if (isEmpty) {
 					try {
 						await rmdir(dir);
-					} catch(err) {}
+					} catch (err) {}
 				}
 			}
 		}
 
-		if(errorFiles.length > 0) {
+		if (errorFiles.length > 0) {
 			throw new StoreClearError(errorFiles, removed);
 		}
 
@@ -335,11 +333,11 @@ export class LocalStoreData {
 
 	async remove(file: string): Promise<boolean> {
 		file = resolvePath(this, file);
-		if(!await checkExists(file)) {
+		if (!(await checkExists(file))) {
 			return false;
 		}
 		const stat = await lstat(file);
-		if(stat.isFile()) {
+		if (stat.isFile()) {
 			await unlink(file);
 			return true;
 		}
@@ -356,7 +354,7 @@ export class LocalStoreData {
 		return stats;
 	}
 
-	resolve(... args: string[]): string {
+	resolve(...args: string[]): string {
 		return resolvePath(this, args);
 	}
 }

@@ -1,15 +1,15 @@
-import {dirname, basename} from "path";
+import { dirname, basename } from "path";
 
 let cwdPath: string | null = null;
 
 function find(): string {
 	let file = __dirname;
-	while(file) {
+	while (file) {
 		const parent = dirname(file);
-		if(!parent) {
+		if (!parent) {
 			break;
 		}
-		if(basename(file) === "scripts") {
+		if (basename(file) === "scripts") {
 			return dirname(file);
 		}
 		file = parent;
@@ -19,7 +19,7 @@ function find(): string {
 }
 
 export default function cwd() {
-	if(cwdPath == null) {
+	if (cwdPath == null) {
 		cwdPath = find();
 	}
 	return cwdPath;

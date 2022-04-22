@@ -1,14 +1,14 @@
-import type {DebugLogger} from "./types";
-import type {Debugger} from "debug";
+import type { DebugLogger } from "./types";
+import type { Debugger } from "debug";
 import util from "util";
-import {format} from "@credo-js/cli-color";
+import { format } from "@credo-js/cli-color";
 import createDebug from "debug";
-import {getNamespace, onRename} from "./namespace";
-import {isAccessible, saveAccess} from "./accessibility";
-import {getFormat} from "./formatters";
-import {getLogger} from "./winstonLogger";
-import {emitListener} from "./listeners";
-import {renameKeysWithPrefix, renamePrefix} from "./util";
+import { getNamespace, onRename } from "./namespace";
+import { isAccessible, saveAccess } from "./accessibility";
+import { getFormat } from "./formatters";
+import { getLogger } from "./winstonLogger";
+import { emitListener } from "./listeners";
+import { renameKeysWithPrefix, renamePrefix } from "./util";
 
 const loggers: Record<string, DebugLogger> = {};
 const debuggers: Record<string, Debugger> = {};
@@ -24,7 +24,7 @@ onRename((newPrefix: string, oldPrefix: string) => {
 
 export default function createLogger(namespace: string): DebugLogger {
 	namespace = getNamespace(namespace);
-	if(loggers.hasOwnProperty(namespace)) {
+	if (loggers.hasOwnProperty(namespace)) {
 		return loggers[namespace];
 	}
 
@@ -33,24 +33,24 @@ export default function createLogger(namespace: string): DebugLogger {
 	const index = loggerNames.length;
 	loggerNames[index] = namespace;
 
-	const logger: DebugLogger = function(text: any, ... args: any[]) {
-		if(text == null) {
+	const logger: DebugLogger = function (text: any, ...args: any[]) {
+		if (text == null) {
 			return;
 		}
 
 		const namespace = loggerNames[index];
-		if(!isAccessible(namespace)) {
+		if (!isAccessible(namespace)) {
 			return;
 		}
 
-		if(text instanceof Error) {
+		if (text instanceof Error) {
 			text = {
 				namespace,
 				level: "error",
 				message: text.stack || text.message,
 			};
 		} else {
-			switch(typeof text) {
+			switch (typeof text) {
 				case "string":
 				case "number":
 				case "bigint":
@@ -65,7 +65,7 @@ export default function createLogger(namespace: string): DebugLogger {
 				default:
 					text = {
 						level: "info",
-						... text,
+						...text,
 						namespace,
 					};
 					break;
@@ -73,34 +73,34 @@ export default function createLogger(namespace: string): DebugLogger {
 		}
 
 		const frm = getFormat(namespace);
-		if(frm) {
-			const {formatter, details} = frm;
+		if (frm) {
+			const { formatter, details } = frm;
 			text = formatter(text, args);
-			if(!text) {
+			if (!text) {
 				return;
 			}
-			if(details) {
+			if (details) {
 				text = {
-					... details,
-					... text,
+					...details,
+					...text,
 				};
 			}
-		} else if(typeof text.message === "string") {
+		} else if (typeof text.message === "string") {
 			text.message = format(text.message);
-			if(args.length) {
-				text.message = util.format(text.message, ... args);
+			if (args.length) {
+				text.message = util.format(text.message, ...args);
 			}
-		} else if(args.length) {
+		} else if (args.length) {
 			text.args = args;
 		}
 
 		const wl = getLogger();
-		if(wl) {
+		if (wl) {
 			wl.log(text);
 			emitListener(text);
 		} else {
-			const {message, namespace, ... rest} = text;
-			if(!debuggers.hasOwnProperty(namespace)) {
+			const { message, namespace, ...rest } = text;
+			if (!debuggers.hasOwnProperty(namespace)) {
 				debuggers[namespace] = createDebug(namespace);
 			}
 			debuggers[namespace](message, rest);

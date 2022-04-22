@@ -1,4 +1,4 @@
-import {isHttpStatus} from "./utils/status";
+import { isHttpStatus } from "./utils/status";
 
 export default class HttpPage {
 	data: any;
@@ -13,7 +13,7 @@ export default class HttpPage {
 	}
 
 	setStatusCode(code: number) {
-		if(isHttpStatus(code) && code !== 204 && !String(code).startsWith("30")) {
+		if (isHttpStatus(code) && code !== 204 && !String(code).startsWith("30")) {
 			this.status = code;
 		}
 		return this;

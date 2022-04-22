@@ -1,13 +1,13 @@
-import {onRename, getPrefix} from "./namespace";
-import {escapeRegExp, renameKeysWithPrefix} from "./util";
+import { onRename, getPrefix } from "./namespace";
+import { escapeRegExp, renameKeysWithPrefix } from "./util";
 
 const access: {
-	origin: string,
-	all: boolean,
-	disable: boolean,
-	hot: null | RegExp,
-	not: null | RegExp,
-	names: Record<string, boolean>,
+	origin: string;
+	all: boolean;
+	disable: boolean;
+	hot: null | RegExp;
+	not: null | RegExp;
+	names: Record<string, boolean>;
 } = {
 	origin: "",
 	all: false,
@@ -23,7 +23,7 @@ onRename((newPrefix: string, oldPrefix: string) => {
 });
 
 function test(name: string) {
-	if(access.disable || access.not && access.not.test(name)) {
+	if (access.disable || (access.not && access.not.test(name))) {
 		return false;
 	} else {
 		return access.all || Boolean(access.hot && access.hot.test(name));
@@ -35,7 +35,7 @@ export function saveAccess(name: string) {
 }
 
 export function isAccessible(name: string) {
-	if(access.names.hasOwnProperty(name)) {
+	if (access.names.hasOwnProperty(name)) {
 		return access.names[name];
 	} else {
 		return test(name);
@@ -43,7 +43,6 @@ export function isAccessible(name: string) {
 }
 
 function recalculate(namespaces: string) {
-
 	// reset
 	access.origin = namespaces;
 	access.all = false;
@@ -56,7 +55,7 @@ function recalculate(namespaces: string) {
 	const hot: string[] = [];
 	const not: string[] = [];
 
-	for(let name of split) {
+	for (let name of split) {
 		name = name
 			.trim()
 			.replace(/[^a-z0-9 #%&:_\-*]+/gi, "")
@@ -67,25 +66,25 @@ function recalculate(namespaces: string) {
 			continue;
 		}
 
-		if(name === "*") {
+		if (name === "*") {
 			// all
 			access.all = true;
 			continue;
 		}
 
-		const n = name[0] === '-';
-		if(n) {
+		const n = name[0] === "-";
+		if (n) {
 			name = name.substring(1);
 		}
 
 		// only for prefix, ignore another prefix
-		if(prefix.length > 0) {
-			if(!name.startsWith(prefix)) {
+		if (prefix.length > 0) {
+			if (!name.startsWith(prefix)) {
 				continue;
 			}
 			name = name.substring(prefix.length);
-			if(name === "*") {
-				if(n) {
+			if (name === "*") {
+				if (n) {
 					// disable all with prefix
 					access.disable = true;
 					return;
@@ -95,13 +94,13 @@ function recalculate(namespaces: string) {
 				access.all = true;
 				continue;
 			}
-			if(name.length === 0) {
+			if (name.length === 0) {
 				continue;
 			}
 		}
 
-		name = name.replace(/\*/g, '.*?');
-		if(n) {
+		name = name.replace(/\*/g, ".*?");
+		if (n) {
 			not.push(name);
 		} else {
 			hot.push(name);
@@ -109,10 +108,10 @@ function recalculate(namespaces: string) {
 	}
 
 	const pref = prefix.length ? escapeRegExp(prefix) : "";
-	if(not.length) {
+	if (not.length) {
 		access.not = new RegExp(`^${pref}(?:${not.join("|")})$`);
 	}
-	if(!access.all && hot.length) {
+	if (!access.all && hot.length) {
 		access.hot = new RegExp(`^${pref}(?:${hot.join("|")})$`);
 	}
 
@@ -120,7 +119,7 @@ function recalculate(namespaces: string) {
 }
 
 export function reconfigure(namespaces: string) {
-	if(namespaces !== access.origin) {
+	if (namespaces !== access.origin) {
 		recalculate(namespaces);
 	}
 }

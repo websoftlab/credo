@@ -1,40 +1,38 @@
-import {pathToPattern} from "@credo-js/path-to-pattern";
-import type {URL, OnMakeURLHook} from "./types";
+import { pathToPattern } from "@credo-js/path-to-pattern";
+import type { URL, OnMakeURLHook } from "./types";
 
-export type {URL, OnMakeURLHook};
+export type { URL, OnMakeURLHook };
 
 function builder(object: any, prefix: string, depth: number, options: URL.QueryOptions) {
-	if(object == null) {
+	if (object == null) {
 		return "";
 	}
 	const build: string[] = [];
 	const push = (key: string, value: any) => {
-		const isNull = options.nullable ? options.nullable(value, key) : (value == null);
-		if(!isNull) {
-			if(typeof value === "object") {
+		const isNull = options.nullable ? options.nullable(value, key) : value == null;
+		if (!isNull) {
+			if (typeof value === "object") {
 				const part = builder(value, key, depth + 1, options);
-				if(part) {
+				if (part) {
 					build.push(part);
 				}
 			} else {
-				build.push(
-					encodeURIComponent(key) + "=" + encodeURIComponent(String(value))
-				);
+				build.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(value)));
 			}
 		}
 	};
-	if(depth > 2) {
+	if (depth > 2) {
 		return "";
 	}
-	if(Array.isArray(object) && prefix) {
+	if (Array.isArray(object) && prefix) {
 		prefix += "[]";
-		object.forEach(value => {
+		object.forEach((value) => {
 			push(prefix, value);
 		});
-	} else if(typeof object === "object") {
-		Object.keys(object).forEach(key => {
+	} else if (typeof object === "object") {
+		Object.keys(object).forEach((key) => {
 			let itemKey = key;
-			if(prefix) {
+			if (prefix) {
 				itemKey = `${prefix}[${itemKey}]`;
 			}
 			push(itemKey, object[key]);
@@ -50,53 +48,43 @@ export function buildQuery(object: any, options: URL.QueryOptions = {}) {
 const regHttp = /^https?:/;
 
 export function makeUrl(options: URL.Options): string {
-	let {
-		path,
-		hash,
-		search,
-		params,
-		cacheable = true,
-		host,
-		port,
-		protocol = "http",
-		... rest
-	} = options;
+	let { path, hash, search, params, cacheable = true, host, port, protocol = "http", ...rest } = options;
 
-	if(Array.isArray(path)) {
+	if (Array.isArray(path)) {
 		path = path.join("/");
 	}
 
 	path = String(path || "").trim();
-	if(!regHttp.test(path)) {
-		if(path.charAt(0) !== "/") {
+	if (!regHttp.test(path)) {
+		if (path.charAt(0) !== "/") {
 			path = `/${path}`;
 		}
-		if(host) {
+		if (host) {
 			let prefix = `${protocol === "https" ? protocol : "http"}://${host}`;
-			if(port) {
+			if (port) {
 				prefix += `:${port}`;
 			}
 			path = prefix + path;
 		}
 	}
 
-	if(params != null && typeof params === "object") {
+	if (params != null && typeof params === "object") {
 		path = pathToPattern(path, { cacheable }).matchToPath({ data: params });
 	}
 
-	if(search != null && search) {
-		if(typeof search === "string") {
+	if (search != null && search) {
+		if (typeof search === "string") {
 			path += `?${search}`;
-		} else if(typeof search === "object") {
+		} else if (typeof search === "object") {
 			search = builder(search, "", 0, rest);
-			if(search) {
+			if (search) {
 				path += `?${search}`;
 			}
 		}
 	}
 
-	if(hash) {
-		if(hash.charAt(0) !== "#") {
+	if (hash) {
+		if (hash.charAt(0) !== "#") {
 			hash = `#${hash}`;
 		}
 		path += hash;

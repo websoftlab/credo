@@ -1,5 +1,5 @@
-import type {Route} from "../types";
-import {constants} from "./constants";
+import type { Route } from "../types";
+import { constants } from "./constants";
 import RouteEmptyEntity from "./RouteEmptyEntity";
 
 export default class RouteDynamic extends RouteEmptyEntity implements Route.RouteDynamic {
@@ -7,17 +7,17 @@ export default class RouteDynamic extends RouteEmptyEntity implements Route.Rout
 	matchToPath?: Route.MatchToPath;
 	length?: number;
 
-	constructor({match, matchToPath, length, ... rest}: Route.RouteDynamic) {
+	constructor({ match, matchToPath, length, ...rest }: Route.RouteDynamic) {
 		super(constants.dynamic, rest);
 		this.match = match;
-		if(typeof matchToPath === "function") {
+		if (typeof matchToPath === "function") {
 			this.matchToPath = matchToPath;
 		}
-		if(typeof length === "number") {
+		if (typeof length === "number") {
 			this.length = length;
-		} else if(typeof length === "function") {
+		} else if (typeof length === "function") {
 			Object.defineProperty(this, "length", {
-				get: length
+				get: length,
 			});
 		}
 	}

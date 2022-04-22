@@ -1,9 +1,8 @@
-import {action, flow, makeObservable, observable} from "mobx";
-import {LanguageStore} from "@credo-js/lexicon";
-import type {App} from "./types";
+import { action, flow, makeObservable, observable } from "mobx";
+import { LanguageStore } from "@credo-js/lexicon";
+import type { App } from "./types";
 
 export default class AppStore<State = any> extends LanguageStore implements App.StoreInterface<State> {
-
 	public state: any;
 
 	constructor(state?: any) {
@@ -28,7 +27,7 @@ export default class AppStore<State = any> extends LanguageStore implements App.
 	}
 
 	translate(key: string, alternative?: string | ((key: string) => string)) {
-		if(typeof this.state[key] === "string") {
+		if (typeof this.state[key] === "string") {
 			return this.state[key];
 		}
 		return super.translate(key, alternative);

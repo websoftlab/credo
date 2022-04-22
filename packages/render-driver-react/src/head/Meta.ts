@@ -1,5 +1,5 @@
 import createHeadComponent from "./createHeadComponent";
-import type {HeadTagProps} from "./types";
+import type { HeadTagProps } from "./types";
 
 export type MetaProps = HeadTagProps<{
 	name?: string;
@@ -9,10 +9,5 @@ export type MetaProps = HeadTagProps<{
 }>;
 
 export default createHeadComponent<MetaProps>("meta", {
-	attributes: [
-		"name",
-		"property",
-		"httpEquiv",
-		"content",
-	]
+	attributes: ["name", "property", "httpEquiv", "content"],
 });

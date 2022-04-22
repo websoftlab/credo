@@ -1,6 +1,4 @@
-
 export namespace Lexicon {
-
 	export interface TranslateOptions {
 		id: string;
 		alternative?: string;
@@ -8,7 +6,12 @@ export namespace Lexicon {
 	}
 
 	export interface LanguageStoreCtor {
-		new (language?: string, lexicon?: any, lambda?: Record<string, LambdaTranslate>, packages?: string[]): LanguageStoreInterface;
+		new (
+			language?: string,
+			lexicon?: any,
+			lambda?: Record<string, LambdaTranslate>,
+			packages?: string[]
+		): LanguageStoreInterface;
 	}
 
 	export interface LanguageStoreInterface {
@@ -30,7 +33,10 @@ export namespace Lexicon {
 		lambda(name: string, value: any, replacement?: any): string;
 	}
 
-	export type LambdaTranslate = (value: any, options: {name: string, translator: Translator, key?: string, data?: any}) => string;
+	export type LambdaTranslate = (
+		value: any,
+		options: { name: string; translator: Translator; key?: string; data?: any }
+	) => string;
 
 	export interface Data {
 		id: string;
@@ -39,6 +45,5 @@ export namespace Lexicon {
 		packages: string[];
 	}
 
-	export type Listener = (data: Data & {packageName: string | null}) => (Promise<void> | void);
-
+	export type Listener = (data: Data & { packageName: string | null }) => Promise<void> | void;
 }

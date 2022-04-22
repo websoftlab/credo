@@ -1,11 +1,15 @@
 import spawn from "cross-spawn";
-import type {SpawnOptions} from "child_process";
+import type { SpawnOptions } from "child_process";
 
-export default async function cmdData(command: string, args: string[] = [], options: SpawnOptions = {}): Promise<string> {
+export default async function cmdData(
+	command: string,
+	args: string[] = [],
+	options: SpawnOptions = {}
+): Promise<string> {
 	return new Promise<string>((resolve, reject) => {
 		const child = spawn(command, args, {
 			stdio: "pipe",
-			... options,
+			...options,
 		});
 
 		let text: string = "";
@@ -19,10 +23,10 @@ export default async function cmdData(command: string, args: string[] = [], opti
 			error += chunk;
 		});
 
-		child.on('close', code => {
+		child.on("close", (code) => {
 			if (code !== 0) {
-				if(!error) {
-					error = `CMD failure: ${command} ${args.join(' ')}`;
+				if (!error) {
+					error = `CMD failure: ${command} ${args.join(" ")}`;
 				}
 				reject(new Error(error));
 			} else {

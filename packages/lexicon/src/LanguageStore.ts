@@ -1,9 +1,9 @@
 import createTranslator from "./createTranslator";
-import {reload, load} from "./lexicon";
-import type {Lexicon} from "./types";
+import { reload, load } from "./lexicon";
+import type { Lexicon } from "./types";
 
 function lang(this: LanguageStore, data: Lexicon.Data) {
-	const {id, lexicon, lambda, packages} = data;
+	const { id, lexicon, lambda, packages } = data;
 	this.language = id;
 	this.lexicon = lexicon;
 	this.lambda = lambda;
@@ -11,7 +11,6 @@ function lang(this: LanguageStore, data: Lexicon.Data) {
 }
 
 export default class LanguageStore implements Lexicon.LanguageStoreInterface {
-
 	readonly translator!: Lexicon.Translator;
 
 	constructor(
@@ -25,31 +24,29 @@ export default class LanguageStore implements Lexicon.LanguageStoreInterface {
 			configurable: false,
 			get() {
 				return translator;
-			}
+			},
 		});
 	}
 
 	translate(key: string, alternative?: string | ((key: string) => string)) {
-		if(this.lexicon.hasOwnProperty(key)) {
+		if (this.lexicon.hasOwnProperty(key)) {
 			return this.lexicon[key];
 		}
-		if(typeof alternative === "function") {
+		if (typeof alternative === "function") {
 			return alternative(key);
 		}
 		return alternative == null ? key : alternative;
 	}
 
-	* reloadLanguage(id: string) {
-		return reload(id)
-			.then((data: Lexicon.Data) => {
-				lang.call(this, data);
-			});
+	*reloadLanguage(id: string) {
+		return reload(id).then((data: Lexicon.Data) => {
+			lang.call(this, data);
+		});
 	}
 
-	* loadLanguage(id: string, packageName?: string) {
-		return load(id, packageName)
-			.then((data: Lexicon.Data) => {
-				lang.call(this, data);
-			});
+	*loadLanguage(id: string, packageName?: string) {
+		return load(id, packageName).then((data: Lexicon.Data) => {
+			lang.call(this, data);
+		});
 	}
 }

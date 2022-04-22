@@ -1,19 +1,19 @@
 import axios from "axios";
-import {computed, action, makeObservable, observable} from "mobx";
-import {isPlainObject} from "@credo-js/utils";
-import type {CancelTokenSource, AxiosInstance, AxiosRequestConfig} from "axios";
-import type {Page} from "./types";
+import { computed, action, makeObservable, observable } from "mobx";
+import { isPlainObject } from "@credo-js/utils";
+import type { CancelTokenSource, AxiosInstance, AxiosRequestConfig } from "axios";
+import type { Page } from "./types";
 
 async function preload<ComponentType>(loader: Page.Loader<ComponentType>, response: Page.Response) {
 	const page = response.page;
-	if(page) {
+	if (page) {
 		return loader.loaded(page) ? null : loader.load(page);
 	}
 	throw new Error(`The page component is not defined in the Page.Response`);
 }
 
 function done<ComponentType>(this: PageStore<ComponentType>, url?: string, key?: string) {
-	if(url) {
+	if (url) {
 		this.url = url;
 		this.key = key || "";
 	}
@@ -21,7 +21,7 @@ function done<ComponentType>(this: PageStore<ComponentType>, url?: string, key?:
 	this.id = Symbol();
 }
 
-function isCode(error: any): error is {code: number} {
+function isCode(error: any): error is { code: number } {
 	return error && typeof error.code === "number";
 }
 
@@ -32,25 +32,25 @@ function isObj<T = any>(obj: any): obj is T {
 function createCodeError(error: any, altCode?: number) {
 	let message: string | undefined;
 	let code: number | undefined = altCode;
-	if(typeof error === "string") {
+	if (typeof error === "string") {
 		message = error;
 	} else {
-		if(error.message) {
+		if (error.message) {
 			message = error.message;
 		}
-		if(isCode(error)) {
+		if (isCode(error)) {
 			code = error.code;
 		}
 	}
 	const err = new Error(message || "Unknown query error");
-	if(typeof code === "number") {
+	if (typeof code === "number") {
 		(err as any).code = code;
 	}
 	return err;
 }
 
-type ResponseFound = { code: number, response: Page.Response };
-type ResponseNotFound = { code: number, message: string };
+type ResponseFound = { code: number; response: Page.Response };
+type ResponseNotFound = { code: number; message: string };
 type ResponseRedirect = { redirect: { location: string } };
 
 function isOk(data: any): data is ResponseFound {
@@ -62,13 +62,13 @@ function isRedirect(data: any): data is ResponseRedirect {
 }
 
 type PrivateOptions<ComponentType> = {
-	getQueryId: string,
-	queryId?: symbol,
-	cancelToken?: CancelTokenSource,
-	http: AxiosInstance,
-	loader: Page.Loader<ComponentType>,
-	preload(url: string, key?: string): () => boolean,
-}
+	getQueryId: string;
+	queryId?: symbol;
+	cancelToken?: CancelTokenSource;
+	http: AxiosInstance;
+	loader: Page.Loader<ComponentType>;
+	preload(url: string, key?: string): () => boolean;
+};
 
 const PRIVATE_ID = Symbol();
 
@@ -77,7 +77,6 @@ function opt<ComponentType>(store: PageStore<ComponentType>) {
 }
 
 export default class PageStore<ComponentType> implements Page.StoreInterface<ComponentType> {
-
 	id: symbol = Symbol();
 	url: string = "";
 	key: string = "";
@@ -107,12 +106,12 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 			title: computed,
 		});
 
-		const {http, loader, getQueryId} = options;
+		const { http, loader, getQueryId } = options;
 		Object.defineProperty(this, "http", {
 			configurable: false,
 			get() {
 				return http;
-			}
+			},
 		});
 
 		this[PRIVATE_ID] = {
@@ -120,14 +119,13 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 			http,
 			loader,
 			preload: (url: string, key?: string) => {
-
 				const prv = opt(this);
 
 				// abort prev request
-				if(this.loading) {
+				if (this.loading) {
 					try {
 						prv.cancelToken?.cancel();
-					} catch(e) {}
+					} catch (e) {}
 				}
 
 				const id = Symbol();
@@ -142,20 +140,20 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 				prv.queryId = id;
 
 				return () => {
-					if(id === prv.queryId) {
+					if (id === prv.queryId) {
 						prv.queryId = undefined;
 						prv.cancelToken = undefined;
 						return true;
 					} else {
 						return false;
 					}
-				}
-			}
+				};
+			},
 		};
 	}
 
 	get title(): string {
-		if(this.error) {
+		if (this.error) {
 			return this.errorMessage as string;
 		} else {
 			const title = this.response?.data.title;
@@ -164,8 +162,8 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 	}
 
 	loadDocument(page: Page.Response, url?: string, key?: string) {
-		if(!url) {
-			url = typeof location === "undefined" ? "/" : (location.pathname + location.search);
+		if (!url) {
+			url = typeof location === "undefined" ? "/" : location.pathname + location.search;
 		}
 
 		const prv = opt(this);
@@ -173,22 +171,22 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 
 		preload(prv.loader, page)
 			.then(() => {
-				if(query()) {
+				if (query()) {
 					this.setResponse(page);
 				}
 			})
 			.catch((err: Error) => {
-				if(query()) {
+				if (query()) {
 					this.setError(new Error(err.message || "Document load error."));
 				}
 			});
 	}
 
 	load(url: string, key: string, postData: any = null) {
-		if(!url) {
+		if (!url) {
 			url = "";
 		}
-		if(this.url === url && this.key === key) {
+		if (this.url === url && this.key === key) {
 			return;
 		}
 
@@ -200,7 +198,7 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 		prv.cancelToken = cancelTokenSource;
 
 		const complete = (result: ResponseFound | ResponseNotFound | null) => {
-			if(!query() || result === null) {
+			if (!query() || result === null) {
 				return;
 			}
 			if (isOk(result)) {
@@ -216,30 +214,29 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 			method: "get",
 			cancelToken: cancelTokenSource.token,
 			headers: {
-				'Content-Type': 'application/json',
-				'Accept': 'application/json',
+				"Content-Type": "application/json",
+				Accept: "application/json",
 			},
 		};
 
-		if(postData != null) {
-			if(!isPlainObject(postData)) {
+		if (postData != null) {
+			if (!isPlainObject(postData)) {
 				throw new Error("Post data must be plain object");
 			}
 			requestConfig.method = "post";
 			requestConfig.data = JSON.stringify({
-				... postData,
-				[queryId]: ""
+				...postData,
+				[queryId]: "",
 			});
 		} else {
-			requestConfig.url += `${url.includes('?') ? '&' : '?'}${queryId}`;
+			requestConfig.url += `${url.includes("?") ? "&" : "?"}${queryId}`;
 		}
 
-		prv
-			.http(requestConfig)
+		prv.http(requestConfig)
 			.then((response) => {
-				const {data, status} = response;
-				if(isObj(data)) {
-					if(typeof data.code === "undefined") {
+				const { data, status } = response;
+				if (isObj(data)) {
+					if (typeof data.code === "undefined") {
 						data.code = status;
 					}
 					return data;
@@ -248,10 +245,10 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 				}
 			})
 			.then((result) => {
-				if(isOk(result)) {
+				if (isOk(result)) {
 					return preload(prv.loader, result.response).then(() => result);
 				}
-				if(isRedirect(result)) {
+				if (isRedirect(result)) {
 					window.location.assign(result.redirect.location);
 					return null;
 				}
@@ -259,7 +256,7 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 			})
 			.then(complete)
 			.catch((err) => {
-				complete({code: isCode(err) ? err.code : 500, message: err.message});
+				complete({ code: isCode(err) ? err.code : 500, message: err.message });
 			});
 	}
 
@@ -272,7 +269,7 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 	}
 
 	setResponse(response: Page.Response, url?: string, key?: string) {
-		const {page, props = {}, data = {}} = response;
+		const { page, props = {}, data = {} } = response;
 		this.error = false;
 		this.errorMessage = null;
 		this.code = isCode(response) ? response.code : 200;

@@ -1,7 +1,7 @@
 import type RoutePattern from "./RoutePattern";
 import type RouteGroup from "./RouteGroup";
 import type RouteDynamic from "./RouteDynamic";
-import type {RouteConfig} from "../types";
+import type { RouteConfig } from "../types";
 
 export type RouteVariant = RoutePattern | RouteGroup | RouteDynamic;
 

@@ -1,20 +1,19 @@
-import {cwdPath, exists, readJsonFile, writeJsonFile} from "../utils";
-import {debugError} from "../debug";
+import { cwdPath, exists, readJsonFile, writeJsonFile } from "../utils";
+import { debugError } from "../debug";
 
 type JsonFileInstallData = {
-	installed: boolean,
-	lock: boolean,
-	time: number,
-	lastError: string | null,
-	lastDuration: number,
-	plugins: Record<string, any>,
+	installed: boolean;
+	lock: boolean;
+	time: number;
+	lastError: string | null;
+	lastDuration: number;
+	plugins: Record<string, any>;
 };
 
 const jsonFileInstallPath = cwdPath("credo.json.install");
 const FI_KEY = Symbol();
 
 export default class JsonFileInstall {
-
 	[FI_KEY]: JsonFileInstallData = {
 		installed: false,
 		lock: false,
@@ -37,7 +36,7 @@ export default class JsonFileInstall {
 	}
 
 	set installed(value: boolean) {
-		if(this[FI_KEY].lock) {
+		if (this[FI_KEY].lock) {
 			this[FI_KEY].installed = value;
 		}
 	}
@@ -63,13 +62,13 @@ export default class JsonFileInstall {
 	}
 
 	async load() {
-		if(await exists(jsonFileInstallPath)) {
+		if (await exists(jsonFileInstallPath)) {
 			this[FI_KEY] = await readJsonFile(jsonFileInstallPath);
 		}
 	}
 
 	async transaction(callback: Function) {
-		if(typeof callback !== "function") {
+		if (typeof callback !== "function") {
 			throw new Error("Transaction callback must be function");
 		}
 
@@ -77,7 +76,7 @@ export default class JsonFileInstall {
 
 		try {
 			await callback();
-		} catch(err) {
+		} catch (err) {
 			await done(err as Error);
 			return err;
 		}
@@ -86,17 +85,16 @@ export default class JsonFileInstall {
 	}
 
 	async createTransaction() {
-
-		if(this[FI_KEY].lock) {
-			throw new Error("Installation transaction already open")
+		if (this[FI_KEY].lock) {
+			throw new Error("Installation transaction already open");
 		}
 
 		// reload all
 		await this.load();
 
 		const gen = this[FI_KEY];
-		if(gen.lock) {
-			throw new Error("Installation transaction already open")
+		if (gen.lock) {
+			throw new Error("Installation transaction already open");
 		}
 
 		async function update(time: number) {
@@ -117,13 +115,13 @@ export default class JsonFileInstall {
 			gen.lastError = err ? err.message : null;
 			process.off("exit", listener);
 
-			return update(time).catch(err => {
+			return update(time).catch((err) => {
 				debugError("{yellow %s} write failure", "./credo.json.install", err);
 			});
 		};
 
 		const listener = (code: number) => {
-			if(gen.lock) {
+			if (gen.lock) {
 				done(new Error("Process exit code " + code));
 			}
 		};

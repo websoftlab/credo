@@ -1,4 +1,4 @@
-import type {Watch} from "../types";
+import type { Watch } from "../types";
 import configure from "./configure";
 import webpack from "webpack";
 import WebpackDevServer from "webpack-dev-server";
@@ -11,7 +11,7 @@ export default async function devWatcher(serve: Watch.Serve) {
 
 	function abort() {
 		const abortServer = server;
-		if(abortServer) {
+		if (abortServer) {
 			server = null;
 			abortWaiter = abortServer
 				.stop()
@@ -27,7 +27,7 @@ export default async function devWatcher(serve: Watch.Serve) {
 	}
 
 	function debug(message: string) {
-		serve.emit("debug", {message, context: "client"});
+		serve.emit("debug", { message, context: "client" });
 	}
 
 	function disable(text: string = "") {
@@ -38,21 +38,21 @@ export default async function devWatcher(serve: Watch.Serve) {
 	serve.on("build", () => {
 		abort();
 
-		const {factory} = serve;
-		if(!factory) {
+		const { factory } = serve;
+		if (!factory) {
 			return;
 		}
 
-		const {cluster} = serve;
-		if(cluster && cluster.mode !== "app") {
+		const { cluster } = serve;
+		if (cluster && cluster.mode !== "app") {
 			return disable();
 		}
 
-		if(!factory.options.renderDriver) {
+		if (!factory.options.renderDriver) {
 			return disable("Render driver not registered, ignore DevServer");
 		}
 
-		if(restart) {
+		if (restart) {
 			restartMore = true;
 			return;
 		}
@@ -61,27 +61,31 @@ export default async function devWatcher(serve: Watch.Serve) {
 
 		function recursiveWatching(): Promise<void> {
 			const factory = serve.factory;
-			if(!factory) {
+			if (!factory) {
 				throw new Error("Builder factory not defined");
 			}
-			return Promise
-				.resolve(abortWaiter)
-				.then(() => configure({
-					mode: "development",
-					type: "client",
-					isDevServer: true,
-					devServerHost: serve.devHost,
-					devServerPort: String(serve.devPort),
-					progressLine: serve.progress,
-					debug: serve.progress ? (message: string, error?: boolean) => serve.emit("debug", {message, context: "client", error}) : undefined,
-					factory,
-					cluster,
-				}))
-				.then(config => {
-					const {devServer, ... configRest} = config;
+			return Promise.resolve(abortWaiter)
+				.then(() =>
+					configure({
+						mode: "development",
+						type: "client",
+						isDevServer: true,
+						devServerHost: serve.devHost,
+						devServerPort: String(serve.devPort),
+						progressLine: serve.progress,
+						debug: serve.progress
+							? (message: string, error?: boolean) =>
+									serve.emit("debug", { message, context: "client", error })
+							: undefined,
+						factory,
+						cluster,
+					})
+				)
+				.then((config) => {
+					const { devServer, ...configRest } = config;
 					const dev = {
 						port: serve.devPort,
-						... devServer,
+						...devServer,
 						static: `./dev/client${cluster ? `-${cluster.mid}` : ""}`,
 						hot: true,
 					};
@@ -91,7 +95,7 @@ export default async function devWatcher(serve: Watch.Serve) {
 					return server.start();
 				})
 				.then(() => {
-					if(restartMore) {
+					if (restartMore) {
 						restartMore = false;
 						abort();
 						return recursiveWatching();

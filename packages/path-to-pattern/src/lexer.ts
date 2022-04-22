@@ -2,14 +2,14 @@ import List from "./segment/List";
 import Values from "./segment/Values";
 import Value from "./segment/Value";
 import Plain from "./segment/Plain";
-import {regExpEscape} from "@credo-js/utils";
-import type {PatternFormatterArgument, PatternRegExArgument, PatternFormatter} from "./types";
-import type {SegmentValue} from "./segment/Values";
+import { regExpEscape } from "@credo-js/utils";
+import type { PatternFormatterArgument, PatternRegExArgument, PatternFormatter } from "./types";
+import type { SegmentValue } from "./segment/Values";
 
 type LexerSegment = List | Values | Value | Plain;
 
 function hasKey(key: string, keys: string[], error?: string) {
-	if(keys.includes(key)) {
+	if (keys.includes(key)) {
 		throw new Error(error || `Duplicate \`${key}\` key name`);
 	}
 	keys.push(key);
@@ -40,7 +40,7 @@ function parse(str: string) {
 	};
 
 	const isPrev = (type: LT): boolean => {
-		if(tokens.length === 0) {
+		if (tokens.length === 0) {
 			return false;
 		}
 		return type === end().type;
@@ -80,19 +80,17 @@ function parse(str: string) {
 		return { name, j };
 	};
 
-	while(index < str.length) {
+	while (index < str.length) {
 		let char = str[index++];
 
-		if(char === "{") {
-			if(open) {
+		if (char === "{") {
+			if (open) {
 				throw new TypeError(`The group in the segment is already open at ${index}`);
 			}
 			open = true;
 			addToken(LT.GROUP_OPEN, index, char);
-		}
-
-		else if(char === "}") {
-			if(!open) {
+		} else if (char === "}") {
+			if (!open) {
 				throw new TypeError(`The group in the segment was not open at ${index}`);
 			}
 			open = false;
@@ -100,12 +98,12 @@ function parse(str: string) {
 		}
 
 		// modifier name
-		else if(char === "|") {
-			if(!isPrev(LT.NAME)) {
+		else if (char === "|") {
+			if (!isPrev(LT.NAME)) {
 				throw new TypeError(`Invalid char | at ${index}`);
 			}
 
-			const {name, j} = getName();
+			const { name, j } = getName();
 			if (!name) {
 				throw new TypeError(`Missing key name at ${index}`);
 			}
@@ -115,9 +113,9 @@ function parse(str: string) {
 		}
 
 		// modifier argument
-		else if(char === "(" || char === ",") {
-			const test = char === "(" && isPrev(LT.MODIFIER) || char === "," && isPrev(LT.MODIFIER_ARGUMENT);
-			if(!test) {
+		else if (char === "(" || char === ",") {
+			const test = (char === "(" && isPrev(LT.MODIFIER)) || (char === "," && isPrev(LT.MODIFIER_ARGUMENT));
+			if (!test) {
 				throw new TypeError(`Invalid char ${char} at ${index}`);
 			}
 
@@ -128,41 +126,41 @@ function parse(str: string) {
 			while (j < str.length) {
 				let char = str[j];
 
-				if(char === ",") {
-					if(!value) {
+				if (char === ",") {
+					if (!value) {
 						throw new TypeError(`Missing modifier argument value at ${j}`);
 					}
 					break;
 				}
 
-				if(char === ")") {
+				if (char === ")") {
 					isEnd = true;
 					break;
 				}
 
-				if(char === "\\") {
+				if (char === "\\") {
 					char = str[j + 1];
-					if(char) {
-						j ++;
+					if (char) {
+						j++;
 					} else {
 						throw new TypeError(`Missing modifier argument value at ${j}`);
 					}
 				}
 
 				value += char;
-				j ++;
+				j++;
 			}
 
 			value && addToken(LT.MODIFIER_ARGUMENT, index, value);
 			index = j;
-			if(isEnd) {
-				addToken(LT.MODIFIER_END, index ++, ")");
+			if (isEnd) {
+				addToken(LT.MODIFIER_END, index++, ")");
 			}
 		}
 
 		// key name
-		else if(char === ":") {
-			const {name, j} = getName();
+		else if (char === ":") {
+			const { name, j } = getName();
 			if (!name) {
 				throw new TypeError(`Missing parameter name at ${index}`);
 			}
@@ -170,36 +168,36 @@ function parse(str: string) {
 			addToken(LT.NAME, index, name, { required: true });
 			index = j;
 
-			if(str[j] === "?") {
+			if (str[j] === "?") {
 				end().details.required = false;
-				index ++;
+				index++;
 			}
 		}
 
 		// other
 		else {
 			let value = "";
-			index --;
+			index--;
 
 			while (index < str.length) {
 				let char = str[index];
 
-				if([":", "{", "}", "?", "(", ")", ","].includes(char)) {
+				if ([":", "{", "}", "?", "(", ")", ","].includes(char)) {
 					break;
 				}
 
-				if(char === "\\") {
-					char = str[++ index];
-					if(!char) {
+				if (char === "\\") {
+					char = str[++index];
+					if (!char) {
 						throw new TypeError(`Unexpected line ending at ${index}`);
 					}
 				}
 
 				value += char;
-				index ++;
+				index++;
 			}
 
-			if(value) {
+			if (value) {
 				addToken(LT.CHAR, index, value);
 			} else {
 				throw new TypeError(`Unexpected line ending at ${index}`);
@@ -212,28 +210,27 @@ function parse(str: string) {
 
 export default function lexer(
 	path: string,
-	mdf: Record<string, { regExp: PatternRegExArgument, formatter?: PatternFormatterArgument }>,
-	keys: string[],
+	mdf: Record<string, { regExp: PatternRegExArgument; formatter?: PatternFormatterArgument }>,
+	keys: string[]
 ): LexerSegment {
-
 	// * key
-	if(path === "*") {
+	if (path === "*") {
 		hasKey("*", keys, "Key `*` must be the last segment");
 		return new List();
 	}
 
-	if(!path) {
+	if (!path) {
 		throw new Error("Empty segment");
 	}
 
 	const tokens = parse(path);
 
-	if(tokens.length === 1) {
+	if (tokens.length === 1) {
 		const t = tokens[0];
-		if(t.type === LT.CHAR) {
+		if (t.type === LT.CHAR) {
 			return new Plain(t.value);
 		}
-		if(t.type === LT.NAME) {
+		if (t.type === LT.NAME) {
 			hasKey(t.value, keys);
 			return new Value(t.value, t.details.required);
 		}
@@ -244,7 +241,7 @@ export default function lexer(
 	let i = 0;
 
 	const nxt = () => {
-		return tokens[i ++];
+		return tokens[i++];
 	};
 
 	const createSegment = (token: LexToken): SegmentValue => {
@@ -261,12 +258,12 @@ export default function lexer(
 		const args: string[] = [];
 		const getter = () => {
 			reg = `(${reg})`;
-			if(prefix || suffix) {
-				if(prefix) reg = regExpEscape(prefix) + reg;
-				if(suffix) reg = reg + regExpEscape(suffix);
+			if (prefix || suffix) {
+				if (prefix) reg = regExpEscape(prefix) + reg;
+				if (suffix) reg = reg + regExpEscape(suffix);
 				reg = `(?:${reg})`;
 			}
-			if(!required) {
+			if (!required) {
 				reg += "?";
 			}
 			rExp.push(reg);
@@ -280,47 +277,47 @@ export default function lexer(
 		};
 
 		let val = isGroup ? nxt() : token;
-		if(!val) {
+		if (!val) {
 			throw new Error(`Unexpected line ending at ${token.index} (open group)`);
 		}
 
-		if(isGroup) {
-			if(val.type === LT.CHAR) {
+		if (isGroup) {
+			if (val.type === LT.CHAR) {
 				prefix = val.value;
 				val = nxt();
 			}
-			if(!val || val.type !== LT.NAME) {
+			if (!val || val.type !== LT.NAME) {
 				throw new Error(`Unexpected line ending at ${token.index} (key in group)`);
 			}
 			name = val.value;
 		}
 
 		hasKey(name, keys);
-		if(!val.details.required) {
+		if (!val.details.required) {
 			required = false;
 		}
 
 		val = nxt();
-		if(!val) {
-			if(isGroup) {
+		if (!val) {
+			if (isGroup) {
 				throw new Error(`Unexpected line ending at ${token.index} (group close)`);
 			} else {
 				return getter();
 			}
 		}
 
-		if(val.type === LT.MODIFIER) {
+		if (val.type === LT.MODIFIER) {
 			modifier = val.value;
-			if(!mdf.hasOwnProperty(modifier)) {
+			if (!mdf.hasOwnProperty(modifier)) {
 				throw new Error(`The ${modifier} modifier not found at ${token.index}`);
 			}
 
 			let j = i;
 
-			while(j < tokens.length) {
+			while (j < tokens.length) {
 				const t = tokens[j];
-				if(t.type === LT.MODIFIER_ARGUMENT) {
-					j ++;
+				if (t.type === LT.MODIFIER_ARGUMENT) {
+					j++;
 					args.push(t.value);
 				} else {
 					break;
@@ -328,57 +325,57 @@ export default function lexer(
 			}
 
 			i = j;
-			if(args.length > 0) {
+			if (args.length > 0) {
 				val = nxt();
-				if(!val || val.type !== LT.MODIFIER_END) {
+				if (!val || val.type !== LT.MODIFIER_END) {
 					throw new Error(`Unexpected line ending at ${token.index} (modifier end)`);
 				}
 			}
 
-			const {regExp, formatter} = mdf[modifier];
-			if(regExp) {
+			const { regExp, formatter } = mdf[modifier];
+			if (regExp) {
 				reg = typeof regExp === "function" ? regExp(args) : regExp;
 			}
 
-			if(formatter) {
+			if (formatter) {
 				format = formatter(args);
 			}
 
 			val = nxt();
-			if(!val) {
-				if(isGroup) {
+			if (!val) {
+				if (isGroup) {
 					throw new Error(`Unexpected line ending at ${token.index} (group close)`);
 				}
 				return getter();
 			}
-			if(!isGroup) {
+			if (!isGroup) {
 				throw new Error(`Unexpected line ending at ${token.index} (key-name close)`);
 			}
-		} else if(!isGroup) {
+		} else if (!isGroup) {
 			throw new Error(`Unexpected line ending at ${token.index} (key-name close)`);
 		}
 
-		if(val.type === LT.CHAR) {
+		if (val.type === LT.CHAR) {
 			suffix = val.value;
 			val = nxt();
-			if(!val) {
+			if (!val) {
 				throw new Error(`Unexpected line ending at ${token.index} (group close)`);
 			}
 		}
 
-		if(val.type !== LT.GROUP_CLOSE) {
+		if (val.type !== LT.GROUP_CLOSE) {
 			throw new Error(`Unexpected line ending at ${token.index} (group close)`);
 		}
 
 		return getter();
 	};
 
-	while(i < tokens.length) {
+	while (i < tokens.length) {
 		const token = nxt();
-		if(token.type === LT.CHAR) {
+		if (token.type === LT.CHAR) {
 			entities.push(token.value);
 			rExp.push(regExpEscape(token.value));
-		} else if(i === 1 && token.type === LT.NAME || token.type === LT.GROUP_OPEN) {
+		} else if ((i === 1 && token.type === LT.NAME) || token.type === LT.GROUP_OPEN) {
 			entities.push(createSegment(token));
 		} else {
 			throw new Error(`Unexpected line ${token.type} -> ${token.value} at ${token.index}`);
@@ -386,11 +383,11 @@ export default function lexer(
 	}
 
 	const first = entities[0];
-	if(
+	if (
 		entities.length === 1 &&
 		typeof first !== "string" &&
-		! first.prefix &&
-		! first.suffix &&
+		!first.prefix &&
+		!first.suffix &&
 		(rExp.length === 0 || rExp[0] === "(.+?)")
 	) {
 		return new Value(first.name, first.required, first.format);

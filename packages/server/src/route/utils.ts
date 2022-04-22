@@ -1,5 +1,5 @@
-import type {RouteConfig} from "../types";
-import type {Nullable} from "../helpTypes";
+import type { RouteConfig } from "../types";
+import type { Nullable } from "../helpTypes";
 
 const regUpperTest = /[^A-Z]/;
 
@@ -14,7 +14,7 @@ export const nameGen = new NameGen();
 
 export function trimLeftSegment(segment: string) {
 	segment = segment.trim();
-	while(segment.startsWith("/")) {
+	while (segment.startsWith("/")) {
 		segment = segment.substring(1);
 	}
 	return segment;
@@ -22,27 +22,27 @@ export function trimLeftSegment(segment: string) {
 
 export function trimRightSegment(segment: string) {
 	segment = segment.trim();
-	while(segment.endsWith("/")) {
+	while (segment.endsWith("/")) {
 		segment = segment.slice(0, -1);
 	}
 	return segment;
 }
 
 export function trimSegment(segment: string) {
-	return trimLeftSegment(trimRightSegment( segment ));
+	return trimLeftSegment(trimRightSegment(segment));
 }
 
 export function createMethods(method: Nullable<RouteConfig.Method>): string[] {
-	if(!method) {
+	if (!method) {
 		return ["GET"];
 	}
-	if(!Array.isArray(method)) {
+	if (!Array.isArray(method)) {
 		method = [method];
 	}
 	const support: string[] = [];
-	method.forEach(val => {
+	method.forEach((val) => {
 		val = String(val).trim().toUpperCase();
-		if(val.length > 0 && !regUpperTest.test(val) && !support.includes(val)) {
+		if (val.length > 0 && !regUpperTest.test(val) && !support.includes(val)) {
 			support.push(val);
 		}
 	});

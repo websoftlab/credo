@@ -1,16 +1,16 @@
 import https from "https";
-import {basename} from "path";
-import {satisfies} from "semver";
-import {newError} from "@credo-js/cli-color";
-import {cwdPath, existsStat, readJsonFile, writeJsonFile} from "./utils";
-import {readFile} from "fs/promises";
-import {debugError, debugInstall} from "./debug";
-import spawn from 'cross-spawn';
+import { basename } from "path";
+import { satisfies } from "semver";
+import { newError } from "@credo-js/cli-color";
+import { cwdPath, existsStat, readJsonFile, writeJsonFile } from "./utils";
+import { readFile } from "fs/promises";
+import { debugError, debugInstall } from "./debug";
+import spawn from "cross-spawn";
 
 const regVer = /^\d+(?:\.\d+)+(?:-(?:alpha|beta|rc)(?:\.\d+(?:-[a-z0-9\-]+)?)?)?$/;
 
 function versionValid(val?: string | null) {
-	if(typeof val !== "string") {
+	if (typeof val !== "string") {
 		return null;
 	}
 	val = val.trim();
@@ -18,7 +18,7 @@ function versionValid(val?: string | null) {
 }
 
 function isUsingYarn() {
-	return (process.env.npm_config_user_agent || '').indexOf('yarn') === 0;
+	return (process.env.npm_config_user_agent || "").indexOf("yarn") === 0;
 }
 
 function asyncSpanText(command: string, args: string[]) {
@@ -30,10 +30,10 @@ function asyncSpanText(command: string, args: string[]) {
 			text += chunk;
 		});
 
-		child.on('close', code => {
+		child.on("close", (code) => {
 			if (code !== 0) {
 				reject({
-					command: `${command} ${args.join(' ')}`,
+					command: `${command} ${args.join(" ")}`,
 				});
 				return;
 			}
@@ -43,57 +43,56 @@ function asyncSpanText(command: string, args: string[]) {
 }
 
 export async function getLatestModuleVersion(name: string): Promise<string> {
-
 	let ver: string | undefined | null;
 
 	// yarn
-	if(isUsingYarn()) {
+	if (isUsingYarn()) {
 		try {
 			const json = await asyncSpanText("yarn", ["info", name, "--json"]);
 			const data = JSON.parse(json) || {};
 
 			ver = data.data && data.data["dist-tags"]?.latest;
-			if(!ver) {
+			if (!ver) {
 				const versions = data.data?.versions;
-				if(Array.isArray(versions) && versions.length > 0) {
+				if (Array.isArray(versions) && versions.length > 0) {
 					ver = versions[versions.length - 1];
 				}
 			}
-			if(ver) {
+			if (ver) {
 				ver = versionValid(ver);
 			}
-		} catch(err: any) {
+		} catch (err: any) {
 			debugError("{red yarn} failure. %s", err.message || err.command);
 		}
 	}
 
-	if(ver) {
+	if (ver) {
 		return ver;
 	}
 
 	// npm
 	try {
 		ver = await asyncSpanText("npm", ["view", name, "version"]);
-		if(ver) {
+		if (ver) {
 			ver = versionValid(ver);
 		}
-	} catch(err: any) {
+	} catch (err: any) {
 		debugError("{red npm} failure. %s", err.message || err.command);
 	}
 
-	if(ver) {
+	if (ver) {
 		return ver;
 	}
 
 	// get registry query
 	const originName = name;
-	name = name.replace('/', '%2F');
+	name = name.replace("/", "%2F");
 	try {
 		const json = await httpJsonQuery(`https://registry.npmjs.org/-/package/${name}/dist-tags`);
-		if(json.latest) {
+		if (json.latest) {
 			return json.latest;
 		}
-	} catch(err: any) {
+	} catch (err: any) {
 		debugError("{red http request} %s", err.message);
 	}
 
@@ -103,21 +102,18 @@ export async function getLatestModuleVersion(name: string): Promise<string> {
 async function httpJsonQuery(url: string) {
 	return new Promise<any>((resolve, reject) => {
 		https
-			.get(
-				url,
-				(res) => {
-					if (res.statusCode === 200) {
-						let body = '';
-						res.on('data', data => (body += data));
-						res.on('end', () => {
-							resolve(JSON.parse(body));
-						});
-					} else {
-						reject(new Error(`HTTP Status error code ${res.statusCode}`));
-					}
+			.get(url, (res) => {
+				if (res.statusCode === 200) {
+					let body = "";
+					res.on("data", (data) => (body += data));
+					res.on("end", () => {
+						resolve(JSON.parse(body));
+					});
+				} else {
+					reject(new Error(`HTTP Status error code ${res.statusCode}`));
 				}
-			)
-			.on('error', (err) => {
+			})
+			.on("error", (err) => {
 				reject(err);
 			});
 	});
@@ -125,7 +121,7 @@ async function httpJsonQuery(url: string) {
 
 export function splitModule(name: string) {
 	const m = name.match(/^(.+?)@(.+?)$/);
-	if(m) {
+	if (m) {
 		return {
 			name: m[1],
 			version: m[2],
@@ -139,40 +135,39 @@ export function splitModule(name: string) {
 }
 
 export async function getPackageModuleVersion(name: string): Promise<string | null> {
-
 	let ver: string | null = null;
 
 	// yarn
-	if(isUsingYarn()) {
+	if (isUsingYarn()) {
 		try {
 			const text = await asyncSpanText("yarn", ["list", "--pattern", name, "--depth=0", "--json"]);
 			const list = text.split(/(\r\n|\n|\r)/g);
 
-			top: for(let line of list) {
+			top: for (let line of list) {
 				line = line.trim();
-				if(line.length < 2 || !line.startsWith('{') || !line.endsWith('}')) {
+				if (line.length < 2 || !line.startsWith("{") || !line.endsWith("}")) {
 					continue;
 				}
 
 				const json = JSON.parse(line);
-				if(json.type !== "tree" || json.data?.type !== "list" || !Array.isArray(json.data.trees)) {
+				if (json.type !== "tree" || json.data?.type !== "list" || !Array.isArray(json.data.trees)) {
 					continue;
 				}
 
-				for(const item of json.data.trees) {
+				for (const item of json.data.trees) {
 					const m = splitModule(item.name);
-					if(m.name === name) {
+					if (m.name === name) {
 						ver = versionValid(m.version);
 						break top;
 					}
 				}
 			}
-		} catch(err: any) {
+		} catch (err: any) {
 			debugError("{red yarn} failure. %s", err.message || err.command);
 		}
 	}
 
-	if(ver) {
+	if (ver) {
 		return ver;
 	}
 
@@ -180,14 +175,14 @@ export async function getPackageModuleVersion(name: string): Promise<string | nu
 	try {
 		const text = await asyncSpanText("npm", ["ls", name, "--depth=0", "--json"]);
 		const json = JSON.parse(text);
-		if(json.dependencies && json.dependencies[name]) {
+		if (json.dependencies && json.dependencies[name]) {
 			ver = versionValid(json.dependencies[name].version);
 		}
-	} catch(err: any) {
+	} catch (err: any) {
 		debugError("{red npm} failure. %s", err.message || err.command);
 	}
 
-	if(ver) {
+	if (ver) {
 		return ver;
 	}
 
@@ -195,19 +190,19 @@ export async function getPackageModuleVersion(name: string): Promise<string | nu
 	try {
 		const text = (await readFile(require.resolve(`${name}/package.json`))).toString();
 		const json = JSON.parse(text);
-		if(json.version) {
+		if (json.version) {
 			ver = versionValid(json.version);
 		}
-	} catch(err) {}
+	} catch (err) {}
 
 	return ver;
 }
 
 function arrayToObject(deps: string[] | Record<string, string>): Record<string, string> {
-	if(Array.isArray(deps)) {
+	if (Array.isArray(deps)) {
 		const newDeps: Record<string, string> = {};
-		for(let module of deps) {
-			const {name, version} = splitModule(module);
+		for (let module of deps) {
+			const { name, version } = splitModule(module);
 			newDeps[name] = version;
 		}
 		return newDeps;
@@ -217,24 +212,23 @@ function arrayToObject(deps: string[] | Record<string, string>): Record<string, 
 }
 
 export function installPackage() {
-	let command: string, args: string[] = [];
-	if(isUsingYarn()) {
+	let command: string,
+		args: string[] = [];
+	if (isUsingYarn()) {
 		command = "yarn";
 	} else {
 		command = "npm";
-		args.push(
-			"install"
-		);
+		args.push("install");
 	}
 
 	debugInstall("Running {yellow %s} install, please wait...", command);
 
 	return new Promise<void>((resolve, reject) => {
-		const child = spawn(command, args, { stdio: 'inherit' });
-		child.on('close', code => {
+		const child = spawn(command, args, { stdio: "inherit" });
+		child.on("close", (code) => {
 			if (code !== 0) {
 				reject({
-					command: `${command} ${args.join(' ')}`,
+					command: `${command} ${args.join(" ")}`,
 				});
 				return;
 			}
@@ -246,18 +240,21 @@ export function installPackage() {
 function createName() {
 	// try create
 	let name = basename(process.cwd())
-		.replace(/[^a-z0-9\-_]+/g, '')
-		.replace(/^[\-_0-9]+/g, '')
-		.replace(/[\-_]+$/g, '');
+		.replace(/[^a-z0-9\-_]+/g, "")
+		.replace(/^[\-_0-9]+/g, "")
+		.replace(/[\-_]+$/g, "");
 
-	if(!name) {
+	if (!name) {
 		name = "credo-project";
 	}
 
 	return name;
 }
 
-export async function installDependencies(dependencies: string[] | Record<string, string>, devDependencies: string[] | Record<string, string> = {}) {
+export async function installDependencies(
+	dependencies: string[] | Record<string, string>,
+	devDependencies: string[] | Record<string, string> = {}
+) {
 	// check package.json file
 	const cwdPackageJsonFile = cwdPath("package.json");
 	const stat = await existsStat(cwdPackageJsonFile);
@@ -271,16 +268,14 @@ export async function installDependencies(dependencies: string[] | Record<string
 		return writeJsonFile(cwdPackageJsonFile, data);
 	};
 
-	if(!stat) {
+	if (!stat) {
 		const name = createName();
 		data = {
 			name,
 			version: "1.0.0",
-			"private": true,
+			private: true,
 			description: "The CredoJS project",
-			keywords: [
-				"credo-js", "credo"
-			],
+			keywords: ["credo-js", "credo"],
 			dependencies: {},
 			devDependencies: {},
 		};
@@ -288,25 +283,24 @@ export async function installDependencies(dependencies: string[] | Record<string
 		debugInstall(`Set package name {yellow %s}`, name);
 
 		await updatePackageJson(data, true);
-
-	} else if(!stat.isFile) {
-		throw newError("{yellow %s} path must be a file", "./package.json")
+	} else if (!stat.isFile) {
+		throw newError("{yellow %s} path must be a file", "./package.json");
 	} else {
 		data = await readJsonFile(cwdPackageJsonFile);
 	}
 
-	if(!data.dependencies) {
+	if (!data.dependencies) {
 		data.dependencies = {};
 	}
 
-	if(!data.devDependencies) {
+	if (!data.devDependencies) {
 		data.devDependencies = {};
 	}
 
 	let updateFile = false;
 	let updateDependencies = false;
 
-	if(!data.name) {
+	if (!data.name) {
 		data.name = createName();
 		updateFile = true;
 	}
@@ -317,27 +311,27 @@ export async function installDependencies(dependencies: string[] | Record<string
 
 	async function checkDependencies(list: Record<string, string>, key: "dependencies" | "devDependencies") {
 		const modules = Object.keys(list);
-		if(!modules.length) {
+		if (!modules.length) {
 			return;
 		}
 
-		for(let module of modules) {
+		for (let module of modules) {
 			const dVer = list[module];
 			let ver: string | null = null;
 
-			if(data.dependencies[module]) {
+			if (data.dependencies[module]) {
 				ver = data.dependencies[module];
-			} else if(data.devDependencies[module]) {
+			} else if (data.devDependencies[module]) {
 				ver = data.devDependencies[module];
-				if(key === "dependencies") {
+				if (key === "dependencies") {
 					delete data.devDependencies[module];
 					data.dependencies[module] = ver;
 					updateFile = true;
 				}
 			}
 
-			if(!ver) {
-				if(isAny(dVer)) {
+			if (!ver) {
+				if (isAny(dVer)) {
 					ver = await getLatestModuleVersion(module);
 					ver = `^${ver}`;
 				} else {
@@ -346,13 +340,17 @@ export async function installDependencies(dependencies: string[] | Record<string
 				data[key][module] = ver;
 				updateDependencies = true;
 				debugInstall(`Added new dependency {yellow %s}`, `${module}@${data[key][module]}`);
-			} else if(!isAny(dVer)) {
+			} else if (!isAny(dVer)) {
 				ver = await getPackageModuleVersion(module);
-				if(!ver) {
+				if (!ver) {
 					throw newError(`The {cyan %s} module is not installed`, module);
 				}
-				if(!satisfies(ver, dVer)) {
-					throw newError(`Installed version of module {cyan %s} does not match new dependencies {cyan %s}`, `${module}@${ver}`, dVer);
+				if (!satisfies(ver, dVer)) {
+					throw newError(
+						`Installed version of module {cyan %s} does not match new dependencies {cyan %s}`,
+						`${module}@${ver}`,
+						dVer
+					);
 				}
 			}
 		}
@@ -361,10 +359,10 @@ export async function installDependencies(dependencies: string[] | Record<string
 	await checkDependencies(dependencies, "dependencies");
 	await checkDependencies(devDependencies, "devDependencies");
 
-	if(updateDependencies) {
+	if (updateDependencies) {
 		await updatePackageJson(data);
 		await installPackage();
-	} else if(updateFile) {
+	} else if (updateFile) {
 		await updatePackageJson(data);
 	}
 }

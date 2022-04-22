@@ -1,9 +1,9 @@
-import type {Version} from "./types";
-import type {WorkspacePackageDetail} from "./types";
-import type {Choice} from "prompts";
+import type { Version } from "./types";
+import type { WorkspacePackageDetail } from "./types";
+import type { Choice } from "prompts";
 import prompts from "prompts";
-import {format} from "./color";
-import {writeJsonFile} from "./utils";
+import { format } from "./color";
+import { writeJsonFile } from "./utils";
 
 function isNum(value: number) {
 	return !isNaN(value) && isFinite(value);
@@ -13,22 +13,17 @@ const verPr = {
 	alpha: 1,
 	beta: 2,
 	rs: 3,
-}
+};
 
 type VerType = "major" | "minor" | "patch" | "pre-release" | "pre-release-remove";
 type VerPreReleaseType = "alpha" | "beta" | "rs";
 
 function createIncrement(version: Version, type: VerType, name?: VerPreReleaseType) {
-	let {
-		major,
-		minor,
-		patch,
-		preRelease,
-	} = version;
+	let { major, minor, patch, preRelease } = version;
 
 	let preReleaseName: "alpha" | "beta" | "rs" | null = null;
 	let preReleaseVersion: number = 0;
-	if(preRelease) {
+	if (preRelease) {
 		preReleaseName = preRelease.name;
 		preReleaseVersion = preRelease.version;
 	}
@@ -40,9 +35,9 @@ function createIncrement(version: Version, type: VerType, name?: VerPreReleaseTy
 			minor,
 			patch,
 		};
-		if(preReleaseName) {
+		if (preReleaseName) {
 			ver.version += `-${preReleaseName}`;
-			if(preReleaseVersion > 0) {
+			if (preReleaseVersion > 0) {
 				ver.version += `.${preReleaseVersion}`;
 			}
 			ver.preRelease = {
@@ -53,29 +48,29 @@ function createIncrement(version: Version, type: VerType, name?: VerPreReleaseTy
 		return ver;
 	}
 
-	if(type === "pre-release-remove") {
-		if(preReleaseName) {
+	if (type === "pre-release-remove") {
+		if (preReleaseName) {
 			preReleaseName = null;
-			patch ++;
+			patch++;
 		}
 		return build();
 	}
 
-	if(type === "pre-release") {
-		if(name) {
-			if(preReleaseName === name) {
-				preReleaseVersion ++;
+	if (type === "pre-release") {
+		if (name) {
+			if (preReleaseName === name) {
+				preReleaseVersion++;
 				return build();
 			}
-			if(preReleaseName && verPr[preReleaseName] > verPr[name]) {
-				patch ++;
+			if (preReleaseName && verPr[preReleaseName] > verPr[name]) {
+				patch++;
 			}
 			preReleaseName = name;
 			preReleaseVersion = 0;
 			return build();
 		}
-		if(preReleaseName) {
-			preReleaseVersion ++;
+		if (preReleaseName) {
+			preReleaseVersion++;
 			return build();
 		}
 		preReleaseName = "alpha";
@@ -83,20 +78,20 @@ function createIncrement(version: Version, type: VerType, name?: VerPreReleaseTy
 		return build();
 	}
 
-	if(type === "patch") {
-		patch ++;
-	} else if(type === "minor") {
-		minor ++;
+	if (type === "patch") {
+		patch++;
+	} else if (type === "minor") {
+		minor++;
 		patch = 0;
-	} else if(type === "major") {
-		major ++;
+	} else if (type === "major") {
+		major++;
 		minor = 0;
 		patch = 0;
 	} else {
 		return build();
 	}
 
-	if(preRelease) {
+	if (preRelease) {
 		preReleaseVersion = 0;
 	}
 
@@ -104,18 +99,18 @@ function createIncrement(version: Version, type: VerType, name?: VerPreReleaseTy
 }
 
 export function incrementVersion(ver: string | Version): Version {
-	if(typeof ver === "string") {
+	if (typeof ver === "string") {
 		ver = split(ver);
 	}
 
-	if(ver.preRelease) {
-		ver.preRelease.version ++;
+	if (ver.preRelease) {
+		ver.preRelease.version++;
 	} else {
-		ver.patch ++;
+		ver.patch++;
 	}
 
 	ver.version = [ver.major, ver.minor, ver.patch].join(".");
-	if(ver.preRelease) {
+	if (ver.preRelease) {
 		ver.version += `-${ver.preRelease.name}.${ver.preRelease.version}`;
 	}
 
@@ -123,16 +118,19 @@ export function incrementVersion(ver: string | Version): Version {
 }
 
 export async function increment(pg: WorkspacePackageDetail): Promise<Version> {
-
 	const ver = split(pg.version);
-	if(pg.nextVersion) {
+	if (pg.nextVersion) {
 		const question = await prompts({
 			type: "confirm",
 			name: "yes",
-			message: format('{yellow %s} package already incremented to {cyan %s}, leave as is?', pg.name, pg.nextVersion),
+			message: format(
+				"{yellow %s} package already incremented to {cyan %s}, leave as is?",
+				pg.name,
+				pg.nextVersion
+			),
 			initial: true,
 		});
-		if(question.yes) {
+		if (question.yes) {
 			return ver;
 		}
 	}
@@ -150,12 +148,12 @@ export async function increment(pg: WorkspacePackageDetail): Promise<Version> {
 		lnk.push(value);
 	}
 
-	if(ver.preRelease) {
+	if (ver.preRelease) {
 		addChoice("pre-release", "pre-release");
 		addChoice("remove pre-release and increment patch", "pre-release-remove");
-		if(ver.preRelease.name !== "alpha") addChoice("change to -alpha.0 pre-release", "pre-release", "alpha");
-		if(ver.preRelease.name !== "beta") addChoice("change to -beta.0 pre-release", "pre-release", "beta");
-		if(ver.preRelease.name !== "rs") addChoice("change to -rs.0 pre-release", "pre-release", "rs");
+		if (ver.preRelease.name !== "alpha") addChoice("change to -alpha.0 pre-release", "pre-release", "alpha");
+		if (ver.preRelease.name !== "beta") addChoice("change to -beta.0 pre-release", "pre-release", "beta");
+		if (ver.preRelease.name !== "rs") addChoice("change to -rs.0 pre-release", "pre-release", "rs");
 	} else {
 		addChoice("add -alpha.0 pre-release", "pre-release", "alpha");
 		addChoice("add -beta.0 pre-release", "pre-release", "beta");
@@ -174,12 +172,12 @@ export async function increment(pg: WorkspacePackageDetail): Promise<Version> {
 		initial: choices[0].value,
 	});
 
-	if(question.version == null) {
+	if (question.version == null) {
 		throw new Error("Version not selected...");
 	}
 
 	const newVer: Version = lnk[question.version];
-	if(newVer.version === pg.nextVersion) {
+	if (newVer.version === pg.nextVersion) {
 		return ver;
 	}
 
@@ -194,7 +192,7 @@ export async function increment(pg: WorkspacePackageDetail): Promise<Version> {
 
 export function split(version: string): Version {
 	const match = version.split(".");
-	while(match.length > 3) {
+	while (match.length > 3) {
 		match[2] += "." + match.splice(3, 1)[0];
 	}
 
@@ -205,9 +203,9 @@ export function split(version: string): Version {
 		patch: 0,
 	};
 
-	if(match[2]) {
+	if (match[2]) {
 		const m = match[2].match(/^(\d+)-(alpha|beta|rs)(?:\.(\d+))?$/);
-		if(m) {
+		if (m) {
 			ver.patch = parseInt(m[1]);
 			ver.preRelease = {
 				name: m[2] as "alpha",
@@ -218,10 +216,10 @@ export function split(version: string): Version {
 		}
 	}
 
-	if(!isNum(ver.major)) throw new Error("Invalid major version -> " + version);
-	if(!isNum(ver.minor)) throw new Error("Invalid minor version -> " + version);
-	if(!isNum(ver.patch)) throw new Error("Invalid patch version -> " + version);
-	if(ver.preRelease && !isNum(ver.preRelease.version)) throw new Error("Invalid pre-release version -> " + version);
+	if (!isNum(ver.major)) throw new Error("Invalid major version -> " + version);
+	if (!isNum(ver.minor)) throw new Error("Invalid minor version -> " + version);
+	if (!isNum(ver.patch)) throw new Error("Invalid patch version -> " + version);
+	if (ver.preRelease && !isNum(ver.preRelease.version)) throw new Error("Invalid pre-release version -> " + version);
 
 	return ver;
 }

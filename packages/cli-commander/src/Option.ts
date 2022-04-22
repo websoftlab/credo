@@ -1,8 +1,8 @@
-import type {OptionOptions, MinOptionInterface, ValType} from "./types";
+import type { OptionOptions, MinOptionInterface, ValType } from "./types";
 import CommandProperty from "./CommandProperty";
-import {newError, format} from "@credo-js/cli-color";
-import {assertOptionName, getAltNames} from "./util";
-import {opts} from "./constants";
+import { newError, format } from "@credo-js/cli-color";
+import { assertOptionName, getAltNames } from "./util";
+import { opts } from "./constants";
 
 export default class Option extends CommandProperty implements MinOptionInterface {
 	is: boolean = false;
@@ -18,38 +18,40 @@ export default class Option extends CommandProperty implements MinOptionInterfac
 
 		let { type = ["flag"], keyName, hidden, alt } = options;
 
-		if(!Array.isArray(type)) {
+		if (!Array.isArray(type)) {
 			type = [type || "flag"];
 		}
-		if(!type.length) {
+		if (!type.length) {
 			type.push("flag");
 		}
 
-		for(const t of type) {
-			switch(t) {
-				case "flag": this.isFlag = true; break;
-				case "multiple": this.multiple = true; break;
-				case "value": this.isSingleValue = true; break;
+		for (const t of type) {
+			switch (t) {
+				case "flag":
+					this.isFlag = true;
+					break;
+				case "multiple":
+					this.multiple = true;
+					break;
+				case "value":
+					this.isSingleValue = true;
+					break;
 				default:
 					throw newError(opts.invalidType, t);
 			}
 		}
 
-		if(this.multiple && this.isSingleValue) {
+		if (this.multiple && this.isSingleValue) {
 			throw newError(opts.valueTypeConflict);
 		}
 
-		if(this.isFlag) {
+		if (this.isFlag) {
 			this.required = false;
 		}
 
-		this.keyName = keyName || (
-			name
-				.replace(/^-+/, '')
-				.replace(/-[a-z]/g, (m) => m[1].toUpperCase())
-		);
+		this.keyName = keyName || name.replace(/^-+/, "").replace(/-[a-z]/g, (m) => m[1].toUpperCase());
 
-		if(hidden) {
+		if (hidden) {
 			this.hidden = true;
 		}
 
@@ -58,33 +60,33 @@ export default class Option extends CommandProperty implements MinOptionInterfac
 
 	val<T = any>(): null | ValType<T> {
 		const error = this._error();
-		if(error) {
+		if (error) {
 			throw new Error(error.error);
 		}
-		const {value, keyName} = this;
+		const { value, keyName } = this;
 		function val(value: any) {
 			return {
 				name: keyName,
 				value,
 			};
 		}
-		if(value.length === 0) {
-			if(this.isFlag) {
+		if (value.length === 0) {
+			if (this.isFlag) {
 				return val(this.is);
 			}
-			if(this.is && this.multiple) {
+			if (this.is && this.multiple) {
 				return val([]);
 			}
 			return null;
 		}
-		if(value.length === 1 && !this.multiple) {
+		if (value.length === 1 && !this.multiple) {
 			return val(value[0]);
 		}
 		return val(value.slice());
 	}
 
 	add(value: string) {
-		if(this.multiple || this.isSingleValue) {
+		if (this.multiple || this.isSingleValue) {
 			super.add(value);
 		} else {
 			throw newError(opts.flagOnly, this.name);
@@ -95,27 +97,27 @@ export default class Option extends CommandProperty implements MinOptionInterfac
 		this.is = true;
 	}
 
-	protected _error(): false | {error: string} {
-		if(this.value.length === 0) {
-			if(this.isFlag) {
+	protected _error(): false | { error: string } {
+		if (this.value.length === 0) {
+			if (this.isFlag) {
 				return false;
 			}
-			if(this.is) {
-				if(this.multiple) {
+			if (this.is) {
+				if (this.multiple) {
 					return super._error();
 				}
 				return {
 					error: format(this.message || opts.valuable, this.name),
 				};
 			}
-			if(this.required) {
+			if (this.required) {
 				return {
 					error: format(this.message || opts.required, this.name),
 				};
 			}
 			return false;
 		}
-		if(this.multiple || this.isSingleValue) {
+		if (this.multiple || this.isSingleValue) {
 			return super._error();
 		} else {
 			return {

@@ -4,7 +4,8 @@
 	"author": "credo@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
-		"build": "node ../../scripts/lib/build.js"
+		"build": "node ../../scripts/lib/build.js",
+		"prettier": "node ../../scripts/lib/build-prettier.js"
 	},
 	"dependencies": {
 		"mobx": "^6.3.2"

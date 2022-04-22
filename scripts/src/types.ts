@@ -1,11 +1,10 @@
-
 export type EStat = {
-	file: string,
-	isFile: boolean,
-	isDirectory: boolean,
-	isSymbolicLink: boolean,
-	size: number,
-}
+	file: string;
+	isFile: boolean;
+	isDirectory: boolean;
+	isSymbolicLink: boolean;
+	size: number;
+};
 
 export interface WorkspacePackageDetail {
 	cwd: string;
@@ -32,35 +31,35 @@ export interface Version {
 	preRelease?: {
 		name: VersionPreReleaseType;
 		version: number;
-	}
+	};
 }
 
 export interface ConfigChannel {
-	user: string,
-	registry?: string
+	user: string;
+	registry?: string;
 }
 
 export interface Config {
 	semver: {
-		version: string,
+		version: string;
 		preRelease?: VersionPreReleaseType;
-	},
+	};
 	workspace: {
-		name: string,
-		path: string
-	},
+		name: string;
+		path: string;
+	};
 	bundle: {
-		author: string,
+		author: string;
 		repository: {
-			type: string,
-			url: string
-		},
-		license: string,
-		licenseText: string,
-		out: string,
-		tmp: string,
-	},
-	release: Record<string, ConfigChannel>,
+			type: string;
+			url: string;
+		};
+		license: string;
+		licenseText: string;
+		out: string;
+		tmp: string;
+	};
+	release: Record<string, ConfigChannel>;
 }
 
 export interface BundleVersionJson {

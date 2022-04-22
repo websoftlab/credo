@@ -1,7 +1,7 @@
-import type {InputOptions, OutputOptions} from "rollup";
-import type {Configuration} from "webpack";
-import {RollupWatcher} from "rollup";
-import {ChildProcessByStdio} from "child_process";
+import type { InputOptions, OutputOptions } from "rollup";
+import type { Configuration } from "webpack";
+import { RollupWatcher } from "rollup";
+import { ChildProcessByStdio } from "child_process";
 
 export type BuildMode = "production" | "development";
 
@@ -10,12 +10,12 @@ export type BuildType = "client" | "server" | "server-page";
 export type BuilderType = "webpack" | "rollup";
 
 export type EStat = {
-	file: string,
-	isFile: boolean,
-	isDirectory: boolean,
-	isSymbolicLink: boolean,
-	size: number,
-}
+	file: string;
+	isFile: boolean;
+	isDirectory: boolean;
+	isSymbolicLink: boolean;
+	size: number;
+};
 
 interface Configure {
 	mode: BuildMode;
@@ -30,15 +30,16 @@ interface Configure {
 	devPort?: string | number;
 }
 
+// prettier-ignore
 export type DaemonSignKill =
 	| "SIGABRT" | "SIGALRM" | "SIGBUS"  | "SIGCHLD" | "SIGCONT" | "SIGFPE"  | "SIGHUP"  | "SIGILL"    | "SIGINT"
 	| "SIGKILL" | "SIGPIPE" | "SIGPOLL" | "SIGPROF" | "SIGQUIT" | "SIGSEGV" | "SIGSTOP" | "SIGSYS"    | "SIGTERM"
 	| "SIGTRAP" | "SIGTSTP" | "SIGTTIN" | "SIGTTOU" | "SIGUSR1" | "SIGUSR2" | "SIGURG"  | "SIGVTALRM" | "SIGXCPU"
 	| "SIGXFSZ" | "SIGWINCH";
 
-export type WebpackConfigure = Configuration & {devServer?: Record<string, any>};
+export type WebpackConfigure = Configuration & { devServer?: Record<string, any> };
 
-export type RollupConfigure = InputOptions & {output: OutputOptions};
+export type RollupConfigure = InputOptions & { output: OutputOptions };
 
 export interface BuildOptions {
 	mode: BuildMode;
@@ -71,10 +72,11 @@ export interface BuildConfigure extends Configure, Omit<BuildOptions, "mode"> {
 	fireOnOptionsHook<T>(name: string, option: T): Promise<T>;
 }
 
-export interface ErrorContext extends Error { context?: string[] }
+export interface ErrorContext extends Error {
+	context?: string[];
+}
 
 export declare namespace Watch {
-
 	export type EventName = "onBeforeStart" | "onAfterStart" | "onError" | "onChangeOptions" | "onInit" | "onAbort";
 
 	export interface Trigger {
@@ -84,13 +86,13 @@ export declare namespace Watch {
 	}
 
 	interface CMDOptions {
-		devHost?: string,
-		devPort?: number,
-		host?: string,
-		port?: number,
-		ssr?: boolean,
-		cluster?: string,
-		noBoard?: boolean,
+		devHost?: string;
+		devPort?: number;
+		host?: string;
+		port?: number;
+		ssr?: boolean;
+		cluster?: string;
+		noBoard?: boolean;
 	}
 
 	export interface DebugEvent {
@@ -100,9 +102,8 @@ export declare namespace Watch {
 	}
 
 	export interface Serve {
-
 		watcher: RollupWatcher | null;
-		child: ChildProcessByStdio<any, any, any> | null
+		child: ChildProcessByStdio<any, any, any> | null;
 		factory: CredoPlugin.Factory | null;
 
 		readonly progress: boolean;
@@ -178,12 +179,13 @@ export declare namespace Watch {
 }
 
 export declare namespace CredoConfig {
-
-	export type Handler = string | {
-		path: string;
-		importer?: string; // default = "default"
-		options?: any; // undefined
-	}
+	export type Handler =
+		| string
+		| {
+				path: string;
+				importer?: string; // default = "default"
+				options?: any; // undefined
+		  };
 
 	export interface FileJSON {
 		dependencies?: string[];
@@ -193,9 +195,9 @@ export declare namespace CredoConfig {
 		extraMiddleware?: Record<string, Handler>;
 		responders?: Record<string, Handler>;
 		cmd?: Record<string, Handler>;
-		public?:  string | true; // true eq "./public"
+		public?: string | true; // true eq "./public"
 		lexicon?: string | true; // true eq "./lexicon"
-		config?:  string | true; // true eq "./config"
+		config?: string | true; // true eq "./config"
 		services?: Record<string, Handler>;
 		controllers?: Record<string, Handler>;
 		hooks?: Record<string, Handler>;
@@ -212,7 +214,7 @@ export declare namespace CredoConfig {
 		env?: Record<string, string>;
 	}
 
-	type RootLexiconExcludeInclude = string | { name: string, type?: "lambda" | "data" | "all" };
+	type RootLexiconExcludeInclude = string | { name: string; type?: "lambda" | "data" | "all" };
 
 	export interface RootLexicon {
 		language: string;
@@ -242,7 +244,6 @@ export declare namespace CredoConfig {
 }
 
 export declare namespace CredoPlugin {
-
 	export interface Handler {
 		path: string;
 		importer: string;
@@ -260,9 +261,9 @@ export declare namespace CredoPlugin {
 		devDependencies?: Record<string, string>;
 		clientDependencies?: string[];
 		extensions?: {
-			all?: string[],
-			typescript?: string[],
-			javascript?: string[],
+			all?: string[];
+			typescript?: string[];
+			javascript?: string[];
 		};
 		hooks?: Hooks;
 	}
@@ -276,11 +277,23 @@ export declare namespace CredoPlugin {
 		installed(name: string): boolean;
 		exists(name: string): boolean;
 
-		on(name: "onBuild", listener: (options: Factory) => (void | Promise<void>)): void;
-		on(name: "onInstall", listener: (options: { name: string, factory: Factory, department: Department }) => (void | Promise<void>)): void;
-		on(name: "onWebpackConfigure", listener: (config: WebpackConfigure, options: BuildConfigure) => (void | Promise<void>)): void;
-		on(name: "onRollupConfigure", listener: (config: RollupConfigure, options: BuildConfigure) => (void | Promise<void>)): void;
-		on<T = any>(name: "onOptions", listener: (event: { name: string, option: T }, options: BuildConfigure) => (void | Promise<void>)): void;
+		on(name: "onBuild", listener: (options: Factory) => void | Promise<void>): void;
+		on(
+			name: "onInstall",
+			listener: (options: { name: string; factory: Factory; department: Department }) => void | Promise<void>
+		): void;
+		on(
+			name: "onWebpackConfigure",
+			listener: (config: WebpackConfigure, options: BuildConfigure) => void | Promise<void>
+		): void;
+		on(
+			name: "onRollupConfigure",
+			listener: (config: RollupConfigure, options: BuildConfigure) => void | Promise<void>
+		): void;
+		on<T = any>(
+			name: "onOptions",
+			listener: (event: { name: string; option: T }, options: BuildConfigure) => void | Promise<void>
+		): void;
 
 		off(name: "onBuild", listener?: Function): void;
 		off(name: "onInstall", listener?: Function): void;
@@ -289,10 +302,14 @@ export declare namespace CredoPlugin {
 		off(name: "onOptions", listener?: Function): void;
 
 		fireHook(name: "onBuild", options: Factory): Promise<void>;
-		fireHook(name: "onInstall", options: { name: string, factory: Factory, department: Department }): Promise<void>;
+		fireHook(name: "onInstall", options: { name: string; factory: Factory; department: Department }): Promise<void>;
 		fireHook(name: "onWebpackConfigure", config: WebpackConfigure, options: BuildConfigure): Promise<void>;
 		fireHook(name: "onRollupConfigure", config: RollupConfigure, options: BuildConfigure): Promise<void>;
-		fireHook<T = any>(name: "onOptions", event: { name: string, option: T }, options: BuildConfigure): Promise<void>;
+		fireHook<T = any>(
+			name: "onOptions",
+			event: { name: string; option: T },
+			options: BuildConfigure
+		): Promise<void>;
 	}
 
 	export interface Department {
@@ -306,10 +323,10 @@ export declare namespace CredoPlugin {
 
 	export interface Hooks {
 		onBuild?(options: Factory): void | Promise<void>;
-		onInstall?(options: { name: string, factory: Factory, department: Department }): void | Promise<void>;
+		onInstall?(options: { name: string; factory: Factory; department: Department }): void | Promise<void>;
 		onWebpackConfigure?(config: WebpackConfigure, options: BuildConfigure): void | Promise<void>;
 		onRollupConfigure?(config: RollupConfigure, options: BuildConfigure): void | Promise<void>;
-		onOptions?<T = any>(event: { name: string, option: T }, options: BuildConfigure): void | Promise<void>;
+		onOptions?<T = any>(event: { name: string; option: T }, options: BuildConfigure): void | Promise<void>;
 	}
 
 	export type HooksEvent = keyof Hooks;
@@ -336,8 +353,8 @@ export declare namespace CredoPlugin {
 		language?: string;
 		languages: string[];
 		multilingual: boolean;
-		exclude?: Array<{ name: string, type: "lambda" | "data" | "all" }>;
-		include?: Array<{ name: string, type: "lambda" | "data" | "all" }>;
+		exclude?: Array<{ name: string; type: "lambda" | "data" | "all" }>;
+		include?: Array<{ name: string; type: "lambda" | "data" | "all" }>;
 		route?: {
 			method: string;
 			path: string;
@@ -384,7 +401,7 @@ export declare namespace CredoPlugin {
 		lexicon?: string;
 		config?: string;
 
-		joinPath(... args: string[]): string;
-		resolver(file: string | string[], mode?: "mixed" | "file" | "directory"): Promise<null | EStat>
+		joinPath(...args: string[]): string;
+		resolver(file: string | string[], mode?: "mixed" | "file" | "directory"): Promise<null | EStat>;
 	}
 }

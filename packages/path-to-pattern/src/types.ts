@@ -28,6 +28,6 @@ export interface MatchToPathOptions<R = any> {
 
 export type PatternRegExArgument = string | ((args: string[]) => string);
 
-export type PatternFormatterArgument = (args: string[]) => (undefined | PatternFormatter);
+export type PatternFormatterArgument = (args: string[]) => undefined | PatternFormatter;
 
-export type PatternFormatter = (value: string) => (boolean | {value: any});
+export type PatternFormatter = (value: string) => boolean | { value: any };

@@ -1,6 +1,6 @@
-export default function getError(error: string): {valid: false, error: string} {
+export default function getError(error: string): { valid: false; error: string } {
 	return {
 		valid: false,
-		error
+		error,
 	};
 }

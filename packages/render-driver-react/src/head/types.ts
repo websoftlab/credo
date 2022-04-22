@@ -1,6 +1,6 @@
-import type {CSSProperties} from "react";
+import type { CSSProperties } from "react";
 
-type Booleanish = boolean | 'true' | 'false';
+type Booleanish = boolean | "true" | "false";
 
 export type HeadTagProps<Props = {}> = Props & {
 	key?: string;
@@ -18,5 +18,5 @@ export type HeadTagProps<Props = {}> = Props & {
 	style?: CSSProperties | undefined;
 	tabIndex?: number | undefined;
 	title?: string | undefined;
-	translate?: 'yes' | 'no' | undefined;
-}
+	translate?: "yes" | "no" | undefined;
+};

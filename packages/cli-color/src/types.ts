@@ -1,12 +1,6 @@
-export type ModifierName =
-	| "bold"
-	| "dim"
-	| "italic"
-	| "underline"
-	| "blink"
-	| "reverse"
-	| "hidden";
+export type ModifierName = "bold" | "dim" | "italic" | "underline" | "blink" | "reverse" | "hidden";
 
+// prettier-ignore
 export type ColorName =
 	| "black"
 	| "white"

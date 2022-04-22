@@ -1,8 +1,8 @@
-import type {BuildConfigure} from "credo";
-import {babelLoader} from "credo/webpack/rules/use-loader-rule-items";
+import type { BuildConfigure } from "credo";
+import { babelLoader } from "credo/webpack/rules/use-loader-rule-items";
 
 export default async function onWebpackConfigure(config: any, options: BuildConfigure): Promise<void> {
-	const {isDevServer} = options;
+	const { isDevServer } = options;
 	if (isDevServer) {
 		if (!config.plugins) {
 			config.plugins = [];
@@ -33,7 +33,7 @@ export default async function onWebpackConfigure(config: any, options: BuildConf
 		use: [
 			await babelLoader(options),
 			{
-				loader: '@svgr/webpack',
+				loader: "@svgr/webpack",
 				options: {
 					babel: false,
 					icon: true,

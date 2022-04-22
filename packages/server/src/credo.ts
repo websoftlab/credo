@@ -1,20 +1,20 @@
-import type {CredoJSGlobal, Route, EnvMode, Server, Ctor} from "./types";
+import type { CredoJSGlobal, Route, EnvMode, Server, Ctor } from "./types";
+import type { Context, Next } from "koa";
 import asyncResult from "@credo-js/utils/asyncResult";
-import {debug, debugSubscribe} from "@credo-js/cli-debug";
-import {cmdBuild, preventBuildListener} from "./cmd/builder";
-import Koa from "koa";
-import {config} from "./config";
+import { debug, debugSubscribe } from "@credo-js/cli-debug";
+import { cmdBuild, preventBuildListener } from "./cmd/builder";
+import { config } from "./config";
 import ServerHooks from "./ServerHooks";
-import {loadOptions} from "./utils";
-import {cache, init as redisInit} from "./redis";
+import { loadOptions } from "./utils";
+import { cache, init as redisInit } from "./redis";
 import cluster from "cluster";
-import {createEnv} from "./envVar";
-import {createLocalStore} from "./store";
+import { createEnv } from "./envVar";
+import { createLocalStore } from "./store";
 
 type CJSDefType = "services" | "controllers" | "responders" | "middleware" | "cmd";
 type CJSDefTypeExt = CJSDefType | "extraMiddleware";
 type CJSDefTypeMwr = "services" | "controllers" | "responders" | "extraMiddleware" | "cmd";
-type CJSOptions = { name: string, handler: Function, options?: any };
+type CJSOptions = { name: string; handler: Function; options?: any };
 type CJSNoNameOptions = Omit<CJSOptions, "name">;
 type CJSReg = Record<CJSDefTypeMwr, CJSOptions[]> & {
 	middleware: CJSNoNameOptions[];
@@ -28,7 +28,7 @@ const REG_KEY = Symbol();
 
 function defineWithoutName(bootMgr: BootManager, key: "bootstrap" | "middleware", body: any) {
 	const reg = bootMgr[REG_KEY];
-	if(reg.prepend) {
+	if (reg.prepend) {
 		reg[key].unshift(body);
 	} else {
 		reg[key].push(body);
@@ -37,7 +37,7 @@ function defineWithoutName(bootMgr: BootManager, key: "bootstrap" | "middleware"
 
 function define(bootMgr: BootManager, key: CJSDefTypeExt, name: string, body: any) {
 	const reg = bootMgr[REG_KEY];
-	if(reg.prepend) {
+	if (reg.prepend) {
 		reg[key].unshift(body);
 	} else {
 		reg[key].push(body);
@@ -47,38 +47,33 @@ function define(bootMgr: BootManager, key: CJSDefTypeExt, name: string, body: an
 	let keyName = `${key}:${name}`;
 
 	// origin key:name
-	if(!def.includes(keyName)) {
+	if (!def.includes(keyName)) {
 		def.push(keyName);
 	}
 
 	// responder key:name
-	if(key === "responders") {
+	if (key === "responders") {
 		keyName = `middleware:${name}`;
-		if(!def.includes(keyName)) {
+		if (!def.includes(keyName)) {
 			def.push(keyName);
 		}
 	}
 }
 
-function isObserver<T = any>(handler: any): handler is ((credo: CredoJSGlobal, params?: any) => T) {
+function isObserver<T = any>(handler: any): handler is (credo: CredoJSGlobal, params?: any) => T {
 	return typeof handler === "function" && handler.observer !== false;
 }
 
 export async function createCredoJS<T extends CredoJSGlobal>(
 	server: Server.Options,
 	options: {
-		mode: string,
-		envMode?: EnvMode,
-		cluster?: boolean,
+		mode: string;
+		envMode?: EnvMode;
+		cluster?: boolean;
 	},
 	additional: Omit<T, keyof CredoJSGlobal>
 ): Promise<T> {
-
-	const {
-		mode,
-		cluster: isCluster = false,
-		envMode = process.env.NODE_ENV || "development",
-	} = options;
+	const { mode, cluster: isCluster = false, envMode = process.env.NODE_ENV || "development" } = options;
 
 	const {
 		process: proc,
@@ -95,7 +90,7 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 		responders,
 		bootstrap,
 
-		... optionsEnv
+		...optionsEnv
 	} = server;
 
 	// hooks
@@ -106,17 +101,13 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 	});
 
 	const lexicon = config("lexicon");
-	let {
-		language,
-		multilingual,
-		languages = [],
-	} = lexicon;
+	let { language, multilingual, languages = [] } = lexicon;
 
-	if(language) {
+	if (language) {
 		const index = languages.indexOf(language);
-		if(index === -1) {
+		if (index === -1) {
 			languages.unshift(language);
-		} else if(index !== 0) {
+		} else if (index !== 0) {
 			languages.splice(index, 1);
 			languages.unshift(language);
 		}
@@ -124,21 +115,23 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 		language = languages[0] || "en";
 	}
 
-	if(multilingual === false) {
+	if (multilingual === false) {
 		languages.length = 0;
-	} else if(multilingual !== true) {
+	} else if (multilingual !== true) {
 		multilingual = languages.length > 1;
 	}
 
 	let boot = false;
-	hooks.once("boot", () => { boot = true; });
+	hooks.once("boot", () => {
+		boot = true;
+	});
 
 	// local store
-	let {dataPath} = config("config");
-	if(typeof dataPath === "object" && dataPath != null) {
+	let { dataPath } = config("config");
+	if (typeof dataPath === "object" && dataPath != null) {
 		dataPath = dataPath[envMode as EnvMode];
 	}
-	if(!dataPath) {
+	if (!dataPath) {
 		dataPath = proc?.mid ? `./data/data-${proc.mid}` : "./data";
 	}
 	const store = await createLocalStore(dataPath);
@@ -153,15 +146,15 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 			enumerable: true,
 			configurable: false,
 		};
-		if(getterSetter) {
-			if(Array.isArray(value)) {
-				if(typeof value[0] === "function") {
+		if (getterSetter) {
+			if (Array.isArray(value)) {
+				if (typeof value[0] === "function") {
 					desc.get = value[0];
 				}
-				if(typeof value[1] === "function") {
+				if (typeof value[1] === "function") {
 					desc.set = value[1];
 				}
-			} else if(typeof value === "function") {
+			} else if (typeof value === "function") {
 				desc.get = value;
 			}
 		} else {
@@ -172,14 +165,28 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 	};
 
 	const credo = {
-		get mode() { return mode; },
-		get envMode() { return envMode; },
-		get store() { return store; },
-		get loaded() { return boot; },
+		get mode() {
+			return mode;
+		},
+		get envMode() {
+			return envMode;
+		},
+		get store() {
+			return store;
+		},
+		get loaded() {
+			return boot;
+		},
 		define: def,
-		isApp() { return mode === "app"; },
-		isCron() { return mode === "cron"; },
-		isCmd() { return mode === "cmd"; },
+		isApp() {
+			return mode === "app";
+		},
+		isCron() {
+			return mode === "cron";
+		},
+		isCmd() {
+			return mode === "cmd";
+		},
 		config,
 		hooks,
 		debug,
@@ -188,37 +195,39 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 		multilingual,
 		services: {},
 		env: createEnv(loadOptions(optionsEnv)),
-		... additional,
+		...additional,
 	} as CredoJSGlobal;
 
-	if(proc) {
+	if (proc) {
 		def("process", proc);
 	}
 
-	if(isCluster && cluster.isWorker && cluster.worker && workerData?.id === proc?.id) {
+	if (isCluster && cluster.isWorker && cluster.worker && workerData?.id === proc?.id) {
 		def("worker", cluster.worker);
 		def("workerData", workerData);
 	}
 
-	if(mode === "app") {
+	if (mode === "app") {
 		def("renderHTMLDriver", renderHTMLDriver || null);
 		def("ssr", renderHTMLDriver ? server.ssr !== false : false);
 	}
 
-	["mode", "envMode", "store", "loaded", "define", "isApp", "isCron", "isCmd", "config", "hooks", "debug"].forEach(key => {
-		const desc = Object.getOwnPropertyDescriptor(credo, key);
-		if(!desc) {
-			return;
+	["mode", "envMode", "store", "loaded", "define", "isApp", "isCron", "isCmd", "config", "hooks", "debug"].forEach(
+		(key) => {
+			const desc = Object.getOwnPropertyDescriptor(credo, key);
+			if (!desc) {
+				return;
+			}
+			desc.configurable = false;
+			if (!desc.get && !desc.set) {
+				desc.writable = false;
+			}
+			Object.defineProperty(credo, key, desc);
 		}
-		desc.configurable = false;
-		if(!desc.get && !desc.set) {
-			desc.writable = false;
-		}
-		Object.defineProperty(credo, key, desc);
-	});
+	);
 
 	// initial cache
-	const {enabled = false, ...redis} = config("redis");
+	const { enabled = false, ...redis } = config("redis");
 	if (enabled) {
 		redisInit(redis);
 		credo.cache = cache;
@@ -232,7 +241,6 @@ export async function createCredoJS<T extends CredoJSGlobal>(
 }
 
 export class BootManager {
-
 	[REG_KEY]: CJSReg = {
 		prepend: false,
 		services: [],
@@ -254,30 +262,38 @@ export class BootManager {
 	};
 
 	option(key: CJSDefTypeExt, name: string, options: any) {
-		if(this[REG_KEY].options[key]) {
+		if (this[REG_KEY].options[key]) {
 			this[REG_KEY].options[key][name] = options;
 		}
 	}
 	defined(key: CJSDefTypeExt, name: string) {
 		return this[REG_KEY].defined.includes(`${key}:${name}`);
 	}
-	service<ServiceFunc = Function, Opt = unknown>(name: string, handler: Ctor.Service<ServiceFunc, Opt>, options?: Opt) {
-		define(this, "services", name, {name, handler, options});
+	service<ServiceFunc = Function, Opt = unknown>(
+		name: string,
+		handler: Ctor.Service<ServiceFunc, Opt>,
+		options?: Opt
+	) {
+		define(this, "services", name, { name, handler, options });
 	}
-	controller<ControllerFunc = Function, Opt = unknown>(name: string, handler: Ctor.Controller<ControllerFunc, Opt>, options?: Opt) {
-		define(this, "controllers", name, {name, handler, options});
+	controller<ControllerFunc = Function, Opt = unknown>(
+		name: string,
+		handler: Ctor.Controller<ControllerFunc, Opt>,
+		options?: Opt
+	) {
+		define(this, "controllers", name, { name, handler, options });
 	}
 	middleware<Opt = unknown>(handler: Ctor.Middleware<Opt>, options?: Opt) {
 		defineWithoutName(this, "middleware", { handler, options });
 	}
 	extraMiddleware<MProps = unknown>(name: string, handler: Ctor.ExtraMiddleware<MProps>, options?: MProps) {
-		define(this, "extraMiddleware", name, {name, handler, options});
+		define(this, "extraMiddleware", name, { name, handler, options });
 	}
 	responder<Conf = unknown>(name: string, handler: Ctor.Responder<Conf>, options?: Conf) {
-		define(this, "responders", name, {name, handler, options});
+		define(this, "responders", name, { name, handler, options });
 	}
 	cmd<Opt = unknown>(name: string, handler: Ctor.Commander<Opt>, options?: Opt) {
-		define(this, "cmd", name, {name, handler, options});
+		define(this, "cmd", name, { name, handler, options });
 	}
 	bootstrap<Opt = unknown>(handler: Ctor.Bootstrap<Opt>, options?: Opt) {
 		defineWithoutName(this, "bootstrap", { handler, options });
@@ -293,13 +309,14 @@ export class BootManager {
 	}
 
 	async load(credo: CredoJSGlobal) {
-
 		const bootKey: symbol = Symbol();
 		const bootEvn: Record<string, boolean> = {};
 		const bootHandler = (evn: any) => {
 			const name = evn.name;
-			if(evn[bootKey] !== true || bootEvn[name] === true) {
-				throw new Error(`The \`${name}\` event is a system hook, you can not emit it outside the system, or re-emit`);
+			if (evn[bootKey] !== true || bootEvn[name] === true) {
+				throw new Error(
+					`The \`${name}\` event is a system hook, you can not emit it outside the system, or re-emit`
+				);
 			}
 			bootEvn[name] = true;
 		};
@@ -307,15 +324,16 @@ export class BootManager {
 		credo.hooks.subscribe(["onLoad", "onBoot"], bootHandler);
 
 		// prevent onBuild hook
-		if(!credo.hooks.has("onBuild", preventBuildListener)) {
+		if (!credo.hooks.has("onBuild", preventBuildListener)) {
 			credo.hooks.subscribe("onBuild", preventBuildListener);
 		}
 
-		if(credo.isCmd()) {
+		if (credo.isCmd()) {
 			cmdBuild(credo, credo.cmd.command("build"));
 		}
 
-		const {services, controllers, responders, middleware, extraMiddleware, cmd, bootstrap, options} = this[REG_KEY];
+		const { services, controllers, responders, middleware, extraMiddleware, cmd, bootstrap, options } =
+			this[REG_KEY];
 		const rename = {
 			cmd: "cmd",
 			services: "service",
@@ -326,32 +344,32 @@ export class BootManager {
 
 		const prop = (key: CJSDefTypeMwr, name: string, props?: any) => {
 			const opt = options[key][name];
-			if(opt) {
+			if (opt) {
 				props = {
-					... opt,
-					... props,
+					...opt,
+					...props,
 				};
 			}
 			return props;
 		};
 
 		const each = async (items: any[], handler: (item: any) => Promise<any>) => {
-			for(let i = 0; i < items.length; i++) {
+			for (let i = 0; i < items.length; i++) {
 				await handler(items[i]);
 			}
 		};
 
 		const register = async (key: CJSDefType, name: string, handler: any, props?: any) => {
-			if(credo[key].hasOwnProperty(name)) {
+			if (credo[key].hasOwnProperty(name)) {
 				throw new Error(`The "${name}" ${rename[key]} already exists`);
 			}
-			if(isObserver(handler)) {
+			if (isObserver(handler)) {
 				const args: [CredoJSGlobal, any?] = [credo];
-				if(key === "responders") {
+				if (key === "responders") {
 					args.push(name);
 				}
 				props = prop(key === "middleware" ? "extraMiddleware" : key, name, props);
-				if(props != null) {
+				if (props != null) {
 					args.push(props);
 				}
 				handler = await asyncResult(handler(...args));
@@ -368,40 +386,41 @@ export class BootManager {
 		const defs = [services];
 		const keys: CJSDefType[] = ["services"];
 
-		if(credo.isApp()) {
+		if (credo.isApp()) {
 			keys.push("controllers", "responders", "middleware");
-			defs.push( controllers,   responders,   extraMiddleware);
+			defs.push(controllers, responders, extraMiddleware);
 		}
 
-		for(let i = 0; i < keys.length; i++) {
+		for (let i = 0; i < keys.length; i++) {
 			const key = keys[i];
-			if(!credo[key]) credo[key] = {};
-			await each(defs[i], ({name, handler, options}: any) => register(key, name, handler, options));
+			if (!credo[key]) credo[key] = {};
+			await each(defs[i], ({ name, handler, options }: any) => register(key, name, handler, options));
 		}
 
-		if(credo.isCmd()) {
-			await each(cmd, ({name, handler, options}: any) => {
+		if (credo.isCmd()) {
+			await each(cmd, ({ name, handler, options }: any) => {
 				return handler(credo, credo.cmd.command(name), prop("cmd", name, options));
 			});
 		}
 
 		// middleware
-		if(credo.isApp()) {
-			const {app} = credo;
+		if (credo.isApp()) {
+			const { app } = credo;
 
 			type MWare = {
 				depth: number;
 				observer: boolean;
-				handler: Function | ((ctx: Koa.Context, next: Koa.Next) => void);
+				handler: Function | ((ctx: Context, next: Next) => void);
 				options?: any;
 			};
 
 			const mwares: Array<MWare> = [];
 			const mware = credo.config("middleware");
-			const {depths = {}, middleware: mrs = []} = mware;
+			const { depths = {}, middleware: mrs = [] } = mware;
 
 			let it = 1;
-			const isDepth = (value: any): value is Number => typeof value === "number" && ! isNaN(value) && isFinite(value);
+			const isDepth = (value: any): value is Number =>
+				typeof value === "number" && !isNaN(value) && isFinite(value);
 			const addMw = (
 				handler: (() => any) | Function | Route.MiddlewareFunction,
 				defaultName?: string,
@@ -413,63 +432,73 @@ export class BootManager {
 				let name = defaultName || handler.name || "";
 				let opt = name ? options.middleware[name] : undefined;
 
-				if(name && isDepth(depths[name])) {
+				if (name && isDepth(depths[name])) {
 					depth = depths[name];
-				} else if(isDepth(defaultDepth)) {
+				} else if (isDepth(defaultDepth)) {
 					depth = defaultDepth;
-				} else if("depth" in handler && isDepth(handler.depth)) {
+				} else if ("depth" in handler && isDepth(handler.depth)) {
 					depth = handler.depth;
 				} else {
-					it ++;
+					it++;
 				}
 
-				if(handlerOptions) {
-					opt = {... opt, ... handlerOptions};
+				if (handlerOptions) {
+					opt = { ...opt, ...handlerOptions };
 				}
 
-				mwares.push({depth, observer, handler, options: opt});
+				mwares.push({ depth, observer, handler, options: opt });
 			};
 
 			// custom middleware
-			middleware.forEach(({handler, options}: any) => {
+			middleware.forEach(({ handler, options }: any) => {
 				if (typeof handler === "function") {
 					addMw(handler, undefined, undefined, isObserver(handler), options);
 				}
 			});
 
 			it = it < 500 ? 500 : it;
-			mrs.forEach(handler => addMw(handler));
+			mrs.forEach((handler) => addMw(handler));
 
 			it = it < 1000 ? 1000 : it;
-			Object.keys(credo.responders).forEach(name => {
+			Object.keys(credo.responders).forEach((name) => {
 				const res = credo.responders[name];
-				addMw((ctx: Koa.Context, next: Koa.Next) => typeof res.middleware === "function" ? res.middleware(ctx, next) : next(), name, res.depth);
+				addMw(
+					(ctx: Context, next: Next) =>
+						typeof res.middleware === "function" ? res.middleware(ctx, next) : next(),
+					name,
+					res.depth
+				);
 			});
 
-			await each(mwares.sort((a, b) => a.depth - b.depth), async (mw: MWare) => {
-				if(mw.observer) {
-					const handler = await asyncResult(mw.options ? (mw.handler as Function)(credo, mw.options) : (mw.handler as Function)(credo));
-					if(typeof handler === "function") {
-						app.use(handler);
+			await each(
+				mwares.sort((a, b) => a.depth - b.depth),
+				async (mw: MWare) => {
+					if (mw.observer) {
+						const handler = await asyncResult(
+							mw.options ? (mw.handler as Function)(credo, mw.options) : (mw.handler as Function)(credo)
+						);
+						if (typeof handler === "function") {
+							app.use(handler);
+						}
+					} else {
+						app.use(mw.handler as () => void);
 					}
-				} else {
-					app.use(mw.handler as () => void);
 				}
-			});
+			);
 		}
 
 		return async () => {
 			const complete: Function[] = [];
 
 			// emit boostrap
-			await each(bootstrap, async ({handler, options}: any) => {
-				if(typeof handler === "function") {
+			await each(bootstrap, async ({ handler, options }: any) => {
+				if (typeof handler === "function") {
 					try {
 						const result = await asyncResult(options ? handler(credo, options) : handler(credo));
-						if(typeof result === "function") {
+						if (typeof result === "function") {
 							complete.push(result);
 						}
-					} catch(err) {
+					} catch (err) {
 						debug.error("bootstrap failure", err);
 					}
 				}
@@ -478,10 +507,10 @@ export class BootManager {
 			await credo.hooks.emit("onLoad", {
 				[bootKey]: true,
 				complete(handler: Function) {
-					if(typeof handler === "function") {
+					if (typeof handler === "function") {
 						complete.push(handler);
 					}
-				}
+				},
 			});
 
 			await credo.hooks.emit("onBoot", {
@@ -492,7 +521,7 @@ export class BootManager {
 			await each(complete, async (handler) => {
 				try {
 					await asyncResult(handler());
-				} catch(err) {
+				} catch (err) {
 					debug.error("bootstrap complete failure", err);
 				}
 			});

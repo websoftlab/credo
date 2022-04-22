@@ -1,9 +1,8 @@
-
 // URL
 export namespace URL {
 	export type QueryOptions = {
 		nullable?: (value: any, name: string) => boolean;
-	}
+	};
 
 	export interface Options extends QueryOptions {
 		path?: string | string[];
@@ -21,4 +20,6 @@ export namespace URL {
 }
 
 // Hooks
-export interface OnMakeURLHook { url: URL.Options }
+export interface OnMakeURLHook {
+	url: URL.Options;
+}

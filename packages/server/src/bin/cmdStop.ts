@@ -4,7 +4,7 @@ export default function cmdStop(_arg: never, _prop: never, stream: NodeJS.WriteS
 	const dmn = daemon();
 	dmn.update();
 
-	if(!dmn.started) {
+	if (!dmn.started) {
 		return;
 	}
 

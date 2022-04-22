@@ -1,18 +1,18 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import {createBrowserHistory} from "history";
-import {Api, Page, createHttpJsonService, PageStore} from "@credo-js/app";
+import React from "react";
+import ReactDOM from "react-dom";
+import { createBrowserHistory } from "history";
+import { Api, Page, createHttpJsonService, PageStore } from "@credo-js/app";
 import App from "./App";
 import loadDocument from "./loadDocument";
-import {load, loaded, component} from "../loadable";
-import {AppStore} from "@credo-js/app";
-import type {ReactElement, ElementType} from "react";
+import { load, loaded, component } from "../loadable";
+import { AppStore } from "@credo-js/app";
+import type { ReactElement, ElementType } from "react";
 
 type React15Root = { render: Function };
 
 function isReact18(obj: any): obj is {
-	createRoot: (node: HTMLElement) => React15Root,
-	hydrateRoot: (node: HTMLElement, element: ReactElement) => React15Root
+	createRoot: (node: HTMLElement) => React15Root;
+	hydrateRoot: (node: HTMLElement, element: ReactElement) => React15Root;
 } {
 	return (
 		"createRoot" in obj &&
@@ -24,9 +24,7 @@ function isReact18(obj: any): obj is {
 
 const renderPage: Page.ClientRenderHandler<ElementType> = async function renderPage(node: HTMLElement, options = {}) {
 	const data: Page.DocumentAppOptions = loadDocument("app-page");
-	const {
-		bootloader = []
-	} = options;
+	const { bootloader = [] } = options;
 	const {
 		ssr = false,
 		getQueryId,
@@ -41,7 +39,7 @@ const renderPage: Page.ClientRenderHandler<ElementType> = async function renderP
 		code,
 	} = data;
 
-	const {protocol, host} = window.location;
+	const { protocol, host } = window.location;
 	const http = createHttpJsonService({
 		protocol: String(protocol).substring(0, 5) === "https" ? "https" : "http",
 		host,
@@ -51,22 +49,22 @@ const renderPage: Page.ClientRenderHandler<ElementType> = async function renderP
 	const page = new PageStore({
 		getQueryId,
 		http,
-		loader: {load, loaded, component}
+		loader: { load, loaded, component },
 	});
 	const api = new Api<ElementType>("client", app, page);
 
 	// client system bootstrap
-	bootloader.forEach(func => {
+	bootloader.forEach((func) => {
 		try {
 			func(api);
-		} catch(err) {
-			if(__DEV__) {
+		} catch (err) {
+			if (__DEV__) {
 				console.error("Bootstrap callback failure", err);
 			}
 		}
 	});
 
-	if(language) {
+	if (language) {
 		await app.loadLanguage(language);
 	}
 
@@ -86,26 +84,28 @@ const renderPage: Page.ClientRenderHandler<ElementType> = async function renderP
 			hydrate,
 			ref: node,
 			App,
-			props: {api, history},
+			props: { api, history },
 		};
 		const def = (name: string, getter: () => void) => {
 			Object.defineProperty(evn, name, { get: getter, configurable: false });
 		};
-		def( "defaultPrevented", () => prevented);
-		def( "preventDefault", () => () => { prevented = true; });
+		def("defaultPrevented", () => prevented);
+		def("preventDefault", () => () => {
+			prevented = true;
+		});
 
 		api.emit("onRender", evn);
 
-		if(!prevented) {
+		if (!prevented) {
 			const reactDom = React.createElement(evn.App, evn.props);
-			if(evn.hydrate) {
-				if(isReact18(ReactDOM)) {
+			if (evn.hydrate) {
+				if (isReact18(ReactDOM)) {
 					root = ReactDOM.hydrateRoot(evn.ref, reactDom);
 				} else {
 					ReactDOM.hydrate(reactDom, evn.ref);
 				}
 			} else {
-				if(isReact18(ReactDOM)) {
+				if (isReact18(ReactDOM)) {
 					root = ReactDOM.createRoot(evn.ref);
 					root.render(reactDom);
 				} else {
@@ -114,18 +114,18 @@ const renderPage: Page.ClientRenderHandler<ElementType> = async function renderP
 			}
 		}
 
-		if(root != null) {
+		if (root != null) {
 			// @ts-ignore
 			api.root = root;
 		}
 	};
 
-	const {location} = history;
+	const { location } = history;
 	const url = location.pathname + location.search;
 	const key = location.key || "";
 
 	const error = (err: Error | string, code: number = 500) => {
-		if(typeof err === "string") {
+		if (typeof err === "string") {
 			err = new Error(err);
 			// @ts-ignore
 			err.code = code;
@@ -140,20 +140,20 @@ const renderPage: Page.ClientRenderHandler<ElementType> = async function renderP
 	const err1 = () => app.translate("system.errors.pageResponseIsEmpty", "Page response is empty");
 	const err2 = () => app.translate("system.errors.unknown", "Unknown error");
 
-	if(api.ssr && found) {
+	if (api.ssr && found) {
 		try {
 			await load(loadable);
-		} catch(err) {
+		} catch (err) {
 			return error(err as Error);
 		}
-		if(response) {
+		if (response) {
 			page.setResponse(response, url, key);
 			render(true);
 		} else {
 			error(err1());
 		}
-	} else if(found) {
-		if(response) {
+	} else if (found) {
+		if (response) {
 			page.loadDocument(response, url, key);
 			render();
 		} else {

@@ -1,8 +1,7 @@
-import type {Route} from "../types";
+import type { Route } from "../types";
 import RouteEntity from "./RouteEntity";
 
 export default abstract class RouteEmptyEntity extends RouteEntity implements Route.RouteEmpty {
-
 	name: string;
 	context: Route.Context;
 	methods: string[];

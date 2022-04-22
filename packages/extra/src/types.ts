@@ -1,4 +1,3 @@
-
 export interface FaviconSize {
 	size: string;
 	href: string;

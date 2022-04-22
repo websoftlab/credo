@@ -1,3 +1,3 @@
 export default {
-	regExp: "[a-z]+"
+	regExp: "[a-z]+",
 };

@@ -1,13 +1,13 @@
 {
-  "global.d.ts": {
-    "target": "copy",
-    "output": "global.d.ts",
-    "package.json": {
-      "types": "./global.d.ts"
-    }
-  },
-  "global-render.d.ts": {
-    "target": "copy",
-    "output": "global-render.d.ts"
-  }
+	"global.d.ts": {
+		"target": "copy",
+		"output": "global.d.ts",
+		"package.json": {
+			"types": "./global.d.ts"
+		}
+	},
+	"global-render.d.ts": {
+		"target": "copy",
+		"output": "global-render.d.ts"
+	}
 }

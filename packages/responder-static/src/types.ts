@@ -1,4 +1,3 @@
-
 type ExcludeFunction = (path: string) => boolean;
 
 export type ResponderStaticOptions = {
@@ -12,7 +11,7 @@ export type ResponderStaticOptions = {
 	immutable?: boolean;
 	brotli?: boolean;
 	extensions?: string[];
-}
+};
 
 export interface StaticCtorConfig {
 	publicPath?: string[];

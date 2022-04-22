@@ -1,8 +1,8 @@
 import createHeadComponent from "./createHeadComponent";
-import type {HeadTagProps} from "./types";
+import type { HeadTagProps } from "./types";
 
 export type StyleProps = HeadTagProps<{
-    media?: string;
+	media?: string;
 	type?: string;
 	children?: string;
 }>;
@@ -10,8 +10,5 @@ export type StyleProps = HeadTagProps<{
 export default createHeadComponent<StyleProps>("style", {
 	singleton: false,
 	child: true,
-	attributes: [
-		"media",
-		"type",
-	]
+	attributes: ["media", "type"],
 });

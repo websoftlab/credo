@@ -1,9 +1,9 @@
-import {cwdPath, existsStat} from "../utils";
-import {readFile, writeFile} from "fs/promises";
+import { cwdPath, existsStat } from "../utils";
+import { readFile, writeFile } from "fs/promises";
 
 function ref(name: string) {
 	const ended = name.startsWith("@") ? name.lastIndexOf("/") !== name.indexOf("/") : name.includes("/");
-	if(!ended) {
+	if (!ended) {
 		name += "/global";
 	}
 	return `/// <reference types="${name}" />`;
@@ -17,27 +17,27 @@ export default async function docTypeReference(name: string | string[]) {
 	let update = false;
 
 	function add(line: string) {
-		if(!text.includes(line)) {
+		if (!text.includes(line)) {
 			update = true;
 			text = line + "\n" + text;
 		}
 	}
 
-	if(stat) {
-		if(stat.isFile) {
+	if (stat) {
+		if (stat.isFile) {
 			text = (await readFile(file)).toString();
 		} else {
 			return;
 		}
 	}
 
-	if(!Array.isArray(name)) {
+	if (!Array.isArray(name)) {
 		name = [name];
 	}
 
 	name.map(ref).forEach(add);
 
-	if(update) {
+	if (update) {
 		await writeFile(file, text);
 	}
 }

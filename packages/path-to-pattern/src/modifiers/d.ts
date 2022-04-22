@@ -1,4 +1,4 @@
-import {noArgs} from "../utils";
+import { noArgs } from "../utils";
 
 export default {
 	regExp: "0|[1-9]\\d*",
@@ -6,6 +6,6 @@ export default {
 		noArgs("d", args);
 		return (value: string) => {
 			return { value: parseInt(value) };
-		}
-	}
-}
+		};
+	},
+};

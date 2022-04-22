@@ -1,10 +1,10 @@
-import type {CommanderOptions} from "./types";
+import type { CommanderOptions } from "./types";
 import type Command from "./Command";
 import Commander from "./Commander";
-import {CommandOptions} from "./types";
+import { CommandOptions } from "./types";
 
 export default function createCommander(options: CommanderOptions | string = {}) {
-	if(typeof options === "string") {
+	if (typeof options === "string") {
 		options = {
 			description: options,
 		};
@@ -40,14 +40,38 @@ export default function createCommander(options: CommanderOptions | string = {})
 	defineValue("find", cmd.find.bind(cmd));
 	defineValue("begin", cmd.begin.bind(cmd));
 
-	defineSetGet("version", () => cmd.version, (value) => { cmd.version = value; });
-	defineSetGet("stream", () => cmd.stream, (value) => { cmd.stream = value; });
-	defineSetGet("prompt", () => cmd.prompt, (value) => { cmd.prompt = value; });
-	defineSetGet("description", () => cmd.description, (value) => { cmd.description = value; });
+	defineSetGet(
+		"version",
+		() => cmd.version,
+		(value) => {
+			cmd.version = value;
+		}
+	);
+	defineSetGet(
+		"stream",
+		() => cmd.stream,
+		(value) => {
+			cmd.stream = value;
+		}
+	);
+	defineSetGet(
+		"prompt",
+		() => cmd.prompt,
+		(value) => {
+			cmd.prompt = value;
+		}
+	);
+	defineSetGet(
+		"description",
+		() => cmd.description,
+		(value) => {
+			cmd.description = value;
+		}
+	);
 	defineSetGet("commands", () => cmd.commands);
 
-	return commander as (Omit<Commander, "command"> & {
+	return commander as Omit<Commander, "command"> & {
 		(name: string, options?: CommandOptions | string): Command;
 		readonly commander: Commander;
-	});
+	};
 }

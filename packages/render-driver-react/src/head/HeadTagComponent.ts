@@ -1,10 +1,10 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import {Consumer} from './context';
-import type {HeadManager, HeadTagName} from "@credo-js/html-head";
+import React from "react";
+import ReactDOM from "react-dom";
+import { Consumer } from "./context";
+import type { HeadManager, HeadTagName } from "@credo-js/html-head";
 
 function createHeadTag(headTag: HeadTagComponent) {
-	const {singleton, tagName, typeName, props} =  headTag;
+	const { singleton, tagName, typeName, props } = headTag;
 	return {
 		type: typeName,
 		props,
@@ -14,7 +14,6 @@ function createHeadTag(headTag: HeadTagComponent) {
 }
 
 export default abstract class HeadTagComponent extends React.Component {
-
 	abstract typeName: HeadTagName;
 	abstract tagName: string;
 	abstract singleton: boolean;
@@ -26,14 +25,14 @@ export default abstract class HeadTagComponent extends React.Component {
 	};
 
 	componentDidMount() {
-		if(this.manager) {
+		if (this.manager) {
 			this.setState({ canUseDOM: true });
 			this.index = this.manager.addClientTag(createHeadTag(this));
 		}
 	}
 
 	componentWillUnmount() {
-		if(this.manager) {
+		if (this.manager) {
 			this.manager.removeClientTag(this.typeName, this.index);
 		}
 	}
@@ -44,7 +43,7 @@ export default abstract class HeadTagComponent extends React.Component {
 
 		return React.createElement(Consumer, null, (manager?: HeadManager) => {
 			if (!manager) {
-				throw Error('HeadManager is not initialized.');
+				throw Error("HeadManager is not initialized.");
 			}
 
 			this.manager = manager;
@@ -56,7 +55,7 @@ export default abstract class HeadTagComponent extends React.Component {
 				return ReactDOM.createPortal(React.createElement(tagName, props), document.head);
 			}
 
-			if(typeof window === "undefined") {
+			if (typeof window === "undefined") {
 				manager.addServerTag(createHeadTag(this));
 			}
 

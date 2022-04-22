@@ -1,6 +1,6 @@
 import createHeadComponent from "./createHeadComponent";
-import type {HeadTagProps} from "./types";
-import type {HTMLAttributeAnchorTarget} from "react";
+import type { HeadTagProps } from "./types";
+import type { HTMLAttributeAnchorTarget } from "react";
 
 export type BaseProps = HeadTagProps<{
 	href: string;
@@ -9,8 +9,5 @@ export type BaseProps = HeadTagProps<{
 
 export default createHeadComponent<BaseProps>("base", {
 	singleton: true,
-	attributes: [
-		"href",
-		"target",
-	]
+	attributes: ["href", "target"],
 });

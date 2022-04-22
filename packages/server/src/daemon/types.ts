@@ -1,4 +1,3 @@
-
 export interface DaemonOptions {
 	delay: number;
 	cpuPoint: number;
@@ -15,18 +14,18 @@ export interface DaemonCPUValue {
 }
 
 interface DaemonProcDetail {
-	id: string,
-	part: number,
-	type: "main" | "cluster" | "fork" | "worker",
-	mode: null | "app" | "cron",
+	id: string;
+	part: number;
+	type: "main" | "cluster" | "fork" | "worker";
+	mode: null | "app" | "cron";
 	port: null | number;
 	host: null | string;
 }
 
 export interface DaemonCPU extends DaemonProcDetail {
-	pid: number,
-	restarted: number,
-	cpu: DaemonCPUValue[],
+	pid: number;
+	restarted: number;
+	cpu: DaemonCPUValue[];
 }
 
 export interface DaemonPIDFileData {

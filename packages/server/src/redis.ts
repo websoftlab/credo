@@ -1,6 +1,6 @@
 import redis from "redis";
-import {debug} from "@credo-js/cli-debug";
-import type {RedisClientType, RedisClientOptions} from "redis";
+import { debug } from "@credo-js/cli-debug";
+import type { RedisClientType, RedisClientOptions } from "redis";
 
 // redis://alice:foobared@awesome.redis.server:6380
 // redis[s]://[[username][:password]@][host][:port][/db-number]
@@ -19,14 +19,14 @@ const connections: Record<string | symbol, RedisClientType> = {};
 function createClient(options: RedisClientOptions) {
 	try {
 		return redis.createClient(options);
-	} catch(err) {
+	} catch (err) {
 		error(err as Error);
 		throw new Error("Redis client connection error");
 	}
 }
 
 function getClient(): RedisClientType {
-	if(!redisClient) {
+	if (!redisClient) {
 		redisClient = createClient(clientOptions);
 	}
 	return redisClient;
@@ -34,14 +34,14 @@ function getClient(): RedisClientType {
 
 function getClientFromConnection(obj: RedisConnection): RedisClientType {
 	const opt = obj[REDIS_OPTIONS];
-	if(!opt.unique) {
+	if (!opt.unique) {
 		return getClient();
 	}
-	const {name, clientOptions} = opt;
-	if(!connections[name]) {
+	const { name, clientOptions } = opt;
+	if (!connections[name]) {
 		connections[name] = createClient({
-			... defaultClientOptions,
-			... clientOptions,
+			...defaultClientOptions,
+			...clientOptions,
 		});
 	}
 	return connections[name];
@@ -61,9 +61,9 @@ export interface RedisCacheOptions<T> {
 
 export interface RedisCacheInterface {
 	data<T = any>(name: string): Promise<T>;
-	save<T = any>(name: string, data: T, options?: Omit<RedisCacheOptions<T>, 'cacheable'>): void;
+	save<T = any>(name: string, data: T, options?: Omit<RedisCacheOptions<T>, "cacheable">): void;
 	read<T = any>(name: string, builder: RedisCacheReadBuilder<T>, options?: RedisCacheOptions<T>): Promise<T>;
-	clear(... args: string[]): void;
+	clear(...args: string[]): void;
 	clear(keys: string[]): void;
 }
 
@@ -77,12 +77,12 @@ async function redisGet<T = any>(obj: RedisConnection, name: string, throwable: 
 	let data: any = null;
 	try {
 		const value = await getClientFromConnection(obj).get(name);
-		if(typeof value === "string") {
+		if (typeof value === "string") {
 			data = JSON.parse(value);
 		}
-	} catch(err) {
+	} catch (err) {
 		error(err as Error);
-		if(throwable) {
+		if (throwable) {
 			throw err;
 		}
 	}
@@ -90,22 +90,22 @@ async function redisGet<T = any>(obj: RedisConnection, name: string, throwable: 
 }
 
 async function redisSet(obj: RedisConnection, name: string, data: any, ttl?: number) {
-	if(data != null) {
+	if (data != null) {
 		await getClientFromConnection(obj).set(name, JSON.stringify(data), {
-			EX: ttl || DEFAULT_TTL
+			EX: ttl || DEFAULT_TTL,
 		});
 	}
 }
 
 async function redisQuit(name: string | symbol | null) {
 	const client = name ? connections[name] : redisClient;
-	if(!client) {
+	if (!client) {
 		return;
 	}
 	try {
 		await client.quit();
 	} finally {
-		if(name) {
+		if (name) {
 			delete connections[name];
 		} else {
 			redisClient = null;
@@ -122,23 +122,18 @@ interface RedisConnectionOptions {
 export interface RedisOptions extends Partial<RedisConnectionOptions> {}
 
 abstract class RedisConnection {
-
 	readonly connected!: boolean;
 
 	[REDIS_OPTIONS]: RedisConnectionOptions;
 
 	protected constructor(options: RedisOptions) {
-		const {
-			name = Symbol(),
-			unique = false,
-			clientOptions = {},
-		} = options;
-		this[REDIS_OPTIONS] = {name, unique, clientOptions};
+		const { name = Symbol(), unique = false, clientOptions = {} } = options;
+		this[REDIS_OPTIONS] = { name, unique, clientOptions };
 		Object.defineProperty(this, "connected", {
 			enumerable: true,
 			get() {
 				return getClientFromConnection(this).isOpen;
-			}
+			},
 		});
 	}
 
@@ -147,8 +142,8 @@ abstract class RedisConnection {
 	}
 
 	async quit() {
-		const {unique, name} = this[REDIS_OPTIONS];
-		if(unique) {
+		const { unique, name } = this[REDIS_OPTIONS];
+		if (unique) {
 			await redisQuit(name);
 		}
 	}
@@ -163,41 +158,45 @@ class RedisCache extends RedisConnection implements RedisCacheInterface {
 		return redisGet<T>(this, name);
 	}
 
-	save<T = any>(name: string, data: T, options: Omit<RedisCacheOptions<T>, "cacheable" | "readFromCache"> = {}): void {
+	save<T = any>(
+		name: string,
+		data: T,
+		options: Omit<RedisCacheOptions<T>, "cacheable" | "readFromCache"> = {}
+	): void {
 		redisSet(this, name, data, options.ttl).catch(error);
 	}
 
-	async read<T = any>(name: string, builder: RedisCacheReadBuilder<T>, options: RedisCacheOptions<T> = {}): Promise<T> {
-		if(typeof builder !== "function") {
+	async read<T = any>(
+		name: string,
+		builder: RedisCacheReadBuilder<T>,
+		options: RedisCacheOptions<T> = {}
+	): Promise<T> {
+		if (typeof builder !== "function") {
 			throw new Error("Cache compiler is not function");
 		}
 
-		const {
-			ttl = DEFAULT_TTL,
-			readFromCache,
-			cacheable
-		} = options;
+		const { ttl = DEFAULT_TTL, readFromCache, cacheable } = options;
 
 		let data: any = null;
 		try {
 			data = await redisGet(this, name, true);
-		} catch(err) {
+		} catch (err) {
 			return builder();
 		}
 
-		if(!data) {
+		if (!data) {
 			data = await builder();
-			if(data == null) {
+			if (data == null) {
 				return data;
 			}
 
 			// cacheable off ?
-			if(typeof cacheable === "function" && !cacheable(data)) {
+			if (typeof cacheable === "function" && !cacheable(data)) {
 				return data;
 			}
 
 			redisSet(this, name, data, ttl).catch(error);
-		} else if(typeof readFromCache === "function") {
+		} else if (typeof readFromCache === "function") {
 			readFromCache();
 		}
 
@@ -205,17 +204,17 @@ class RedisCache extends RedisConnection implements RedisCacheInterface {
 	}
 
 	clear(...args: string[] | [string[]]): void {
-		if(!args.length) {
+		if (!args.length) {
 			// clear all
 			getClientFromConnection(this).flushDb().catch(error);
 		} else {
-			if(args.length === 1 && Array.isArray(args[0])) {
+			if (args.length === 1 && Array.isArray(args[0])) {
 				args = args[0];
 			}
 
 			const remove = async (keys: string | string[]) => {
-				if(Array.isArray(keys)) {
-					if(keys.length) {
+				if (Array.isArray(keys)) {
+					if (keys.length) {
 						return getClientFromConnection(this).del(keys);
 					}
 				} else {
@@ -224,18 +223,18 @@ class RedisCache extends RedisConnection implements RedisCacheInterface {
 			};
 
 			const clear = (keys: string | string[] | [string[]]) => {
-				if(Array.isArray(keys)) {
+				if (Array.isArray(keys)) {
 					keys.forEach((item: string | string[]) => {
-						if(Array.isArray(item)) {
+						if (Array.isArray(item)) {
 							clear(item);
-						} else if(item.includes("*")) {
+						} else if (item.includes("*")) {
 							// remove by pattern
 							getClientFromConnection(this).keys(item).then(remove).catch(error);
 						} else {
 							remove(item).catch(error);
 						}
 					});
-				} else if(typeof keys === "string") {
+				} else if (typeof keys === "string") {
 					remove(keys).catch(error);
 				}
 			};
@@ -263,27 +262,19 @@ class RedisStore extends RedisConnection implements RedisStoreInterface {
 
 function init(options: RedisClientOptions) {
 	clientOptions = {
-		... defaultClientOptions,
-		... options,
+		...defaultClientOptions,
+		...options,
 	};
 }
 
 async function quit(forAll: boolean = false) {
 	await redisQuit(null);
-	if(forAll) {
-		await Promise.all(Object.keys(connections).map((name => redisQuit(name))));
+	if (forAll) {
+		await Promise.all(Object.keys(connections).map((name) => redisQuit(name)));
 	}
 }
 
 const redisStore = new RedisStore();
 const redisCache = new RedisCache();
 
-export {
-	RedisStore,
-	RedisCache,
-	redisStore as store,
-	redisCache as cache,
-	init,
-	quit,
-	getClient,
-};
+export { RedisStore, RedisCache, redisStore as store, redisCache as cache, init, quit, getClient };

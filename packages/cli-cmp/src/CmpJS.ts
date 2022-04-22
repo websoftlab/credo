@@ -1,11 +1,11 @@
-import type {StringifyOptions} from "./types";
+import type { StringifyOptions } from "./types";
 import CmpTool from "./CmpTool";
 import stringify from "./stringify";
 import keyVar from "./keyVar";
 import toStr from "./toStr";
 
 function getVar(pref: "var" | "let" | "const", name: string, value?: any, escape?: boolean | StringifyOptions) {
-	if(escape) {
+	if (escape) {
 		value = stringify(value, escape === true ? {} : escape);
 	} else {
 		value = toStr(value);
@@ -13,7 +13,7 @@ function getVar(pref: "var" | "let" | "const", name: string, value?: any, escape
 	return `${pref} ${name}${value ? ` = ${value}` : ""};`;
 }
 
-type DepthLambda = ((tool: CmpTool) => void);
+type DepthLambda = (tool: CmpTool) => void;
 
 type CmpType = {
 	capture: [boolean, boolean, string];
@@ -30,13 +30,13 @@ type CmpType = {
 	dataAll: Record<string, boolean>;
 	req: Record<string, string>;
 	set: Record<string, [string, string?]>;
-}
+};
 
 const CMP_ID = Symbol();
 
 function getName(cmp: CmpType, from: string) {
 	const match = from.match(/([a-zA-Z][a-zA-Z0-9_]+)(?:\.[a-z]+)?$/);
-	return (match ? match[1].charAt(0).toUpperCase() + match[1].substring(1) : "Req") + (cmp.id ++);
+	return (match ? match[1].charAt(0).toUpperCase() + match[1].substring(1) : "Req") + cmp.id++;
 }
 
 function getReq(cmp: CmpType) {
@@ -48,18 +48,18 @@ function getReq(cmp: CmpType) {
 }
 
 function importOnce(cmp: CmpType, from: string) {
-	if(!cmp.ji.includes(from)) {
+	if (!cmp.ji.includes(from)) {
 		cmp.ji.push(from);
 	}
 }
 
 function addJS(cJs: CmpJS, source: string) {
 	const cmp = cJs[CMP_ID];
-	const {capture} = cmp;
-	if(capture[0]) {
+	const { capture } = cmp;
+	if (capture[0]) {
 		capture[2] += source;
-		if(!capture[1]) {
-			capture[1] = source.replace(/\s+/g, '').length > 0;
+		if (!capture[1]) {
+			capture[1] = source.replace(/\s+/g, "").length > 0;
 		}
 	} else {
 		cmp.js += source;
@@ -67,7 +67,6 @@ function addJS(cJs: CmpJS, source: string) {
 }
 
 class CmpJS {
-
 	[CMP_ID]: CmpType = {
 		capture: [false, false, ""],
 		js: "",
@@ -119,13 +118,17 @@ class CmpJS {
 
 	capture() {
 		const cmp = this[CMP_ID];
-		if(cmp.capture[0]) {
+		if (cmp.capture[0]) {
 			throw new Error("Capture is already underway");
 		}
 		cmp.capture[0] = true;
 		return {
-			get filled(): boolean { return cmp.capture[0] && cmp.capture[1]; },
-			get source(): string { return cmp.capture[2]; },
+			get filled(): boolean {
+				return cmp.capture[0] && cmp.capture[1];
+			},
+			get source(): string {
+				return cmp.capture[2];
+			},
 			reset() {
 				cmp.capture = [false, false, ""];
 			},
@@ -137,7 +140,7 @@ class CmpJS {
 	}
 
 	set(from: string, varName?: string, name?: string) {
-		if(!name) {
+		if (!name) {
 			name = varName || "default";
 		}
 		this[CMP_ID].set[name] = [from, varName];
@@ -146,16 +149,16 @@ class CmpJS {
 
 	get(name: string) {
 		const cmp = this[CMP_ID].set;
-		if(cmp.hasOwnProperty(name)) {
-			return this.imp(... cmp[name]);
+		if (cmp.hasOwnProperty(name)) {
+			return this.imp(...cmp[name]);
 		} else {
 			throw new Error(`The ${name} id not defined`);
 		}
 	}
 
 	impOnly(from: string | string[]) {
-		if(Array.isArray(from)) {
-			for(let file of from) {
+		if (Array.isArray(from)) {
+			for (let file of from) {
 				importOnce(this[CMP_ID], file);
 			}
 		} else {
@@ -166,7 +169,7 @@ class CmpJS {
 
 	req(from: string) {
 		const cmp = this[CMP_ID];
-		if(!cmp.req.hasOwnProperty(from)) {
+		if (!cmp.req.hasOwnProperty(from)) {
 			cmp.req[from] = `_${cmp.pref}_${getName(cmp, from)}`;
 		}
 		return cmp.req[from];
@@ -175,7 +178,7 @@ class CmpJS {
 	imp(from: string, varName?: string): string {
 		const iid = this[CMP_ID];
 
-		if(!iid.keys.includes(from)) {
+		if (!iid.keys.includes(from)) {
 			const name = getName(iid, from);
 			iid.keys.push(from);
 			iid.name[from] = name;
@@ -183,14 +186,14 @@ class CmpJS {
 			iid.dataKeys[from] = [];
 		}
 
-		if(!varName) {
+		if (!varName) {
 			varName = "default";
-		} else if(varName === "*") {
+		} else if (varName === "*") {
 			iid.dataAll[from] = true;
 			return `_${iid.pref}_${iid.name[from]}`;
 		}
 
-		if(!iid.dataKeys[from].includes(varName)) {
+		if (!iid.dataKeys[from].includes(varName)) {
 			iid.dataKeys[from].push(varName);
 			iid.data[from][varName] = `${iid.pref}_${iid.name[from]}_${iid.id++}`;
 		}
@@ -199,29 +202,35 @@ class CmpJS {
 	}
 
 	gef(name: string, args: string | string[] = "") {
-		if(Array.isArray(args)) {
+		if (Array.isArray(args)) {
 			args = args.join(", ");
 		}
 		return `${this.get(name)}(${args})`;
 	}
 
 	fnc(from: string, varName?: string, args: string | string[] = "") {
-		if(Array.isArray(args)) {
+		if (Array.isArray(args)) {
 			args = args.join(", ");
 		}
 		return `${this.imp(from, varName)}(${args})`;
 	}
 
-	gl(name: string, value?: any, escape: boolean | StringifyOptions = false) { return this.append(getVar("let", name, value, escape)); }
-	gc(name: string, value?: any, escape: boolean | StringifyOptions = false) { return this.append(getVar("const", name, value, escape)); }
-	gv(name: string, value?: any, escape: boolean | StringifyOptions = false) { return this.append(getVar("var", name, value, escape)); }
+	gl(name: string, value?: any, escape: boolean | StringifyOptions = false) {
+		return this.append(getVar("let", name, value, escape));
+	}
+	gc(name: string, value?: any, escape: boolean | StringifyOptions = false) {
+		return this.append(getVar("const", name, value, escape));
+	}
+	gv(name: string, value?: any, escape: boolean | StringifyOptions = false) {
+		return this.append(getVar("var", name, value, escape));
+	}
 
 	imported(from: string, varName?: string) {
 		const iid = this[CMP_ID];
-		if(!iid.keys.includes(from)) {
+		if (!iid.keys.includes(from)) {
 			return false;
 		}
-		if(varName) {
+		if (varName) {
 			return typeof iid.data[from][varName] === "string";
 		}
 		return false;
@@ -232,28 +241,30 @@ class CmpJS {
 		let outConst = "";
 		const cmp = this[CMP_ID];
 
-		for(let from of cmp.keys) {
+		for (let from of cmp.keys) {
 			const data = cmp.data[from];
 
-			if(cmp.dataAll[from]) {
+			if (cmp.dataAll[from]) {
 				const baseName = `_${cmp.pref}_${cmp.name[from]}`;
 				out += `import * as ${baseName} from ${stringify(from)};\n`;
 
-				Object.keys(data).forEach(name => {
+				Object.keys(data).forEach((name) => {
 					const varName = data[name];
-					if(name === "default") {
+					if (name === "default") {
 						outConst += `const ${varName} = ${baseName}.default;\n`;
 					} else {
 						outConst += `const ${varName} = ${keyVar(baseName, name)};\n`;
 					}
 				});
 			} else {
-				out += `import { ${Object.keys(data).map(name => (`${name} as ${data[name]}`)).join(", ")} } from ${stringify(from)};\n`;
+				out += `import { ${Object.keys(data)
+					.map((name) => `${name} as ${data[name]}`)
+					.join(", ")} } from ${stringify(from)};\n`;
 			}
 		}
 
-		cmp.ji.forEach(file => {
-			out += `import ${stringify(file)};\n`
+		cmp.ji.forEach((file) => {
+			out += `import ${stringify(file)};\n`;
 		});
 
 		return out + getReq(cmp) + outConst;
@@ -264,13 +275,13 @@ class CmpJS {
 		let out = "";
 		const cmp = this[CMP_ID];
 
-		for(let from of cmp.keys) {
+		for (let from of cmp.keys) {
 			const baseName = `_${cmp.pref}_${cmp.name[from]}`;
 			const data = cmp.data[from];
 			out += `const ${baseName} = require(${stringify(from)});\n`;
-			Object.keys(data).forEach(name => {
+			Object.keys(data).forEach((name) => {
 				const varName = data[name];
-				if(name === "default") {
+				if (name === "default") {
 					def = true;
 					out += `const ${varName} = _interopRequireDefault(${baseName}).default;\n`;
 				} else {
@@ -279,13 +290,13 @@ class CmpJS {
 			});
 		}
 
-		if(def) {
+		if (def) {
 			out = `const _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");\n${out}`;
 		}
 
 		out += getReq(cmp);
-		cmp.ji.forEach(file => {
-			out += `require(${stringify(file)});\n`
+		cmp.ji.forEach((file) => {
+			out += `require(${stringify(file)});\n`;
 		});
 
 		return out;
@@ -302,12 +313,12 @@ class CmpJS {
 	}
 
 	append(exp: string | number | Array<string | number>) {
-		if(!Array.isArray(exp)) {
+		if (!Array.isArray(exp)) {
 			exp = [exp];
 		}
-		for(let line of exp) {
+		for (let line of exp) {
 			line = toStr(line);
-			if(line.length > 0) {
+			if (line.length > 0) {
 				addJS(this, "\n" + this[CMP_ID].tabs + line);
 			}
 		}
@@ -316,20 +327,19 @@ class CmpJS {
 
 	tab(func: () => void, count: number = 1) {
 		const cmp = this[CMP_ID];
-		if(typeof count !== "number" || isNaN(count) || count < 1) {
+		if (typeof count !== "number" || isNaN(count) || count < 1) {
 			count = 1;
-		} else if(count > 20) {
+		} else if (count > 20) {
 			count = 20;
 		}
 		cmp.tabs += "\t".repeat(count);
 		func();
-		cmp.tabs  = cmp.tabs.substring(count);
+		cmp.tabs = cmp.tabs.substring(count);
 		return this;
 	}
 
 	group(exp: string, end: string, func: DepthLambda) {
-
-		if(exp) {
+		if (exp) {
 			exp = exp.trimEnd();
 			exp += " ";
 		}
@@ -340,7 +350,7 @@ class CmpJS {
 
 		cmp.tabs += "\t";
 		func(new CmpTool());
-		cmp.tabs  = cmp.tabs.substring(1);
+		cmp.tabs = cmp.tabs.substring(1);
 
 		addJS(this, "\n" + cmp.tabs + "}" + (end || ""));
 
@@ -348,23 +358,25 @@ class CmpJS {
 	}
 
 	comment(text: string) {
-		text = toStr(text).trim().replace(/\r\n|\r/g, "\n");
-		if(!text.length) {
+		text = toStr(text)
+			.trim()
+			.replace(/\r\n|\r/g, "\n");
+		if (!text.length) {
 			return this;
 		}
-		if(text.includes("\n")) {
-			text = '/* ' + text.replace(/\*\//g, '*|') + ' */';
+		if (text.includes("\n")) {
+			text = "/* " + text.replace(/\*\//g, "*|") + " */";
 		} else {
-			text = '// ' + text;
+			text = "// " + text;
 		}
 		return this.append(text);
 	}
 
 	toJS(type: "import" | "require" | false = false) {
 		let out = "";
-		if(type === "import") {
+		if (type === "import") {
 			out += this.toImport();
-		} else if(type === "require") {
+		} else if (type === "require") {
 			out += this.toRequire();
 		}
 		return out + this.toString();
