@@ -42,8 +42,10 @@ export namespace API {
 	}
 
 	export type HookName = string;
-	export type HookListener<Event = any> = (event?: Event) => void;
 	export type HookUnsubscribe = () => void;
+	export type HookListener<Event = any, Name extends string = string> =
+		| ((event: Event & { name: Name }) => void)
+		| (() => void);
 }
 
 export namespace App {

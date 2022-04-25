@@ -1,9 +1,27 @@
-import type { App, Page } from "@credo-js/app";
+import type { App, Page, API } from "@credo-js/app";
 import type { Action, History, Location } from "history";
-import type { ElementType } from "react";
+import type { ElementType, FC } from "react";
+import type React from "react";
+import type ReactDOM from "react-dom";
 
 export interface OnAppMountHook {
 	app: App.StoreInterface;
+}
+
+type AppProps = {
+	api: API.ApiInterface<ElementType>;
+	history: History;
+};
+
+export interface OnAppRenderHook {
+	React: typeof React;
+	ReactDOM: typeof ReactDOM;
+	hydrate: boolean;
+	ref: HTMLElement;
+	App: FC<AppProps>;
+	props: AppProps;
+	readonly defaultPrevented: boolean;
+	preventDefault(): void;
 }
 
 export interface OnLocationChangeHook {

@@ -7,6 +7,7 @@ import loadDocument from "./loadDocument";
 import { load, loaded, component } from "../loadable";
 import { AppStore } from "@credo-js/app";
 import type { ReactElement, ElementType } from "react";
+import type { OnAppRenderHook } from "../app";
 
 type React15Root = { render: Function };
 
@@ -78,23 +79,25 @@ const renderPage: Page.ClientRenderHandler<ElementType> = async function renderP
 	const render = (hydrate: boolean = false) => {
 		let prevented = false;
 		let root: null | React15Root = null;
-		const evn = {
+		const evn: OnAppRenderHook = {
 			React,
 			ReactDOM,
 			hydrate,
 			ref: node,
 			App,
-			props: { api, history },
+			props: {
+				api,
+				history,
+			},
+			get defaultPrevented() {
+				return prevented;
+			},
+			preventDefault() {
+				prevented = true;
+			},
 		};
-		const def = (name: string, getter: () => void) => {
-			Object.defineProperty(evn, name, { get: getter, configurable: false });
-		};
-		def("defaultPrevented", () => prevented);
-		def("preventDefault", () => () => {
-			prevented = true;
-		});
 
-		api.emit("onRender", evn);
+		api.emit<OnAppRenderHook>("onRender", evn);
 
 		if (!prevented) {
 			const reactDom = React.createElement(evn.App, evn.props);

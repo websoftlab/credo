@@ -11,5 +11,9 @@
 				"types": "./index.d.ts"
 			}
 		}
-	]
+	],
+	"types": {
+		"target": "copy",
+		"output": "."
+	}
 }
