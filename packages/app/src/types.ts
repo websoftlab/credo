@@ -58,12 +58,12 @@ export namespace App {
 }
 
 export namespace Page {
-	export type ClientRenderHandler<ComponentType> = (
+	export type ClientRenderHandler<ComponentType, RenderOptions = {}> = (
 		node: HTMLElement,
-		options?: ClientOptions<ComponentType>
+		options?: ClientOptions<ComponentType, RenderOptions>
 	) => Promise<void>;
 
-	export type ClientOptions<ComponentType> = {
+	export type ClientOptions<ComponentType, RenderOptions = {}> = RenderOptions & {
 		bootloader?: ((api: API.ApiInterface<ComponentType>) => void)[];
 	};
 

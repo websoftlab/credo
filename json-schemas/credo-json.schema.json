@@ -92,6 +92,10 @@
 					"additionalProperties": {
 						"type": "string"
 					}
+				},
+				"renderOptions": {
+					"description": "Render driver options",
+					"type": "object"
 				}
 			},
 			"required": [
@@ -302,6 +306,10 @@
 							]
 						}
 					]
+				},
+				"renderOptions": {
+					"description": "Render driver options",
+					"type": "object"
 				},
 				"onBuildTimeout": {
 					"description": "Timeout for onBuild hook functions",

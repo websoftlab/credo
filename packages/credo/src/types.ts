@@ -335,6 +335,7 @@ export declare namespace CredoPlugin {
 	interface BaseOptions {
 		pages: string | false;
 		components?: Record<string, string>;
+		renderOptions?: any;
 	}
 
 	export interface RootClusterOptions extends BaseOptions {

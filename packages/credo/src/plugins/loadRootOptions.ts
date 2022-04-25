@@ -179,7 +179,7 @@ export default async function loadRootOptions(plugins: CredoPlugin.Plugin[]): Pr
 
 	const cls: CredoPlugin.RootClusterOptions[] = [];
 	let clsCount: number = 0;
-	let { components, pages, clusters, configLoaders, daemon, onBuildTimeout } = opts;
+	let { components, pages, clusters, configLoaders, daemon, onBuildTimeout, renderOptions: rootRenderOptions } = opts;
 	let rootPages: string | undefined;
 	let rootComponents: Record<string, string> | undefined;
 
@@ -235,6 +235,7 @@ export default async function loadRootOptions(plugins: CredoPlugin.Plugin[]): Pr
 				ssr,
 				env = {},
 				bootloader,
+				renderOptions = {},
 			} = cluster;
 
 			if (count < 1) {
@@ -296,6 +297,11 @@ export default async function loadRootOptions(plugins: CredoPlugin.Plugin[]): Pr
 				} else if (rootComponents) {
 					pco.components = rootComponents;
 				}
+
+				options.renderOptions = {
+					...rootRenderOptions,
+					...renderOptions,
+				};
 			} else {
 				pco.ssr = false;
 			}
@@ -317,6 +323,9 @@ export default async function loadRootOptions(plugins: CredoPlugin.Plugin[]): Pr
 		}
 		if (rootComponents) {
 			options.components = rootComponents;
+		}
+		if (options.renderDriver) {
+			options.renderOptions = { ...rootRenderOptions };
 		}
 	}
 

@@ -1,5 +1,6 @@
 import type { CredoPlugin } from "../../types";
 import { CmpJS } from "@credo-js/cli-cmp";
+import { isPlainObject } from "@credo-js/utils";
 import createRelativePath from "./createRelativePath";
 import { buildPath, createCwdDirectoryIfNotExists, exists, writeBundleFile } from "../../utils";
 import { writeFile } from "fs/promises";
@@ -43,12 +44,14 @@ export async function buildClient(factory: CredoPlugin.Factory) {
 	}
 
 	const {
-		options: { clusters },
+		options: { clusters, renderOptions },
 	} = factory;
 	const renderPageImport = `${renderDriver.modulePath}/client`;
 
-	async function create(options: { mid?: number; bootloader?: CredoPlugin.HandlerOptional } = {}) {
-		const { mid, bootloader } = options;
+	async function create(
+		options: { mid?: number; bootloader?: CredoPlugin.HandlerOptional; renderOptions?: any } = {}
+	) {
+		const { mid, bootloader, renderOptions } = options;
 		const file = mid ? `client-${mid}/client.js` : "client.js";
 		const cJs = new CmpJS();
 		const bootloaders: string[] = [cJs.imp(`${mid ? ".." : "."}/lexicon-client.js`)];
@@ -90,10 +93,15 @@ export async function buildClient(factory: CredoPlugin.Factory) {
 			`const renderPage = typeof ${func}.renderPage === "function" ? ${func}.renderPage : (typeof ${func}.default === "function" ? ${func}.default : ${func});`
 		);
 
-		cJs.group('if( typeof renderPage === "function" )', "", () => {
+		cJs.group('if( typeof renderPage === "function" )', "", (t) => {
+			const { bootloader, ...rest } = isPlainObject(renderOptions) ? renderOptions : <any>{};
+			let opt = t.esc(rest).slice(1, -1).trim();
+			if (opt.length > 0) {
+				opt += ", ";
+			}
 			cJs.append('const node = document.getElementById("root");');
 			cJs.group("if( node )", "", () => {
-				cJs.append(`const options = { bootloader: [ ${bootloaders.join(", ")} ] };`);
+				cJs.append(`const options = {${opt}bootloader: [ ${bootloaders.join(", ")} ]};`);
 				cJs.append(`renderPage(node, options).catch(${failure});`);
 			});
 			cJs.group("else", "", () => {
@@ -112,12 +120,12 @@ export async function buildClient(factory: CredoPlugin.Factory) {
 
 	if (clusters && clusters.length > 0) {
 		for (let cluster of clusters) {
-			const { bootloader, mode, mid } = cluster;
+			const { bootloader, mode, mid, renderOptions } = cluster;
 			if (mode === "app") {
-				await create({ mid, bootloader });
+				await create({ mid, bootloader, renderOptions });
 			}
 		}
 	} else {
-		await create();
+		await create({ renderOptions });
 	}
 }
