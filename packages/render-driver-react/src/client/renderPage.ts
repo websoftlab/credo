@@ -6,6 +6,7 @@ import App from "./App";
 import loadDocument from "./loadDocument";
 import { load, loaded, component } from "../loadable";
 import { AppStore } from "@credo-js/app";
+import onHistoryScroll from "./onHistoryScroll";
 import type { ReactElement, ElementType } from "react";
 import type { OnAppRenderHook } from "../app";
 
@@ -23,9 +24,12 @@ function isReact18(obj: any): obj is {
 	);
 }
 
-const renderPage: Page.ClientRenderHandler<ElementType> = async function renderPage(node: HTMLElement, options = {}) {
+const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolean }> = async function renderPage(
+	node: HTMLElement,
+	options = {}
+) {
 	const data: Page.DocumentAppOptions = loadDocument("app-page");
-	const { bootloader = [] } = options;
+	const { historyScroll = true, bootloader = [] } = options;
 	const {
 		ssr = false,
 		getQueryId,
@@ -53,6 +57,9 @@ const renderPage: Page.ClientRenderHandler<ElementType> = async function renderP
 		loader: { load, loaded, component },
 	});
 	const api = new Api<ElementType>("client", app, page);
+	const history = createBrowserHistory();
+
+	api.services.history = history;
 
 	// client system bootstrap
 	bootloader.forEach((func) => {
@@ -69,12 +76,14 @@ const renderPage: Page.ClientRenderHandler<ElementType> = async function renderP
 		await app.loadLanguage(language);
 	}
 
-	const history = createBrowserHistory();
-
 	// load base page props from head tags
 	api.baseUrl = typeof baseUrl === "string" ? baseUrl : "/";
 	api.title = title || document.title;
 	api.ssr = ssr;
+
+	if (historyScroll) {
+		onHistoryScroll(api);
+	}
 
 	const render = (hydrate: boolean = false) => {
 		let prevented = false;
