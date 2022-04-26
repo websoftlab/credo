@@ -15,11 +15,12 @@ export namespace URL {
 		cacheable?: boolean;
 	}
 
-	export type Handler = (url: string | string[] | Options) => string;
-	export type AsyncHandler = (url: string | string[] | Options) => Promise<string>;
+	export type Handler<D = any> = (url: string | string[] | (Options & { details?: D })) => string;
+	export type AsyncHandler<D = any> = (url: string | string[] | (Options & { details?: D })) => Promise<string>;
 }
 
 // Hooks
-export interface OnMakeURLHook {
+export interface OnMakeURLHook<D = any> {
 	url: URL.Options;
+	details?: D;
 }

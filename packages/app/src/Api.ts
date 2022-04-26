@@ -43,7 +43,8 @@ export default class Api<ComponentType, Store = any> implements API.ApiInterface
 		if (typeof url === "string" || Array.isArray(url)) {
 			url = { path: url };
 		}
-		const event = { url };
+		const { details = {}, ...opts } = url;
+		const event = { url: opts, details };
 		this.emit<OnMakeURLHook>("onMakeURL", event);
 		return makeUrl(event.url);
 	};

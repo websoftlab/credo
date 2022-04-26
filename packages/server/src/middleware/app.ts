@@ -34,8 +34,10 @@ export function middleware(
 					path: await credo.route.matchToPath(name, params),
 				};
 			}
-			await credo.hooks.emit<OnMakeURLServerHook>("onMakeURL", { url, ctx, name: routeName });
-			return makeUrl(url);
+			const { details = {}, ...opts } = url;
+			const event = { url: opts, details, ctx, name: routeName };
+			await credo.hooks.emit<OnMakeURLServerHook>("onMakeURL", event);
+			return makeUrl(event.url);
 		};
 
 	const BODY_END_KEY: symbol = Symbol();
