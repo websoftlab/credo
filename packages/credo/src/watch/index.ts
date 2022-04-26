@@ -11,7 +11,14 @@ import type { Watch } from "../types";
 import type { WatchEntry } from "./WatchGlobal";
 
 const watchList: WatchEntry[] = [
-	{ path: "lexicon", type: "directory", required: true },
+	{
+		path: "lexicon",
+		type: "directory",
+		required: true,
+		test(action) {
+			return action !== "change";
+		},
+	},
 	{ path: "config", type: "directory", required: true },
 	{ path: ".env", type: "file", required: false },
 	{ path: ".development.env", type: "file", required: false },

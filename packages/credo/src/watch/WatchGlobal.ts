@@ -1,12 +1,15 @@
 import type { Stats } from "fs";
-import { watch, watchFile, unwatchFile, existsSync, statSync } from "fs";
-import { join } from "path";
+import { watch, watchFile, unwatchFile, existsSync, statSync, lstatSync, readdirSync, realpathSync } from "fs";
+import { join, resolve } from "path";
 import { newError } from "@credo-js/cli-color";
+
+export type WatchAction = "change" | "delete" | "create";
 
 export interface WatchEntry {
 	path: string;
 	type: "file" | "directory";
 	required: boolean;
+	test?: (action: WatchAction, file: string, stats?: Stats) => boolean;
 }
 
 export interface WatchNode {
@@ -17,9 +20,8 @@ export interface WatchNode {
 }
 
 export interface WatchEvent {
-	type: "file" | "directory";
 	file: string;
-	action: string;
+	action: WatchAction;
 	stat?: Stats;
 }
 
@@ -27,34 +29,159 @@ export interface WatchFunction {
 	(event: WatchEvent): void;
 }
 
+function checkNode(node: WatchNode) {
+	const { entry, file } = node;
+	if (entry.required && !existsSync(file)) {
+		throw newError(`The {yellow ./%s} ${entry.type} not found`, entry.path);
+	}
+}
+
 export default class WatchGlobal {
 	private _noWatchId: null | NodeJS.Timeout = null;
+	private _files: Record<string, { size: number; exists: boolean }> = {};
+	private _dirs: string[] = [];
 	private readonly _nodes: WatchNode[] = [];
 	private readonly _notExistsNodes: WatchNode[] = [];
 	private readonly _handler: WatchFunction;
 
 	started: boolean = false;
 
+	private _readDir(prefix: string, ref: boolean = false) {
+		if (ref) {
+			prefix = realpathSync(prefix);
+		}
+
+		if (this._dirs.includes(prefix)) {
+			return;
+		}
+
+		this._dirs.push(prefix);
+
+		const files = readdirSync(prefix);
+		for (const file of files) {
+			let path = join(prefix, file);
+			let stat = lstatSync(path);
+
+			if (stat.isSymbolicLink()) {
+				path = realpathSync(path);
+				stat = statSync(path);
+			}
+
+			if (stat.isFile()) {
+				if (!this._files.hasOwnProperty(path)) {
+					this._files[path] = {
+						size: stat.size,
+						exists: true,
+					};
+				}
+			} else if (stat.isDirectory()) {
+				this._readDir(path);
+			}
+		}
+	}
+
+	private _emitAction(node: WatchNode, file: string, stats?: Stats) {
+		const { entry } = node;
+		const size = stats ? stats.size : 0;
+		const exists = size === 0 ? existsSync(file) : true;
+
+		let action: WatchAction = "change";
+		let found = this._files.hasOwnProperty(file) ? this._files[file] : null;
+
+		if (!exists) {
+			action = "delete";
+			if (entry.type === "file") {
+				checkNode(node);
+			}
+		} else if (!found || !found.exists) {
+			action = "create";
+		}
+
+		if (!found) {
+			this._files[file] = { size, exists };
+			if (entry.type === "file" || entry.test && !entry.test(action, file, stats)) {
+				return null;
+			}
+			return action;
+		}
+
+		let emit = found.size !== size || found.exists !== exists;
+		if (emit) {
+			found.size = size;
+			found.exists = exists;
+			if (entry.test && !entry.test(action, file, stats)) {
+				emit = false;
+			}
+		}
+
+		return emit ? action : null;
+	}
+
 	private _createNode(entry: WatchEntry): WatchNode {
 		const file = join(process.cwd(), entry.path);
-		const node = {
+
+		let node: WatchNode;
+		let tick: (...args: any[]) => void;
+
+		if (entry.type === "file") {
+			tick = (stat: Stats) => {
+				const action = this._emitAction(node, file, stat);
+				if (action) {
+					this._handler({ action, file, stat });
+				}
+			};
+		} else {
+			const prefix = file;
+			tick = (_: string, file: string) => {
+				// normalize file name
+				if (!file) {
+					file = prefix;
+				} else {
+					if (file.endsWith("~")) {
+						file = file.slice(0, -1);
+					}
+					file = resolve(prefix, file);
+				}
+
+				// real path
+				file = realpathSync(file);
+
+				let stat: Stats | undefined;
+				if (existsSync(file)) {
+					stat = statSync(file);
+					if (stat.isDirectory()) {
+						if (!this._dirs.includes(file)) {
+							this._dirs.push(file);
+						}
+						return;
+					}
+					if (!stat.isFile()) {
+						return;
+					}
+				} else if (prefix === file) {
+					return checkNode(node);
+				} else {
+					const index = this._dirs.indexOf(file);
+					if (index !== -1) {
+						this._dirs.splice(index, 1);
+						return;
+					}
+				}
+
+				const action = this._emitAction(node, file, stat);
+				if (action) {
+					this._handler({ action, file, stat });
+				}
+			};
+		}
+
+		node = {
 			file,
 			unsubscribe() {},
 			entry,
-			tick:
-				entry.type === "file"
-					? (stat: Stats) => {
-							if (stat.size === 0 && !existsSync(file)) {
-								this._checkNode(node);
-								this._handler({ action: "delete", type: "file", file });
-							} else {
-								this._handler({ action: "change", type: "file", file, stat });
-							}
-					  }
-					: (type: string, file: string) => {
-							this._handler({ action: type, type: "directory", file });
-					  },
+			tick,
 		};
+
 		return node;
 	}
 
@@ -62,13 +189,6 @@ export default class WatchGlobal {
 		if (this._noWatchId) {
 			clearInterval(this._noWatchId);
 			this._noWatchId = null;
-		}
-	}
-
-	private _checkNode(node: WatchNode) {
-		const { entry, file } = node;
-		if (entry.required && !existsSync(file)) {
-			throw newError(`The {yellow ./%s} ${entry.type} not found`, entry.path);
 		}
 	}
 
@@ -80,7 +200,7 @@ export default class WatchGlobal {
 				if (existsSync(file)) {
 					throw err;
 				}
-				this._checkNode(node);
+				checkNode(node);
 				node.unsubscribe();
 				node.tick("delete", file);
 				this._notExistsNodes.push(node);
@@ -90,9 +210,6 @@ export default class WatchGlobal {
 				wt.close();
 				node.unsubscribe = () => {};
 			};
-			if (emit) {
-				node.tick("create", file);
-			}
 		} else {
 			watchFile(file, node.tick);
 			node.unsubscribe = () => {
@@ -114,12 +231,7 @@ export default class WatchGlobal {
 			const copy = this._notExistsNodes.slice();
 			for (const node of copy) {
 				if (existsSync(node.file)) {
-					this._handler({
-						action: "create",
-						type: node.entry.type,
-						file: node.file,
-					});
-					this._watchNode(node, true);
+					this._watchNode(node);
 					this._notExistsNodes.splice(this._notExistsNodes.indexOf(node), 1);
 				}
 			}
@@ -149,11 +261,14 @@ export default class WatchGlobal {
 		}
 		this.started = true;
 		for (const node of this._nodes) {
-			this._checkNode(node);
+			checkNode(node);
 		}
 		for (const node of this._nodes) {
 			const { file, entry } = node;
 			if (entry.type === "file" || existsSync(file)) {
+				if (entry.type === "directory") {
+					this._readDir(node.file, true);
+				}
 				this._watchNode(node);
 			} else {
 				this._notExistsNodes.push(node);
@@ -178,8 +293,8 @@ export default class WatchGlobal {
 		}
 		this._nodes.push(node);
 		if (this.started) {
-			this._checkNode(node);
-			this._watchNode(node);
+			checkNode(node);
+			this._watchNode(node, entry.type === "file");
 		}
 	}
 }
