@@ -1,6 +1,6 @@
 import axios from "axios";
 import { computed, action, makeObservable, observable } from "mobx";
-import { isPlainObject } from "@credo-js/utils";
+import { isPlainObject } from "@phragon/utils";
 import type { CancelTokenSource, AxiosInstance, AxiosRequestConfig } from "axios";
 import type { Page } from "./types";
 

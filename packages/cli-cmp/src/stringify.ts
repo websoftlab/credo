@@ -1,5 +1,5 @@
 import type { StringifyOptions } from "./types";
-import { isPlainObject } from "@credo-js/utils";
+import { isPlainObject } from "@phragon/utils";
 import CmpValue from "./CmpValue";
 import isUnescapedName from "./isUnescapedName";
 

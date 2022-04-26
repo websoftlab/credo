@@ -1,14 +1,14 @@
 {
-	"name": "@credo-js/make-url",
+	"name": "@phragon/make-url",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",
 		"prettier": "node ../../scripts/lib/build-prettier.js"
 	},
 	"dependencies": {
-		"@credo-js/path-to-pattern": "*"
+		"@phragon/path-to-pattern": "*"
 	},
 	"devDependencies": {},
 	"peerDependencies": {},

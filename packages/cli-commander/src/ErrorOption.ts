@@ -1,5 +1,5 @@
 import type { ErrorOptionOptions, MinOptionInterface } from "./types";
-import { format, color } from "@credo-js/cli-color";
+import { format, color } from "@phragon/cli-color";
 import { assertOptionName, getAltNames } from "./util";
 import { opts, titles } from "./constants";
 

@@ -1,4 +1,4 @@
-import { asyncResult } from "@credo-js/utils";
+import { asyncResult } from "@phragon/utils";
 import { throwError } from "./render";
 import createHttpError from "http-errors";
 import { RouteEntity } from "../route";
@@ -58,7 +58,7 @@ export const middleware = async function (ctx: Context, next: Next) {
 
 	const ref: ContextRef = {};
 
-	await find(ctx, ref, ctx.credo.route.routeList);
+	await find(ctx, ref, ctx.phragon.route.routeList);
 
 	if (!ctx.route && ref.context) {
 		return throwError(ctx, createHttpError(400, ref.message || `Route query error`), ref.context, ref.code);

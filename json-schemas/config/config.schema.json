@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-04/schema#",
-	"title": "JSON schema for CredoJS config.json config files",
+	"title": "JSON schema for PhragonJS config.json config files",
 	"description": "Basic service options",
 	"type": "object",
 	"properties": {

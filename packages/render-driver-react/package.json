@@ -1,19 +1,19 @@
 {
-	"name": "@credo-js/render-driver-react",
+	"name": "@phragon/render-driver-react",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",
 		"prettier": "node ../../scripts/lib/build-prettier.js"
 	},
 	"dependencies": {
-		"@credo-js/html-head": "*",
-		"@credo-js/loadable": "*",
-		"@credo-js/responder-page": "*",
-		"@credo-js/utils": "*",
-		"@credo-js/cli-debug": "*",
-		"@credo-js/app": "*",
+		"@phragon/html-head": "*",
+		"@phragon/loadable": "*",
+		"@phragon/responder-page": "*",
+		"@phragon/utils": "*",
+		"@phragon/cli-debug": "*",
+		"@phragon/app": "*",
 		"mobx": "^6.3.2",
 		"mobx-react-lite": "^3.3.0",
 		"react": "^17.0.2",
@@ -33,7 +33,7 @@
 		"react-refresh": "^0.10.0"
 	},
 	"peerDependencies": {
-		"credo": "*"
+		"phragon": "*"
 	},
 	"exports": {
 		"./": "./src/",

@@ -1,6 +1,6 @@
 import type { Render } from "./types";
 import type HtmlNode from "./HtmlNode";
-import type { API, Page } from "@credo-js/app";
+import type { API, Page } from "@phragon/app";
 import type { Context } from "koa";
 
 export default abstract class HtmlDriverPrototype<Type, RenderType = HtmlNode>

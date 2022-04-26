@@ -1,7 +1,7 @@
 {
-	"name": "@credo-js/responder-page",
+	"name": "@phragon/responder-page",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",
@@ -9,10 +9,10 @@
 	},
 	"dependencies": {
 		"http-errors": "^1.7.3",
-		"@credo-js/make-url": "*",
-		"@credo-js/utils": "*",
-		"@credo-js/server": "*",
-		"@credo-js/app": "*"
+		"@phragon/make-url": "*",
+		"@phragon/utils": "*",
+		"@phragon/server": "*",
+		"@phragon/app": "*"
 	},
 	"devDependencies": {
 		"@types/axios": "^0.14.0",

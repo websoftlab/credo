@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import type { HeadTagName } from "@credo-js/html-head";
+import type { HeadTagName } from "@phragon/html-head";
 import { createElement } from "react";
 import HeadTagComponent from "./HeadTagComponent";
 

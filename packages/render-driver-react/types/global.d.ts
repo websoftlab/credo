@@ -1,4 +1,4 @@
-import type { API } from "@credo-js/app";
+import type { API } from "@phragon/app";
 import type { History } from "history";
 import type {
 	OnLocationChangeHook,
@@ -7,9 +7,9 @@ import type {
 	OnPageHook,
 	OnAppRenderHook,
 	OnPageHistoryScrollHook,
-} from "@credo-js/render-driver-react/app/index";
+} from "@phragon/render-driver-react/app/index";
 
-declare module "@credo-js/app" {
+declare module "@phragon/app" {
 	namespace API {
 		interface Services {
 			history?: History;

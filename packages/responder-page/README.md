@@ -1,9 +1,9 @@
-# @credo-js/responder-page
+# @phragon/responder-page
 
 The project is under construction, the description will be later
 
 ## ❯ Install
 
 ```
-$ npm install --save @credo-js/responder-page
+$ npm install --save @phragon/responder-page
 ```

@@ -1,12 +1,12 @@
-import type { CredoJSGlobal } from "../types";
-import type { Commander } from "@credo-js/cli-commander";
-import type { Command } from "@credo-js/cli-commander";
+import type { PhragonJSGlobal } from "../types";
+import type { Commander } from "@phragon/cli-commander";
+import type { Command } from "@phragon/cli-commander";
 
-export interface CredoJSCmd extends CredoJSGlobal {
+export interface PhragonJSCmd extends PhragonJSGlobal {
 	readonly mode: "cmd";
 	readonly cmd: Commander;
 }
 
 export interface OnBuildHook {}
 
-export type CommanderCtor<Opt = never> = (credo: CredoJSCmd, command: Command, opt?: Opt) => void;
+export type CommanderCtor<Opt = never> = (phragon: PhragonJSCmd, command: Command, opt?: Opt) => void;

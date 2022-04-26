@@ -2,7 +2,7 @@ import List from "./segment/List";
 import Values from "./segment/Values";
 import Value from "./segment/Value";
 import Plain from "./segment/Plain";
-import { regExpEscape } from "@credo-js/utils";
+import { regExpEscape } from "@phragon/utils";
 import type { PatternFormatterArgument, PatternRegExArgument, PatternFormatter } from "./types";
 import type { SegmentValue } from "./segment/Values";
 

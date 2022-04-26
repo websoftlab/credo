@@ -1,6 +1,6 @@
 import daemon from "../daemon";
 import prettyMs from "pretty-ms";
-import { format } from "@credo-js/cli-color";
+import { format } from "@phragon/cli-color";
 
 export default function cmdStatus(_arg: never, _prop: never, stream: NodeJS.WriteStream) {
 	const dmn = daemon();

@@ -1,4 +1,4 @@
-import { pathToPattern } from "@credo-js/path-to-pattern";
+import { pathToPattern } from "@phragon/path-to-pattern";
 import type { URL, OnMakeURLHook } from "./types";
 
 export type { URL, OnMakeURLHook };

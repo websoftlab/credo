@@ -1,9 +1,9 @@
-# @credo-js/extra
+# @phragon/extra
 
 The project is under construction, the description will be later
 
 ## ❯ Install
 
 ```
-$ npm install --save @credo-js/extra
+$ npm install --save @phragon/extra
 ```

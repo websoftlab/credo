@@ -1,7 +1,7 @@
 {
-	"name": "@credo-js/types",
+	"name": "@phragon/types",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",

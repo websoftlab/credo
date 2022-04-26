@@ -1,5 +1,5 @@
 import type { Context } from "koa";
-import type { CredoJS, Ctor, Route } from "@credo-js/server";
+import type { PhragonJS, Ctor, Route } from "@phragon/server";
 import createHttpError from "http-errors";
 import HttpText from "./HttpText";
 
@@ -7,7 +7,7 @@ function send(ctx: Context, body: HttpText) {
 	ctx.bodyEnd(body.toText(), body.status);
 }
 
-export default (function responder(_credo: CredoJS, name: string): Route.Responder {
+export default (function responder(_phragon: PhragonJS, name: string): Route.Responder {
 	async function error(ctx: Context, error: Error) {
 		let code = 500;
 		let message = "";

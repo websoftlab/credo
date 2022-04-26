@@ -1,8 +1,8 @@
 import type { Server } from "../types";
-import type { CredoJSCmd } from "./types";
-import { createCredoJS, BootManager } from "../credo";
+import type { PhragonJSCmd } from "./types";
+import { createPhragonJS, BootManager } from "../phragon";
 import { isMainProcess } from "../utils";
-import { Commander } from "@credo-js/cli-commander";
+import { Commander } from "@phragon/cli-commander";
 
 export default async function cmdService(options: Server.Options = {}) {
 	if (!isMainProcess()) {
@@ -11,7 +11,7 @@ export default async function cmdService(options: Server.Options = {}) {
 
 	const { registrar: registrarOption, ...rest } = options;
 
-	const credo: CredoJSCmd = await createCredoJS<CredoJSCmd>(
+	const phragon: PhragonJSCmd = await createPhragonJS<PhragonJSCmd>(
 		rest,
 		{
 			mode: "cmd",
@@ -20,22 +20,22 @@ export default async function cmdService(options: Server.Options = {}) {
 		{}
 	);
 
-	if (credo.envMode !== "production") {
+	if (phragon.envMode !== "production") {
 		throw new Error("Command line not available in development mode");
 	}
 
 	const cmd = new Commander({
-		prompt: "credo cmd",
+		prompt: "phragon cmd",
 		version: require("../package.json").version,
 		description: "Command shell for internal operations",
 	});
 
-	credo.define("cmd", cmd);
+	phragon.define("cmd", cmd);
 
 	// load & bootstrap, run cmd
 	const registrar = registrarOption || new BootManager();
 	await (
-		await registrar.load(credo)
+		await registrar.load(phragon)
 	)();
 
 	return cmd.begin();

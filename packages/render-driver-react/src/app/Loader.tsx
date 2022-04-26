@@ -2,7 +2,7 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import { component, defined } from "../component";
-import type { Page } from "@credo-js/app";
+import type { Page } from "@phragon/app";
 import type { CSSProperties, ElementType, ReactNode } from "react";
 
 const errorStyle: CSSProperties = {

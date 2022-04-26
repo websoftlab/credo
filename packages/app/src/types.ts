@@ -1,6 +1,6 @@
 import type { AxiosInstance } from "axios";
-import type { Lexicon } from "@credo-js/lexicon";
-import type { URL, OnMakeURLHook } from "@credo-js/make-url";
+import type { Lexicon } from "@phragon/lexicon";
+import type { URL, OnMakeURLHook } from "@phragon/make-url";
 
 export namespace API {
 	export interface Services extends Record<string, any> {

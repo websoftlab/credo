@@ -7,7 +7,7 @@ import type {
 	RenderHandler,
 	FallbackHandler,
 } from "./types";
-import { isPlainObject } from "@credo-js/utils";
+import { isPlainObject } from "@phragon/utils";
 
 function delFrom<T>(all: T[], item: T) {
 	const index = all.indexOf(item);

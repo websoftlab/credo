@@ -9,7 +9,7 @@ export default async function getRenderDriver(
 ): Promise<Render.HtmlDriverInterface<any>> {
 	// system drivers
 	if (baseDriver.includes(name)) {
-		name = `@credo-js/render-driver-${name}`;
+		name = `@phragon/render-driver-${name}`;
 	}
 
 	let HtmlDriver: any;

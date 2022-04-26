@@ -1,9 +1,9 @@
-# @credo-js/lexicon
+# @phragon/lexicon
 
 The project is under construction, the description will be later
 
 ## ❯ Install
 
 ```
-$ npm install --save @credo-js/lexicon
+$ npm install --save @phragon/lexicon
 ```

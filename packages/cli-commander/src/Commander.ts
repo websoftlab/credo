@@ -1,7 +1,7 @@
 import type { CommanderOptions } from "./types";
 import Command from "./Command";
 import { CommandOptions } from "./types";
-import { newError } from "@credo-js/cli-color";
+import { newError } from "@phragon/cli-color";
 import { helpCommand, helpCommandList } from "./help";
 import { getOptions } from "./util";
 import { EventEmitter } from "events";

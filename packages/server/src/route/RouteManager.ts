@@ -1,10 +1,10 @@
-import type { CredoJS, Route, RouteConfig } from "../types";
+import type { PhragonJS, Route, RouteConfig } from "../types";
 import type { Context } from "koa";
-import type { PatternInterface } from "@credo-js/path-to-pattern";
+import type { PatternInterface } from "@phragon/path-to-pattern";
 import type { Nullable } from "../helpTypes";
 import type { RouteVariant, NRPCDecode, NormalizeRoute } from "./types";
-import { pathToPattern, matchPath } from "@credo-js/path-to-pattern";
-import { asyncResult } from "@credo-js/utils";
+import { pathToPattern, matchPath } from "@phragon/path-to-pattern";
+import { asyncResult } from "@phragon/utils";
 import { createMethods, nameGen, trimLeftSegment, trimRightSegment } from "./utils";
 import { default as RouteEntity } from "./RouteEntity";
 import { default as RoutePattern } from "./RoutePattern";
@@ -37,9 +37,9 @@ function createMatchCallback<Params extends { [K in keyof Params]?: string } = {
 	};
 }
 
-function getService(credo: CredoJS, service: string) {
+function getService(phragon: PhragonJS, service: string) {
 	const nodes = String(service).split(".");
-	let target: any = credo.services;
+	let target: any = phragon.services;
 	let handler: any = target;
 
 	do {
@@ -62,7 +62,7 @@ function getService(credo: CredoJS, service: string) {
 	};
 }
 
-function createDynamicPathOptions(credo: CredoJS, path: RouteConfig.PathDynamic) {
+function createDynamicPathOptions(phragon: PhragonJS, path: RouteConfig.PathDynamic) {
 	let { matchToPath, match, service } = path;
 	let length: number | (() => number) | undefined = undefined;
 
@@ -74,7 +74,7 @@ function createDynamicPathOptions(credo: CredoJS, path: RouteConfig.PathDynamic)
 				`You cannot use the 'service' and 'matchToPath' options at the same time for a group route.`
 			);
 
-		const { target, handler } = getService(credo, service);
+		const { target, handler } = getService(phragon, service);
 
 		if (typeof handler === "function") {
 			match = (ctx: Context) => handler.call(target, ctx);
@@ -110,7 +110,7 @@ function createDynamicPathOptions(credo: CredoJS, path: RouteConfig.PathDynamic)
 }
 
 function createPatternPathOptions(
-	credo: CredoJS,
+	phragon: PhragonJS,
 	path: RouteConfig.PathPattern | RouteConfig.PathHandler
 ): { pattern?: PatternInterface; match: Route.Match } {
 	if (path.type === "pattern") {
@@ -128,7 +128,7 @@ function createPatternPathOptions(
 	if (typeof handler === "function") {
 		test = handler;
 	} else {
-		const { handler: callback, target } = getService(credo, handler);
+		const { handler: callback, target } = getService(phragon, handler);
 		if (typeof callback !== "function") {
 			throw new Error(`The "${handler}" service is not a function`);
 		}
@@ -477,7 +477,7 @@ function configEmptyRoute(route: RouteConfig.EmptyRoute, parent: any = {}): Rout
 }
 
 function configRoute(
-	credo: CredoJS,
+	phragon: PhragonJS,
 	configRoutes: RouteConfig.Route[],
 	parent: any,
 	callback: (r: RouteVariant, g?: RouteGroup) => void,
@@ -527,12 +527,12 @@ function configRoute(
 			if ("routes" in otherRoute && Array.isArray(otherRoute.routes) && otherRoute.routes.length > 0) {
 				routes = otherRoute.routes;
 			} else {
-				credo.debug.error(`Attention! The routes group route option '${name}' is empty`);
+				phragon.debug.error(`Attention! The routes group route option '${name}' is empty`);
 			}
 			const routeGroup = new RouteGroup(path, method);
 			callback(routeGroup, group);
 			if (routes.length > 0) {
-				configRoute(credo, routes, createParent(), callback, routeGroup);
+				configRoute(phragon, routes, createParent(), callback, routeGroup);
 			}
 			continue;
 		}
@@ -540,7 +540,7 @@ function configRoute(
 		if ("routes" in otherRoute) {
 			const { routes } = otherRoute;
 			if (Array.isArray(routes) && routes.length > 0) {
-				configRoute(credo, routes, createParent(), callback, group);
+				configRoute(phragon, routes, createParent(), callback, group);
 			}
 			continue;
 		}
@@ -573,7 +573,7 @@ function configRoute(
 		if (path.type === "dynamic") {
 			callback(
 				new RouteDynamic({
-					...createDynamicPathOptions(credo, path),
+					...createDynamicPathOptions(phragon, path),
 					methods,
 					context,
 				}),
@@ -582,7 +582,7 @@ function configRoute(
 		} else {
 			callback(
 				new RoutePattern({
-					...createPatternPathOptions(credo, path),
+					...createPatternPathOptions(phragon, path),
 					methods,
 					context,
 				}),
@@ -621,13 +621,13 @@ export default class RouteManager {
 
 		const { name } = route;
 		if (this.added(name)) {
-			this.credo.error("Duplicate route name {cyan %s}", name);
+			this.phragon.error("Duplicate route name {cyan %s}", name);
 		} else {
 			this._nameToRoute[name] = route;
 		}
 	};
 
-	constructor(public credo: CredoJS) {
+	constructor(public phragon: PhragonJS) {
 		const freezeRoutes = (routes: RouteVariant[]) => {
 			Object.freeze(routes);
 			for (const route of routes) {
@@ -649,16 +649,16 @@ export default class RouteManager {
 			return this;
 		};
 
-		if (!credo.isApp()) {
+		if (!phragon.isApp()) {
 			return init();
 		}
 
-		const conf = credo.config("routes");
+		const conf = phragon.config("routes");
 		const { host = "*", routes = [], route404, sort = "native", middleware, ...otherConf } = conf;
 
 		this._hostList = createHostListRegExp(host);
 
-		configRoute(credo, routes, { ...otherConf, middleware }, (route, group) => {
+		configRoute(phragon, routes, { ...otherConf, middleware }, (route, group) => {
 			this[ADD_ROUTE_KEY](route, undefined, group);
 		});
 
@@ -666,7 +666,7 @@ export default class RouteManager {
 			this._routeNotFound = new RouteEmpty(configEmptyRoute(route404, otherConf));
 		}
 
-		credo.hooks.once("onBoot", () => {
+		phragon.hooks.once("onBoot", () => {
 			if (!this._sorted) {
 				this.sort(sort);
 			}
@@ -718,7 +718,7 @@ export default class RouteManager {
 			return this;
 		}
 
-		configRoute(this.credo, [route], { middleware: [] }, (route, group) => {
+		configRoute(this.phragon, [route], { middleware: [] }, (route, group) => {
 			this[ADD_ROUTE_KEY](route, priority, group);
 		});
 

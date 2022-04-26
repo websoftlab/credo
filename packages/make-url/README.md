@@ -1,9 +1,9 @@
-# @credo-js/make-url
+# @phragon/make-url
 
 The project is under construction, the description will be later
 
 ## ❯ Install
 
 ```
-$ npm install --save @credo-js/make-url
+$ npm install --save @phragon/make-url
 ```

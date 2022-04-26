@@ -1,9 +1,9 @@
-import type { CredoPlugin } from "credo";
+import type { PhragonPlugin } from "phragon";
 import prepareBabelConfig from "./prepareBabelConfig";
 import onWebpackConfigure from "./onWebpackConfigure";
 import tsConfigCompilerOptionsJSX from "./tsConfigCompilerOptionsJSX";
 
-export default <Omit<CredoPlugin.RenderDriver, "modulePath">>{
+export default <Omit<PhragonPlugin.RenderDriver, "modulePath">>{
 	name: "react",
 	extensions: {
 		all: [".ts", ".tsx", ".js", ".jsx"],
@@ -20,13 +20,13 @@ export default <Omit<CredoPlugin.RenderDriver, "modulePath">>{
 		"react-refresh": "^0.10.0",
 	},
 	clientDependencies: [
-		"@credo-js/html-head",
-		"@credo-js/app",
-		"@credo-js/render-driver-react/app",
-		"@credo-js/render-driver-react/head",
+		"@phragon/html-head",
+		"@phragon/app",
+		"@phragon/render-driver-react/app",
+		"@phragon/render-driver-react/head",
 	],
 	hooks: {
-		onBuild(options: CredoPlugin.Factory): void | Promise<void> {
+		onBuild(options: PhragonPlugin.Factory): void | Promise<void> {
 			return tsConfigCompilerOptionsJSX(options.root.pluginPath);
 		},
 		onWebpackConfigure,

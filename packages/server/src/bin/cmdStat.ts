@@ -1,5 +1,5 @@
-import type { ModifierColorName } from "@credo-js/cli-color";
-import { color, format } from "@credo-js/cli-color";
+import type { ModifierColorName } from "@phragon/cli-color";
+import { color, format } from "@phragon/cli-color";
 import daemon from "../daemon";
 
 type RowOutType = {

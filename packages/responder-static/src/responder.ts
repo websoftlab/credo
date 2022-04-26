@@ -1,4 +1,4 @@
-import type { CredoJS, Ctor } from "@credo-js/server";
+import type { PhragonJS, Ctor } from "@phragon/server";
 import type { Context, Next } from "koa";
 import type { ResponderStaticOptions, StaticCtorConfig } from "./types";
 import type { Stats } from "fs";
@@ -62,8 +62,8 @@ function cwd(file: string) {
 	return join(process.cwd(), file);
 }
 
-export default (function responder(credo: CredoJS, name: string, config: StaticCtorConfig = {}) {
-	const options = credo.config<ResponderStaticOptions>(`responder/${name}`);
+export default (function responder(phragon: PhragonJS, name: string, config: StaticCtorConfig = {}) {
+	const options = phragon.config<ResponderStaticOptions>(`responder/${name}`);
 	const { exclude: excludePath = [], root: configRoot } = options;
 	const { publicPath = [] } = config;
 
@@ -87,8 +87,8 @@ export default (function responder(credo: CredoJS, name: string, config: StaticC
 		: [];
 
 	// add client directory
-	if (credo.renderHTMLDriver) {
-		const mid = credo.process?.mid;
+	if (phragon.renderHTMLDriver) {
+		const mid = phragon.process?.mid;
 		const clientPath: string = cwd(`${__BUNDLE__}/client${mid ? `-${mid}` : ""}`);
 		const clientPrivate: string = clientPath + sep + ".";
 		const clientManifest: string = join(clientPath, `/manifest.json`);

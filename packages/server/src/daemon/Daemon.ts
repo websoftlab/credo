@@ -3,8 +3,8 @@ import { join } from "path";
 import { isMainProcess } from "../utils";
 import cluster from "cluster";
 import { isMainThread, workerData, parentPort } from "worker_threads";
-import { debug } from "@credo-js/cli-debug";
-import { newError } from "@credo-js/cli-color";
+import { debug } from "@phragon/cli-debug";
+import { newError } from "@phragon/cli-color";
 import { spawn } from "child_process";
 import createCPUTick from "./createCPUTick";
 import type { DaemonCPUValue, DaemonSendCPU, DaemonSendData, DaemonPIDFileData, DaemonOptions } from "./types";
@@ -46,9 +46,9 @@ export default class Daemon {
 			delay: 5000,
 			cpuPoint: 180,
 			killSignal: "SIGTERM",
-			pid: join(process.cwd(), "./credo-pid.json"),
+			pid: join(process.cwd(), "./phragon-pid.json"),
 		};
-		const confFile = join(process.cwd(), "credo-daemon.json");
+		const confFile = join(process.cwd(), "phragon-daemon.json");
 		if (existsSync(confFile)) {
 			Object.assign(options, JSON.parse(readFileSync(confFile).toString()));
 		}

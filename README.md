@@ -1,4 +1,4 @@
-# CredoJS Project
+# PhragonJS Project
 
 **Attention!** The project is under development, a full description will be later. The project is in the beta testing stage.
 
@@ -10,34 +10,34 @@
 For install project
 
 ```shell
-yarn add credo
-yarn credo install [--render react] [--from <template_directory>]
+yarn add phragon
+yarn phragon install
 ```
 
 ## Project commands
 
 ```shell
-# credo commands
-yarn credo install                   # install system
-yarn credo install plugin-name       # install additional plugin
-yarn credo dev                       # start dev server
-yarn credo make                      # make build files to ./credo directory
-yarn credo build                     # create build
+# phragon commands
+yarn phragon install                   # install system
+yarn phragon install plugin-name       # install additional plugin
+yarn phragon dev                       # start dev server
+yarn phragon make                      # make build files to ./phragon directory
+yarn phragon build                     # create build
 
-# credo-serv (production only, after credo build)
-yarn credo-serv start                # start server
-yarn credo-serv start --background   # start server in background
-yarn credo-serv stop                 # stop server
-yarn credo-serv status               # server status (online or offline)
-yarn credo-serv stat                 # server CPU statistic
-yarn credo-serv cmd [...options]     # running an internal command
+# phragon-serv (production only, after phragon build)
+yarn phragon-serv start                # start server
+yarn phragon-serv start --background   # start server in background
+yarn phragon-serv stop                 # stop server
+yarn phragon-serv status               # server status (online or offline)
+yarn phragon-serv stat                 # server CPU statistic
+yarn phragon-serv cmd [...options]     # running an internal command
 
 # for more information use --help [?command-name]
 ```
 
-## Terms and concepts of the CredoJS application
+## Terms and concepts of the PhragonJS application
 
-### Global var `credo`
+### Global var `phragon`
 
 > todo
 
@@ -45,9 +45,9 @@ yarn credo-serv cmd [...options]     # running an internal command
 
 | Mode   | How to discover | Comment |
 |---     |---              |---      |
-| `app`  | `credo.isApp() === true`  | Started HTTP Server (koa) |
-| `cron` | `credo.isCron() === true` | Started CRON Server (node-schedule) |
-| `cmd`  | `credo.isCmd() === true`  | Started internal terminal command |
+| `app`  | `phragon.isApp() === true`  | Started HTTP Server (koa) |
+| `cron` | `phragon.isCron() === true` | Started CRON Server (node-schedule) |
+| `cmd`  | `phragon.isCmd() === true`  | Started internal terminal command |
 
 ### Service
 
@@ -81,31 +81,31 @@ yarn credo-serv cmd [...options]     # running an internal command
 
 > todo
 
-### CredoJS packages
+### PhragonJS packages
 
 | Package | Comment |
 |---      |---      |
-| [credo](./packages/credo) | Development: installation, building, watching. |
-| [create-credo-app](./packages/create-credo-app) | - |
-| [@credo-js/server](./packages/server) | Main HTTP server (wrapper for `koa`). |
-| [@credo-js/responder-static](./packages/responder-static) | Static files responder. `koa-static` alternative. |
-| [@credo-js/responder-text](./packages/responder-text) | Text responder. |
-| [@credo-js/responder-json](./packages/responder-json) | JSON responder (work with cors). |
-| [@credo-js/responder-page](./packages/responder-page) | HTML page responder. |
-| [@credo-js/render-driver-react](./packages/render-driver-react) | Page rendering driver for `react`. |
-| [@credo-js/app](./packages/app) | Application tools (using `mobx` observation). |
-| [@credo-js/lexicon](./packages/lexicon) | Library for working with language packs and files. |
-| [@credo-js/path-to-pattern](./packages/path-to-pattern) | Route Path Parser. |
-| [@credo-js/make-url](./packages/make-url) | URL builder. |
-| [@credo-js/loadable](./packages/loadable) | Dynamic import for client side and server side rendering. |
-| [@credo-js/html-head](./packages/html-head) | HTML tools. Working with document HEAD tags. |
-| [@credo-js/utils](./packages/utils) | Utilities. |
-| [@credo-js/cli-cmp](./packages/cli-cmp) | Runtime tools, JS file generator. |
-| [@credo-js/cli-color](./packages/cli-color) | - |
-| [@credo-js/cli-commander](./packages/cli-commander) | - |
-| [@credo-js/cli-debug](./packages/cli-debug) | Logging. Wrapper for `debug` or `winston` packages. |
-| [@credo-js/types](./packages/types) | Global types of typescript. |
-| [@credo-js/extra](./packages/extra) | Extra application tools. |
+| [phragon](./packages/phragon) | Development: installation, building, watching. |
+| [create-phragon-app](./packages/create-phragon-app) | - |
+| [@phragon/server](./packages/server) | Main HTTP server (wrapper for `koa`). |
+| [@phragon/responder-static](./packages/responder-static) | Static files responder. `koa-static` alternative. |
+| [@phragon/responder-text](./packages/responder-text) | Text responder. |
+| [@phragon/responder-json](./packages/responder-json) | JSON responder (work with cors). |
+| [@phragon/responder-page](./packages/responder-page) | HTML page responder. |
+| [@phragon/render-driver-react](./packages/render-driver-react) | Page rendering driver for `react`. |
+| [@phragon/app](./packages/app) | Application tools (using `mobx` observation). |
+| [@phragon/lexicon](./packages/lexicon) | Library for working with language packs and files. |
+| [@phragon/path-to-pattern](./packages/path-to-pattern) | Route Path Parser. |
+| [@phragon/make-url](./packages/make-url) | URL builder. |
+| [@phragon/loadable](./packages/loadable) | Dynamic import for client side and server side rendering. |
+| [@phragon/html-head](./packages/html-head) | HTML tools. Working with document HEAD tags. |
+| [@phragon/utils](./packages/utils) | Utilities. |
+| [@phragon/cli-cmp](./packages/cli-cmp) | Runtime tools, JS file generator. |
+| [@phragon/cli-color](./packages/cli-color) | - |
+| [@phragon/cli-commander](./packages/cli-commander) | - |
+| [@phragon/cli-debug](./packages/cli-debug) | Logging. Wrapper for `debug` or `winston` packages. |
+| [@phragon/types](./packages/types) | Global types of typescript. |
+| [@phragon/extra](./packages/extra) | Extra application tools. |
 
 > todo
 
@@ -113,29 +113,29 @@ yarn credo-serv cmd [...options]     # running an internal command
 
 | Path | Watch | Configurable | Production | Comment |
 |---   |---    |---           |---         |---      |
-| **Build directories** | | | | |
-| `/.credo`             | | | | Global building files, compiled by the system. |
-| `/dev`                | | | | Development `Webpack` and `Rollup` files. |
-| `/build`              | | | `only` | Production build. |
-| **Directories**       | | | | |
-| `/src-client`         | `client` | | | Render template files used only on the client side when `SSR` is disabled. |
-| `/src-server`         | `server` | | | Server side files only. For `nodejs` v14 and up. |
-| `/src-full`           | `client` & `server` | | | Files that are used both on the client side and on the server side. Should not contain nodejs global library imports. Not recommended for use. It's better to use package.json dependencies. |
-| `/lexicon`            | `global` | | | Languages files. Those files are included into build. |
-| `/config`             | `global` | | `yes` | Configuration files. You can change the configuration after a production build. |
-| **Files**             | | | | |
-| `/.env`               | `global` | | `yes` | Environment vars. Used if `/.production.env` or `/.development.env` does not exist. |
-| `/.production.env`    | | | `yes` | Environment vars. For `production` mode. |
-| `/.development.env`   | `global` | | | Environment vars. For `development` mode. |
-| `/credo.json`         | `global` | | | Global configurations and parameters of the CredoJS application. |
-| `/credo.json.install` | | | | Generated dynamic. Information about installed plugins. |
-| `/credo-pid.json`     | | `yes` | `only` | Generated dynamic. Information about PID and processor. |
-| `/credo-watch.log`    | | | | Full watch dev server log file. |
-| `/credo-env.d.ts`     | | | | Global typescript types. Additional file types are recommended to be moved to the `./types` directory. |
-| `/tsconfig.json`      | `global` | | | Typescript config file. You can also use `./tsconfig-server.json` and `./tsconfig-client.json` files. |
-| `/package.json`       | `global` | | `yes` | NPM package configuration. A WARNING! The `project name` option is required! |
+| **Build directories**   | | | | |
+| `/.phragon`             | | | | Global building files, compiled by the system. |
+| `/dev`                  | | | | Development `Webpack` and `Rollup` files. |
+| `/build`                | | | `only` | Production build. |
+| **Directories**         | | | | |
+| `/src-client`           | `client` | | | Render template files used only on the client side when `SSR` is disabled. |
+| `/src-server`           | `server` | | | Server side files only. For `nodejs` v14 and up. |
+| `/src-full`             | `client` & `server` | | | Files that are used both on the client side and on the server side. Should not contain nodejs global library imports. Not recommended for use. It's better to use package.json dependencies. |
+| `/lexicon`              | `global` | | | Languages files. Those files are included into build. |
+| `/config`               | `global` | | `yes` | Configuration files. You can change the configuration after a production build. |
+| **Files**               | | | | |
+| `/.env`                 | `global` | | `yes` | Environment vars. Used if `/.production.env` or `/.development.env` does not exist. |
+| `/.production.env`      | | | `yes` | Environment vars. For `production` mode. |
+| `/.development.env`     | `global` | | | Environment vars. For `development` mode. |
+| `/phragon.json`         | `global` | | | Global configurations and parameters of the PhragonJS application. |
+| `/phragon.json.install` | | | | Generated dynamic. Information about installed plugins. |
+| `/phragon-pid.json`     | | `yes` | `only` | Generated dynamic. Information about PID and processor. |
+| `/phragon-watch.log`    | | | | Full watch dev server log file. |
+| `/phragon-env.d.ts`     | | | | Global typescript types. Additional file types are recommended to be moved to the `./types` directory. |
+| `/tsconfig.json`        | `global` | | | Typescript config file. You can also use `./tsconfig-server.json` and `./tsconfig-client.json` files. |
+| `/package.json`         | `global` | | `yes` | NPM package configuration. A WARNING! The `project name` option is required! |
 
 ### `* global` watching. 
 
 > If changes are made to the global watch field, the watcher regenerates 
-> the `./credo` building files and restarts other watchers.
+> the `./phragon` building files and restarts other watchers.

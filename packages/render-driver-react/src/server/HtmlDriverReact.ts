@@ -1,13 +1,13 @@
 import type { ReactElement, ElementType } from "react";
 import type { Context } from "koa";
-import type { HeadTag } from "@credo-js/html-head";
-import type { API } from "@credo-js/app";
+import type { HeadTag } from "@phragon/html-head";
+import type { API } from "@phragon/app";
 import { createElement } from "react";
 import ReactDOMServer from "react-dom/server";
 import createError from "http-errors";
-import htmlEscape from "@credo-js/utils/htmlEscape";
-import { debug } from "@credo-js/cli-debug";
-import { isPageFound, HtmlNode, HtmlDriverPrototype } from "@credo-js/responder-page";
+import htmlEscape from "@phragon/utils/htmlEscape";
+import { debug } from "@phragon/cli-debug";
+import { isPageFound, HtmlNode, HtmlDriverPrototype } from "@phragon/responder-page";
 import App from "./App";
 import { renderToString } from "../head";
 import { loaded, load, component } from "../loadable";

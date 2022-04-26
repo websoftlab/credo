@@ -1,5 +1,5 @@
-import type { BuildConfigure } from "credo";
-import { babelLoader } from "credo/webpack/rules/use-loader-rule-items";
+import type { BuildConfigure } from "phragon";
+import { babelLoader } from "phragon/webpack/rules/use-loader-rule-items";
 
 export default async function onWebpackConfigure(config: any, options: BuildConfigure): Promise<void> {
 	const { isDevServer } = options;

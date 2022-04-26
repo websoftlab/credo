@@ -1,9 +1,9 @@
-# @credo-js/types
+# @phragon/types
 
 The project is under construction, the description will be later
 
 ## ❯ Install
 
 ```
-$ npm install --save @credo-js/types
+$ npm install --save @phragon/types
 ```

@@ -1,5 +1,5 @@
 import type { Route } from "../types";
-import type { PatternInterface } from "@credo-js/path-to-pattern";
+import type { PatternInterface } from "@phragon/path-to-pattern";
 import RouteEmptyEntity from "./RouteEmptyEntity";
 import { constants } from "./constants";
 

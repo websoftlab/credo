@@ -1,5 +1,5 @@
 import { action, flow, makeObservable, observable } from "mobx";
-import { LanguageStore } from "@credo-js/lexicon";
+import { LanguageStore } from "@phragon/lexicon";
 import type { App } from "./types";
 
 export default class AppStore<State = any> extends LanguageStore implements App.StoreInterface<State> {

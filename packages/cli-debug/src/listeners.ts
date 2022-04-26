@@ -1,5 +1,5 @@
 import type { DebugEvent } from "./types";
-import asyncResult from "@credo-js/utils/asyncResult";
+import asyncResult from "@phragon/utils/asyncResult";
 import { DebugListener } from "./types";
 
 const listeners: DebugListener[] = [];

@@ -1,7 +1,7 @@
 import koaBodyParser from "koa-bodyparser";
-import type { CredoJS } from "../types";
+import type { PhragonJS } from "../types";
 
-export function middleware(credo: CredoJS) {
-	const conf = credo.config("koa/body-parser");
-	credo.app.use(koaBodyParser(conf));
+export function middleware(phragon: PhragonJS) {
+	const conf = phragon.config("koa/body-parser");
+	phragon.app.use(koaBodyParser(conf));
 }

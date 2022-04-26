@@ -4,7 +4,7 @@ import Option from "../Option";
 import Help from "./Help";
 import Group from "./Group";
 import GroupItem from "./GroupItem";
-import { newError } from "@credo-js/cli-color";
+import { newError } from "@phragon/cli-color";
 import { commands, titles } from "../constants";
 
 function createGroupItem(option: Option) {

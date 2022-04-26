@@ -6,7 +6,7 @@ import { formatTimeInterval } from "./formatTimeInterval";
 import { formatRegExp } from "./formatRegExp";
 import getError from "./getError";
 import { FormatFunction } from "./types";
-import { newError } from "@credo-js/cli-color";
+import { newError } from "@phragon/cli-color";
 import { formats } from "../constants";
 
 const getFormatType: FormatFunction<any, FormatType> = function formatType(value, type) {

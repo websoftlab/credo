@@ -3,45 +3,45 @@ import type Koa from "koa";
 import type { Options as KoaBodyparserOptions } from "koa-bodyparser";
 import type { RedisClientOptions } from "redis";
 import type { opts as KoaSessionOptions } from "koa-session";
-import type { Debugger } from "@credo-js/cli-debug";
-import type { OnMakeURLHook } from "@credo-js/make-url";
-import type { PatternInterface } from "@credo-js/path-to-pattern";
+import type { Debugger } from "@phragon/cli-debug";
+import type { OnMakeURLHook } from "@phragon/make-url";
+import type { PatternInterface } from "@phragon/path-to-pattern";
 import type { Worker as WorkerThreads } from "worker_threads";
 import type { Worker as WorkerCluster } from "cluster";
-import type { BootManager } from "./credo";
+import type { BootManager } from "./phragon";
 import type { LocalStoreData } from "./store";
 import type { Stats } from "fs";
-import type { CredoJSCmd, OnBuildHook, CommanderCtor } from "./cmd/types";
+import type { PhragonJSCmd, OnBuildHook, CommanderCtor } from "./cmd/types";
 import type { RouteManager } from "./route";
-import type { Command } from "@credo-js/cli-commander";
+import type { Command } from "@phragon/cli-commander";
 import type { Promisify } from "./helpTypes";
 
 export type EnvMode = "development" | "production";
 
-export { CredoJSCmd, OnBuildHook, CommanderCtor };
+export { PhragonJSCmd, OnBuildHook, CommanderCtor };
 
 interface PType {
 	id: string;
 	mid: number;
 }
 
-export interface CredoServices {
+export interface PhragonServices {
 	[key: string]: any;
 }
 
-export interface CredoControllers {
+export interface PhragonControllers {
 	[key: string]: any;
 }
 
-export interface CredoResponders {
+export interface PhragonResponders {
 	[key: string]: Route.Responder;
 }
 
-export interface CredoExtraMiddleware {
+export interface PhragonExtraMiddleware {
 	[key: string]: Route.ExtraMiddlewareFunction;
 }
 
-export interface CredoJSGlobal {
+export interface PhragonJSGlobal {
 	readonly mode: string;
 	readonly envMode: EnvMode;
 	readonly loaded: boolean;
@@ -55,30 +55,30 @@ export interface CredoJSGlobal {
 	languages: string[];
 	multilingual: boolean;
 	env: Env;
-	services: CredoServices;
+	services: PhragonServices;
 	cache?: any;
 	worker?: WorkerCluster;
 	workerData?: Worker.Data;
 	process?: PType;
-	isApp(this: CredoJSGlobal): this is CredoJS;
-	isCron(this: CredoJSGlobal): this is CredoJSCron;
-	isCmd(this: CredoJSGlobal): this is CredoJSCmd;
+	isApp(this: PhragonJSGlobal): this is PhragonJS;
+	isCron(this: PhragonJSGlobal): this is PhragonJSCron;
+	isCmd(this: PhragonJSGlobal): this is PhragonJSCmd;
 	[key: string]: any;
 }
 
-export interface CredoJS extends CredoJSGlobal {
+export interface PhragonJS extends PhragonJSGlobal {
 	readonly mode: "app";
 	readonly ssr: boolean;
 	app: Koa;
 	renderHTMLDriver: string | null;
 	route: RouteManager;
-	controllers: CredoControllers;
-	responders: CredoResponders;
-	middleware: CredoExtraMiddleware;
+	controllers: PhragonControllers;
+	responders: PhragonResponders;
+	middleware: PhragonExtraMiddleware;
 	cronWorker?: WorkerThreads;
 }
 
-export interface CredoJSCron extends CredoJSGlobal {
+export interface PhragonJSCron extends PhragonJSGlobal {
 	readonly mode: "cron";
 	cron: Record<string, Cron.Worker>;
 	cronMode: Omit<Cron.Mode, "disabled">;
@@ -456,9 +456,9 @@ export namespace Route {
 }
 
 export namespace Ctor {
-	type CtorHandler<Result = void, Opt = unknown> = (credo: CredoJS, options?: Opt) => Promisify<Result>;
+	type CtorHandler<Result = void, Opt = unknown> = (phragon: PhragonJS, options?: Opt) => Promisify<Result>;
 
-	export type Commander<Opt = unknown> = (credo: CredoJSCmd, command: Command, opt?: Opt) => void;
+	export type Commander<Opt = unknown> = (phragon: PhragonJSCmd, command: Command, opt?: Opt) => void;
 
 	export type Controller<ControllerFunc = Function, Opt = unknown> = CtorHandler<ControllerFunc, Opt>;
 
@@ -468,11 +468,11 @@ export namespace Ctor {
 
 	export type Middleware<Opt = unknown> = Route.MiddlewareFunction | CtorHandler<Route.MiddlewareFunction, Opt>;
 
-	export type Responder<Conf = unknown> = (credo: CredoJS, name: string, config?: Conf) => Route.Responder;
+	export type Responder<Conf = unknown> = (phragon: PhragonJS, name: string, config?: Conf) => Route.Responder;
 
 	export type ExtraMiddleware<MProps = unknown> =
 		| Route.ExtraMiddlewareFunction
-		| ((credo: CredoJS) => Promisify<Route.ExtraMiddlewareFunction<MProps>>);
+		| ((phragon: PhragonJS) => Promisify<Route.ExtraMiddlewareFunction<MProps>>);
 }
 
 // Cron

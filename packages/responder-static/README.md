@@ -1,9 +1,9 @@
-# @credo-js/responder-static
+# @phragon/responder-static
 
 The project is under construction, the description will be later
 
 ## ❯ Install
 
 ```
-$ npm install --save @credo-js/responder-static
+$ npm install --save @phragon/responder-static
 ```

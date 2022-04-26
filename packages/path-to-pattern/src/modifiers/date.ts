@@ -1,4 +1,4 @@
-import { regExpEscape } from "@credo-js/utils";
+import { regExpEscape } from "@phragon/utils";
 
 function minMax(data: any, name: string, val: number, min: number, max: number, offset: number = 0) {
 	if (val < min || val > max) {

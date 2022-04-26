@@ -1,7 +1,7 @@
 import type Group from "./Group";
-import type { ModifierColorName } from "@credo-js/cli-color";
+import type { ModifierColorName } from "@phragon/cli-color";
 import type { HelpOptions } from "./types";
-import { color } from "@credo-js/cli-color";
+import { color } from "@phragon/cli-color";
 
 type PropType = {
 	name: string;

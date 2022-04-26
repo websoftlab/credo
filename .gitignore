@@ -24,4 +24,4 @@ report.*.json
 /packages/*/node_modules/
 /packages/*/bundle-version.json
 /scripts/lib
-/credo-build.conf.json
+/phragon-build.conf.json

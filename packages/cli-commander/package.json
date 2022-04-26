@@ -1,14 +1,14 @@
 {
-	"name": "@credo-js/cli-commander",
+	"name": "@phragon/cli-commander",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",
 		"prettier": "node ../../scripts/lib/build-prettier.js"
 	},
 	"dependencies": {
-		"@credo-js/cli-color": "*"
+		"@phragon/cli-color": "*"
 	},
 	"devDependencies": {},
 	"peerDependencies": {},

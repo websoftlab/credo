@@ -1,7 +1,7 @@
 import type { OnPageHook } from "../app";
-import type { Api } from "@credo-js/app";
+import type { Api } from "@phragon/app";
 import type { ElementType } from "react";
-import type {OnPageHistoryScrollHook} from "../app/types";
+import type { OnPageHistoryScrollHook } from "../app/types";
 import createEvent from "./createEvent";
 
 type ScrollXY = {
@@ -70,7 +70,7 @@ export default function onHistoryScroll(api: Api<ElementType>) {
 		});
 
 		api.emit<OnPageHistoryScrollHook>("onPageHistoryScroll", event);
-		if(!event.defaultPrevented) {
+		if (!event.defaultPrevented) {
 			window.scroll(goTo.x, goTo.y);
 			historySave(goTo);
 		}

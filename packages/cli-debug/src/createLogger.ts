@@ -1,7 +1,7 @@
 import type { DebugLogger } from "./types";
 import type { Debugger } from "debug";
 import util from "util";
-import { format } from "@credo-js/cli-color";
+import { format } from "@phragon/cli-color";
 import createDebug from "debug";
 import { getNamespace, onRename } from "./namespace";
 import { isAccessible, saveAccess } from "./accessibility";

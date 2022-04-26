@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-04/schema#",
-	"title": "JSON schema for CredoJS routes.json config files",
+	"title": "JSON schema for PhragonJS routes.json config files",
 	"description": "Routing configuration",
 	"type": "object",
 	"definitions": {

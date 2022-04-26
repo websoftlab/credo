@@ -1,7 +1,7 @@
 {
-	"name": "@credo-js/responder-static",
+	"name": "@phragon/responder-static",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",
@@ -10,7 +10,7 @@
 	"dependencies": {
 		"http-errors": "^1.7.3",
 		"resolve-path": "^1.4.0",
-		"@credo-js/server": "*"
+		"@phragon/server": "*"
 	},
 	"devDependencies": {
 		"@types/http-errors": "^1.6.3",

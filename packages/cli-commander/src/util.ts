@@ -1,4 +1,4 @@
-import { newError } from "@credo-js/cli-color";
+import { newError } from "@phragon/cli-color";
 import { opts } from "./constants";
 
 export function isOptionName(name: string) {

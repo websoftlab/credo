@@ -1,8 +1,8 @@
 import type { Context } from "koa";
 import type HtmlDocument from "./HtmlDocument";
 import type { default as HtmlNode } from "./HtmlNode";
-import type { API, Page } from "@credo-js/app";
-import type { CtxHook } from "@credo-js/server";
+import type { API, Page } from "@phragon/app";
+import type { CtxHook } from "@phragon/server";
 
 type OkCode = 200 | 201 | 202 | 203 | 205 | 206 | 207 | 208 | 226;
 

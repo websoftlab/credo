@@ -1,7 +1,7 @@
 {
-	"name": "@credo-js/cli-debug",
+	"name": "@phragon/cli-debug",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",
@@ -10,8 +10,8 @@
 	"dependencies": {
 		"debug": "^4.3.2",
 		"winston": "^3.6.0",
-		"@credo-js/cli-color": "*",
-		"@credo-js/utils": "*"
+		"@phragon/cli-color": "*",
+		"@phragon/utils": "*"
 	},
 	"devDependencies": {
 		"@types/debug": "^4.1.7",

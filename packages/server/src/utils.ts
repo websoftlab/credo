@@ -39,7 +39,7 @@ interface EnvOptions extends Partial<Omit<EnvConfig, "port">> {
 }
 
 function envName(key: string) {
-	if (key.startsWith("CREDO_")) {
+	if (key.startsWith("PHRAGON_")) {
 		key = key.substring(6);
 	}
 	return key.toLowerCase().replace(/_([a-z0-9])/g, (_, alpha: string) => alpha.toUpperCase());
@@ -57,7 +57,7 @@ export function loadOptions(options: EnvOptions = {}): EnvConfig {
 	let { mode, host, port } = options;
 
 	if (!host) {
-		host = process.env.CREDO_HOST || (isWindows() ? "127.0.0.1" : "0.0.0.0");
+		host = process.env.PHRAGON_HOST || (isWindows() ? "127.0.0.1" : "0.0.0.0");
 	}
 
 	if (!mode) {
@@ -69,7 +69,7 @@ export function loadOptions(options: EnvOptions = {}): EnvConfig {
 			port = parseInt(port);
 		}
 	} else {
-		port = parseInt(process.env.CREDO_PORT || "3000");
+		port = parseInt(process.env.PHRAGON_PORT || "3000");
 	}
 
 	const data: any = { ...options, ...prepare(envGlobal(mode)) };

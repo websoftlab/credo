@@ -1,6 +1,6 @@
 import type { Property } from "./types";
 import { createFormat } from "./format";
-import { newError, format } from "@credo-js/cli-color";
+import { newError, format } from "@phragon/cli-color";
 import { opts, args } from "./constants";
 
 function isName(object: any): object is { name: string } {

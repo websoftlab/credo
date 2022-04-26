@@ -7,16 +7,16 @@ import type {
 	ResponderPageResultFound,
 	LoadManifestOptions,
 } from "./types";
-import type { CredoJS, Ctor, Route } from "@credo-js/server";
+import type { PhragonJS, Ctor, Route } from "@phragon/server";
 import type { Context } from "koa";
 import { isHttpStatus, isRedirectCode } from "./utils/status";
-import { htmlEscape } from "@credo-js/utils";
+import { htmlEscape } from "@phragon/utils";
 import HtmlDocument from "./HtmlDocument";
 import { loadManifest } from "./utils/manifest";
 import HttpRedirect from "./HttpRedirect";
 import HttpPage from "./HttpPage";
 import createHttpError from "http-errors";
-import { buildQuery } from "@credo-js/make-url";
+import { buildQuery } from "@phragon/make-url";
 import getRenderDriver from "./getRenderDriver";
 
 function createRoute(result: any, name: string): Route.Context {
@@ -32,31 +32,31 @@ function createRoute(result: any, name: string): Route.Context {
 	};
 }
 
-export default (function responder(credo: CredoJS, name: string) {
-	if (!credo.isApp()) {
-		throw new Error("CredoJS not starting in application mode");
+export default (function responder(phragon: PhragonJS, name: string) {
+	if (!phragon.isApp()) {
+		throw new Error("PhragonJS not starting in application mode");
 	}
 
-	if (!credo.renderHTMLDriver) {
-		throw new Error("CredoJS.renderHTMLDriver is not defined");
+	if (!phragon.renderHTMLDriver) {
+		throw new Error("PhragonJS.renderHTMLDriver is not defined");
 	}
 
-	const renderHTMLDriver = credo.renderHTMLDriver;
-	const options = credo.config<ResponderPageOptions>(`responder/${name}`);
+	const renderHTMLDriver = phragon.renderHTMLDriver;
+	const options = phragon.config<ResponderPageOptions>(`responder/${name}`);
 
 	const manifestOptions: LoadManifestOptions = {
-		envMode: credo.envMode,
-		devServerHost: credo.env.get("devServerHost").value,
-		devServerPort: credo.env.get("devServerPort").value,
+		envMode: phragon.envMode,
+		devServerHost: phragon.env.get("devServerHost").value,
+		devServerPort: phragon.env.get("devServerPort").value,
 	};
 
-	if (credo.process) {
-		manifestOptions.mid = credo.process.mid;
+	if (phragon.process) {
+		manifestOptions.mid = phragon.process.mid;
 	}
 
 	const { ssr = true, getQueryId = "query", baseUrl = "/" } = options;
 
-	credo.hooks.subscribe("onResponse", (evn) => {
+	phragon.hooks.subscribe("onResponse", (evn) => {
 		const { ctx } = evn;
 		const redirectNative = ctx.redirect;
 		ctx.redirect = (url: string, alt?: string) => {
@@ -72,7 +72,7 @@ export default (function responder(credo: CredoJS, name: string) {
 		};
 	});
 
-	credo.hooks.subscribe("onResponseRoute", (evn) => {
+	phragon.hooks.subscribe("onResponseRoute", (evn) => {
 		const { ctx, notFound } = evn;
 		const { route } = ctx;
 
@@ -160,13 +160,13 @@ export default (function responder(credo: CredoJS, name: string) {
 
 		document.language = ctx.language;
 		document.getQueryId = getQueryId;
-		document.ssr = credo.ssr ? (typeof ssrProp === "boolean" ? ssrProp : ssr) : false;
+		document.ssr = phragon.ssr ? (typeof ssrProp === "boolean" ? ssrProp : ssr) : false;
 		document.baseUrl = baseUrl;
 		document.styles = manifest.styles.slice();
 		document.scripts = manifest.scripts.slice();
 
 		// fire hook
-		await credo.hooks.emit<OnPageHTMLBeforeRenderHook>("onPageHTMLBeforeRender", { ctx, document });
+		await phragon.hooks.emit<OnPageHTMLBeforeRenderHook>("onPageHTMLBeforeRender", { ctx, document });
 		if (ctx.isBodyEnded) {
 			return;
 		}
@@ -186,7 +186,7 @@ export default (function responder(credo: CredoJS, name: string) {
 		};
 
 		// fire hook
-		await credo.hooks.emit<OnPageJSONBeforeRenderHook>("onPageJSONBeforeRender", {
+		await phragon.hooks.emit<OnPageJSONBeforeRenderHook>("onPageJSONBeforeRender", {
 			ctx,
 			body,
 			isError: "message" in body,

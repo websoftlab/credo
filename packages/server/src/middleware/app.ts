@@ -1,13 +1,13 @@
-import { AppStore } from "@credo-js/app";
-import clonePlainObject from "@credo-js/utils/clonePlainObject";
+import { AppStore } from "@phragon/app";
+import clonePlainObject from "@phragon/utils/clonePlainObject";
 import { observe } from "mobx";
-import { makeUrl } from "@credo-js/make-url";
+import { makeUrl } from "@phragon/make-url";
 import type Koa from "koa";
-import type { URL } from "@credo-js/make-url";
-import type { CredoJS, OnMakeURLServerHook, OnAppStateHook, OnResponseHook } from "../types";
+import type { URL } from "@phragon/make-url";
+import type { PhragonJS, OnMakeURLServerHook, OnAppStateHook, OnResponseHook } from "../types";
 
 export function middleware(
-	credo: CredoJS,
+	phragon: PhragonJS,
 	options: {
 		store: any;
 		language: string;
@@ -31,12 +31,12 @@ export function middleware(
 				routeName = name;
 				url = <URL.Options>{
 					...rest,
-					path: await credo.route.matchToPath(name, params),
+					path: await phragon.route.matchToPath(name, params),
 				};
 			}
 			const { details = {}, ...opts } = url;
 			const event = { url: opts, details, ctx, name: routeName };
-			await credo.hooks.emit<OnMakeURLServerHook>("onMakeURL", event);
+			await phragon.hooks.emit<OnMakeURLServerHook>("onMakeURL", event);
 			return makeUrl(event.url);
 		};
 
@@ -46,9 +46,9 @@ export function middleware(
 		return ctx[BODY_END_KEY] === true || !ctx.res.writable;
 	}
 
-	credo.app.use(async (ctx: Koa.Context, next: Koa.Next) => {
+	phragon.app.use(async (ctx: Koa.Context, next: Koa.Next) => {
 		const val: Record<string, any> = {
-			credo, // link to credo
+			phragon, // link to phragon
 			store: null,
 			defaultLanguage: language,
 			multilingual,
@@ -75,7 +75,7 @@ export function middleware(
 				return true;
 			},
 			async redirectToRoute(name: string, params?: any) {
-				ctx.redirect(await credo.route.matchToPath(name, params));
+				ctx.redirect(await phragon.route.matchToPath(name, params));
 			},
 		};
 
@@ -114,7 +114,7 @@ export function middleware(
 		const state = typeof store === "function" ? await store(ctx) : clonePlainObject(store);
 
 		// emit hook, update state
-		await credo.hooks.emit<OnAppStateHook>("onAppState", { ctx, state });
+		await phragon.hooks.emit<OnAppStateHook>("onAppState", { ctx, state });
 
 		const appStore = new AppStore(state);
 
@@ -130,7 +130,7 @@ export function middleware(
 		val.store = appStore;
 
 		// emit hook, start response
-		await credo.hooks.emit<OnResponseHook>("onResponse", { ctx });
+		await phragon.hooks.emit<OnResponseHook>("onResponse", { ctx });
 
 		return next();
 	});

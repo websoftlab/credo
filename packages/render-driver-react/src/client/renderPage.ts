@@ -1,11 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { createBrowserHistory } from "history";
-import { Api, Page, createHttpJsonService, PageStore } from "@credo-js/app";
+import { Api, Page, createHttpJsonService, PageStore } from "@phragon/app";
 import App from "./App";
 import loadDocument from "./loadDocument";
 import { load, loaded, component } from "../loadable";
-import { AppStore } from "@credo-js/app";
+import { AppStore } from "@phragon/app";
 import onHistoryScroll from "./onHistoryScroll";
 import createEvent from "./createEvent";
 import type { ReactElement, ElementType } from "react";

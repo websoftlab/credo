@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { createCommander } from "@credo-js/cli-commander";
-import { format } from "@credo-js/cli-color";
+import { createCommander } from "@phragon/cli-commander";
+import { format } from "@phragon/cli-color";
 import cmdStop from "./cmdStop";
 import cmdStart from "./cmdStart";
 import cmdStatus from "./cmdStatus";
@@ -10,7 +10,7 @@ import cmdCmd from "./cmdCmd";
 import util from "util";
 
 const commander = createCommander({
-	prompt: "credo",
+	prompt: "phragon",
 	version: require("../package.json").version,
 	description: "Working with the server in production mode",
 	stream: process.stderr,

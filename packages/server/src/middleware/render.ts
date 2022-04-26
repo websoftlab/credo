@@ -1,8 +1,8 @@
-import { asyncResult, callIn } from "@credo-js/utils";
+import { asyncResult, callIn } from "@phragon/utils";
 import createError from "http-errors";
 import type { Context } from "koa";
 import type {
-	CredoJS,
+	PhragonJS,
 	Route,
 	OnResponseRouteHook,
 	OnResponseCompleteHook,
@@ -32,7 +32,7 @@ function create404(): Route.Context {
 	};
 }
 
-function controllerCall(credo: CredoJS, ctx: Context, caller: Route.Context["controller"]) {
+function controllerCall(phragon: PhragonJS, ctx: Context, caller: Route.Context["controller"]) {
 	const { name, handler, props } = caller;
 	const args: [Context] | [Context, any] = [ctx];
 	if (props != null) {
@@ -44,14 +44,14 @@ function controllerCall(credo: CredoJS, ctx: Context, caller: Route.Context["con
 	if (typeof name !== "string") {
 		throw new Error(`The controller point must be a string`);
 	}
-	return callIn(credo.controllers, name, args, () => {
+	return callIn(phragon.controllers, name, args, () => {
 		throw new Error(`The "${name}" controller is not defined`);
 	});
 }
 
-function responderCall(credo: CredoJS, ctx: Context, result: any, caller: Route.Context["responder"]) {
+function responderCall(phragon: PhragonJS, ctx: Context, result: any, caller: Route.Context["responder"]) {
 	const { name, props } = caller;
-	const res = credo.responders[name];
+	const res = phragon.responders[name];
 	if (!res) {
 		throw new Error(`The ${name} responder is not defined`);
 	}
@@ -59,15 +59,15 @@ function responderCall(credo: CredoJS, ctx: Context, result: any, caller: Route.
 }
 
 export async function throwError(ctx: Context, error: any, routeContext?: Route.Context, code?: string) {
-	const { credo } = ctx;
-	await credo.hooks.emit<OnResponseErrorHook>("onResponseError", { ctx, route: routeContext, code, error });
+	const { phragon } = ctx;
+	await phragon.hooks.emit<OnResponseErrorHook>("onResponseError", { ctx, route: routeContext, code, error });
 	if (ctx.isBodyEnded) {
 		return;
 	}
 
 	const name = routeContext?.responder?.name;
 	if (name) {
-		const res = credo.responders[name];
+		const res = phragon.responders[name];
 		if (res && typeof res.error === "function") {
 			try {
 				return await asyncResult(res.error(ctx, error));
@@ -84,9 +84,9 @@ export async function throwError(ctx: Context, error: any, routeContext?: Route.
 	}
 }
 
-export function middleware(credo: CredoJS) {
+export function middleware(phragon: PhragonJS) {
 	async function failure(ctx: Context, error: any) {
-		ctx.credo.debug("Response failure", error);
+		ctx.phragon.debug("Response failure", error);
 		return throwError(ctx, error, ctx.route, typeof error.code === "string" ? error.code : "RESPONSE_FAILURE");
 	}
 
@@ -97,8 +97,8 @@ export function middleware(credo: CredoJS) {
 
 		if (notFound) {
 			ctx.status = 404;
-			if (credo.route.isNotFoundRoute() && credo.route.routeNotFound.method(ctx.method)) {
-				ctx.route = credo.route.routeNotFound.context;
+			if (phragon.route.isNotFoundRoute() && phragon.route.routeNotFound.method(ctx.method)) {
+				ctx.route = phragon.route.routeNotFound.context;
 			} else if (["GET", "POST"].includes(ctx.method)) {
 				ctx.route = create404();
 			} else {
@@ -106,7 +106,7 @@ export function middleware(credo: CredoJS) {
 			}
 		}
 
-		await credo.hooks.emit<OnResponseRouteHook>("onResponseRoute", { ctx, notFound });
+		await phragon.hooks.emit<OnResponseRouteHook>("onResponseRoute", { ctx, notFound });
 
 		const { route } = ctx;
 		if (!route) {
@@ -126,7 +126,7 @@ export function middleware(credo: CredoJS) {
 			const next = async (i: number) => {
 				if (i < middleware.length) {
 					const { name, props } = middleware[i];
-					const handler = credo.middleware[name];
+					const handler = phragon.middleware[name];
 					if (!handler) {
 						throw new Error(`The "${name}" extra middleware not defined`);
 					}
@@ -150,18 +150,18 @@ export function middleware(credo: CredoJS) {
 			}
 		}
 
-		if (cache && credo.cache) {
+		if (cache && phragon.cache) {
 			try {
 				cacheable = await asyncResult(cache.cacheable(ctx));
 				if (cacheable) {
 					cacheKey = await asyncResult(cache.getKey(ctx));
-					cacheData = await credo.cache.data(cacheKey);
+					cacheData = await phragon.cache.data(cacheKey);
 					if (cacheData && cacheData.mode === cache.mode) {
 						cached = true;
 					}
 				}
 			} catch (err) {
-				credo.debug.error("Read cache failure", err);
+				phragon.debug.error("Read cache failure", err);
 			}
 		}
 
@@ -175,8 +175,8 @@ export function middleware(credo: CredoJS) {
 			} else {
 				try {
 					const result = cacheData.body;
-					await credo.hooks.emit<OnResponseControllerHook>("onResponseController", { ctx, result });
-					await responderCall(credo, ctx, result, responder);
+					await phragon.hooks.emit<OnResponseControllerHook>("onResponseController", { ctx, result });
+					await responderCall(phragon, ctx, result, responder);
 				} catch (err) {
 					return failure(ctx, err);
 				}
@@ -184,7 +184,7 @@ export function middleware(credo: CredoJS) {
 		} else {
 			let result: any;
 			try {
-				result = await controllerCall(credo, ctx, controller);
+				result = await controllerCall(phragon, ctx, controller);
 			} catch (err) {
 				return !notFound && createError.isHttpError(err) && err.status === 404
 					? render(ctx, true)
@@ -198,7 +198,7 @@ export function middleware(credo: CredoJS) {
 
 			// save cache
 			if (cacheable && cache.mode === "controller") {
-				credo.cache.save(
+				phragon.cache.save(
 					cacheKey,
 					{
 						mode: "controller",
@@ -209,8 +209,8 @@ export function middleware(credo: CredoJS) {
 			}
 
 			try {
-				await credo.hooks.emit<OnResponseControllerHook>("onResponseController", { ctx, result });
-				await responderCall(credo, ctx, result, responder);
+				await phragon.hooks.emit<OnResponseControllerHook>("onResponseController", { ctx, result });
+				await responderCall(phragon, ctx, result, responder);
 			} catch (err) {
 				return failure(ctx, err);
 			}
@@ -220,9 +220,9 @@ export function middleware(credo: CredoJS) {
 		ctx.cached = cached;
 
 		try {
-			await credo.hooks.emit<OnResponseCompleteHook>("onResponseComplete", { ctx });
+			await phragon.hooks.emit<OnResponseCompleteHook>("onResponseComplete", { ctx });
 		} catch (err) {
-			credo.debug.error("Hook:OnResponseComplete failure", err);
+			phragon.debug.error("Hook:OnResponseComplete failure", err);
 		}
 
 		if (
@@ -232,7 +232,7 @@ export function middleware(credo: CredoJS) {
 			ctx.status !== 204 &&
 			String(ctx.status).startsWith("20")
 		) {
-			credo.cache.save(
+			phragon.cache.save(
 				cacheKey,
 				{
 					mode: "body",
@@ -245,5 +245,5 @@ export function middleware(credo: CredoJS) {
 		}
 	}
 
-	credo.app.use((ctx: Context) => render(ctx));
+	phragon.app.use((ctx: Context) => render(ctx));
 }

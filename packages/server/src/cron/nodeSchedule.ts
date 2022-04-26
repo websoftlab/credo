@@ -1,9 +1,9 @@
-import type { Cron, CredoJSCron } from "../types";
+import type { Cron, PhragonJSCron } from "../types";
 import schedule from "node-schedule";
 
 // cron
 
-const createJob = (credo: CredoJSCron, conf: Cron.Job | Cron.Service, part: number) => {
+const createJob = (phragon: PhragonJSCron, conf: Cron.Job | Cron.Service, part: number) => {
 	const isJob = (conf: any): conf is Cron.Job => typeof conf.job === "function";
 	const { rule } = conf;
 
@@ -18,13 +18,13 @@ const createJob = (credo: CredoJSCron, conf: Cron.Job | Cron.Service, part: numb
 		name = `@cron-part-${part}/${Math.random().toString(16).substring(2)}`;
 	}
 
-	if (credo.cron[name]) {
-		credo.debug.error(`Duplicate cron job name {cyan %s}, ignore job`, name);
+	if (phragon.cron[name]) {
+		phragon.debug.error(`Duplicate cron job name {cyan %s}, ignore job`, name);
 		return () => {};
 	}
 
 	const sJob = (date: Date) => {
-		credo.debug.cron(`Cron job {cyan %s} started`, name);
+		phragon.debug.cron(`Cron job {cyan %s} started`, name);
 		started++;
 		work.call(jobWork, date)
 			.then(() => {
@@ -32,10 +32,10 @@ const createJob = (credo: CredoJSCron, conf: Cron.Job | Cron.Service, part: numb
 			})
 			.catch((err: Error) => {
 				errors++;
-				credo.debug.error(`Cron job {cyan %s} failure`, name, err);
+				phragon.debug.error(`Cron job {cyan %s} failure`, name, err);
 			})
 			.finally(() => {
-				credo.debug.cron(`Cron job {cyan %s} completed`, name);
+				phragon.debug.cron(`Cron job {cyan %s} completed`, name);
 			});
 	};
 
@@ -68,7 +68,7 @@ const createJob = (credo: CredoJSCron, conf: Cron.Job | Cron.Service, part: numb
 		work = async function (this: any, date: Date) {
 			const copy = args.slice();
 			copy.push(date);
-			return method ? credo.services[name][method].apply(this, copy) : credo.services[name].apply(this, copy);
+			return method ? phragon.services[name][method].apply(this, copy) : phragon.services[name].apply(this, copy);
 		};
 	}
 
@@ -76,16 +76,16 @@ const createJob = (credo: CredoJSCron, conf: Cron.Job | Cron.Service, part: numb
 		sJob.call(jobWork, date);
 	});
 
-	credo.cron[name] = jobWork;
+	phragon.cron[name] = jobWork;
 
 	return sJob;
 };
 
-export default async function nodeSchedule(credo: CredoJSCron, jobs: Array<Cron.Job | Cron.Service>) {
+export default async function nodeSchedule(phragon: PhragonJSCron, jobs: Array<Cron.Job | Cron.Service>) {
 	for (let i = 0; i < jobs.length; i++) {
 		const conf = jobs[i];
 		const { bootstrap = false } = conf;
-		const fire = createJob(credo, conf, i + 1);
+		const fire = createJob(phragon, conf, i + 1);
 		if (bootstrap) {
 			fire(new Date());
 		}

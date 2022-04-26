@@ -1,6 +1,6 @@
-import type { OnPageHTMLBeforeRenderHook, HtmlDocument } from "@credo-js/responder-page";
-import type { CredoJSGlobal } from "@credo-js/server";
-import type { CredoExtraFavicon } from "./types";
+import type { OnPageHTMLBeforeRenderHook, HtmlDocument } from "@phragon/responder-page";
+import type { PhragonJSGlobal } from "@phragon/server";
+import type { PhragonExtraFavicon } from "./types";
 
 function prefix(value: string) {
 	value = String(value);
@@ -10,7 +10,7 @@ function prefix(value: string) {
 	return value;
 }
 
-function hook(document: HtmlDocument, favicon: CredoExtraFavicon) {
+function hook(document: HtmlDocument, favicon: PhragonExtraFavicon) {
 	const { sizes = [], properties = {}, index: indexFile, manifest } = favicon;
 
 	Object.keys(properties).forEach((name) => {
@@ -39,7 +39,7 @@ function hook(document: HtmlDocument, favicon: CredoExtraFavicon) {
 
 export async function FaviconHook(event: OnPageHTMLBeforeRenderHook) {
 	const { document } = event;
-	const { favicon } = credo.config("config");
+	const { favicon } = phragon.config("config");
 
 	// favicon properties
 	if (favicon) {
@@ -47,11 +47,11 @@ export async function FaviconHook(event: OnPageHTMLBeforeRenderHook) {
 	}
 }
 
-export function subscribeFaviconHook(credo: CredoJSGlobal) {
-	if (credo.isApp() && credo.renderHTMLDriver != null) {
-		const { favicon } = credo.config("config");
+export function subscribeFaviconHook(phragon: PhragonJSGlobal) {
+	if (phragon.isApp() && phragon.renderHTMLDriver != null) {
+		const { favicon } = phragon.config("config");
 		if (favicon) {
-			credo.hooks.subscribe<OnPageHTMLBeforeRenderHook>("onPageHTMLBeforeRender", (event) => {
+			phragon.hooks.subscribe<OnPageHTMLBeforeRenderHook>("onPageHTMLBeforeRender", (event) => {
 				hook(event.document, favicon);
 			});
 		}

@@ -1,5 +1,5 @@
 import { isNum } from "../utils";
-import { regExpEscapeInSet } from "@credo-js/utils";
+import { regExpEscapeInSet } from "@phragon/utils";
 
 const notDReg = /[^0-9]+/g;
 const dgt = "0123456789";

@@ -1,4 +1,4 @@
-import type { App, Page, API } from "@credo-js/app";
+import type { App, Page, API } from "@phragon/app";
 import type { Action, History, Location } from "history";
 import type { ElementType, FC } from "react";
 import type React from "react";

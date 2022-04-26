@@ -1,5 +1,5 @@
-import type { CredoJSCmd, CommanderCtor } from "./types";
-import type { Command } from "@credo-js/cli-commander";
+import type { PhragonJSCmd, CommanderCtor } from "./types";
+import type { Command } from "@phragon/cli-commander";
 
 const BUILD_KEY = Symbol();
 let onBuildEmit = false;
@@ -13,18 +13,18 @@ export function preventBuildListener(event: { name: string; [BUILD_KEY]?: boolea
 	onBuildEmit = true;
 }
 
-export const cmdBuild: CommanderCtor = function cmdBuild(credo: CredoJSCmd, command: Command) {
-	if (!credo.hooks.has("onBuild", preventBuildListener)) {
-		credo.hooks.subscribe("onBuild", preventBuildListener);
+export const cmdBuild: CommanderCtor = function cmdBuild(phragon: PhragonJSCmd, command: Command) {
+	if (!phragon.hooks.has("onBuild", preventBuildListener)) {
+		phragon.hooks.subscribe("onBuild", preventBuildListener);
 	}
 
-	credo.cmd.on("add", () => {
-		if (credo.loaded) {
+	phragon.cmd.on("add", () => {
+		if (phragon.loaded) {
 			throw new Error("You cannot add a new command to the command list because the system is already loaded");
 		}
 	});
 
-	credo.cmd.on("remove", (cmd: Command) => {
+	phragon.cmd.on("remove", (cmd: Command) => {
 		if (cmd === command) {
 			throw new Error("You cannot remove the default build command");
 		}
@@ -50,14 +50,14 @@ export const cmdBuild: CommanderCtor = function cmdBuild(credo: CredoJSCmd, comm
 				timeout === 0
 					? 0
 					: setTimeout(() => {
-							credo.debug.error(
+							phragon.debug.error(
 								`Attention! Assembly takes too long [{green %s} second limit], process aborted`,
 								(timeout as number) / 1000
 							);
 							process.exit(1);
 					  }, timeout);
 
-			await credo.hooks.emit("onBuild", { [BUILD_KEY]: true });
+			await phragon.hooks.emit("onBuild", { [BUILD_KEY]: true });
 			if (id !== 0) {
 				clearTimeout(id);
 			}

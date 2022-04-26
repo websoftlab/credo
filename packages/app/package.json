@@ -1,16 +1,16 @@
 {
-	"name": "@credo-js/app",
+	"name": "@phragon/app",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",
 		"prettier": "node ../../scripts/lib/build-prettier.js"
 	},
 	"dependencies": {
-		"@credo-js/lexicon": "*",
-		"@credo-js/make-url": "*",
-		"@credo-js/utils": "*",
+		"@phragon/lexicon": "*",
+		"@phragon/make-url": "*",
+		"@phragon/utils": "*",
 		"mobx": "^6.3.2",
 		"axios": "^0.26.0"
 	},

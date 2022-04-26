@@ -1,5 +1,5 @@
 import HtmlNode from "./HtmlNode";
-import { PageStore, Api, createHttpJsonService } from "@credo-js/app";
+import { PageStore, Api, createHttpJsonService } from "@phragon/app";
 import type { Context } from "koa";
 import type { Render } from "./types";
 

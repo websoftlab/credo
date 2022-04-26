@@ -1,4 +1,4 @@
-import type { API } from "@credo-js/app";
+import type { API } from "@phragon/app";
 import type { ElementType } from "react";
 import { createContext, useContext } from "react";
 

@@ -1,10 +1,10 @@
 import type { Context } from "koa";
-import type { CredoJS, Ctor, Route, RouteVariant } from "@credo-js/server";
+import type { PhragonJS, Ctor, Route, RouteVariant } from "@phragon/server";
 import type { ResponderJsonConfigOptions } from "./types";
-import { RouteEntity } from "@credo-js/server";
+import { RouteEntity } from "@phragon/server";
 import createHttpError from "http-errors";
 import HttpJSON from "./HttpJSON";
-import asyncResult from "@credo-js/utils/asyncResult";
+import asyncResult from "@phragon/utils/asyncResult";
 
 type OriginOptions = {
 	origin: string;
@@ -15,8 +15,8 @@ function getHeaderString(value?: string | string[]): string {
 	return value != null ? (Array.isArray(value) ? value.join(",") : value) : "";
 }
 
-export default (function responder(credo: CredoJS, name: string): Route.Responder {
-	const options: ResponderJsonConfigOptions = credo.config(`responder/${name}`);
+export default (function responder(phragon: PhragonJS, name: string): Route.Responder {
+	const options: ResponderJsonConfigOptions = phragon.config(`responder/${name}`);
 	const { cors: corsOption = true, done: doneHandler, error: errorHandler } = options;
 	const enabled: boolean = corsOption !== false;
 	const cors = enabled && corsOption != null && typeof corsOption === "object" ? corsOption : {};
@@ -161,7 +161,7 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 			return;
 		}
 
-		const methods = await getOptionsMethods(ctx, credo.route.routeList, []);
+		const methods = await getOptionsMethods(ctx, phragon.route.routeList, []);
 		if (!methods.length) {
 			return;
 		}
@@ -187,7 +187,7 @@ export default (function responder(credo: CredoJS, name: string): Route.Responde
 		ctx.bodyEnd("", 204);
 	}
 
-	credo.hooks.subscribe("onResponseError", async (event) => {
+	phragon.hooks.subscribe("onResponseError", async (event) => {
 		const { ctx, code, route } = event;
 		if (ctx.method === "OPTIONS" && code === "HTTP_METHOD_NOT_SUPPORTED" && route?.responder?.name === name) {
 			const opts = await setOrigin(ctx);

@@ -1,5 +1,5 @@
-import type { CredoJSCron, Server } from "../types";
-import { createCredoJS, BootManager } from "../credo";
+import type { PhragonJSCron, Server } from "../types";
+import { createPhragonJS, BootManager } from "../phragon";
 import nodeSchedule from "./nodeSchedule";
 import daemon from "../daemon";
 import cluster from "cluster";
@@ -17,7 +17,7 @@ export default async function cronService(options: Server.Options = {}) {
 	}
 
 	const registrar = registrarOption || new BootManager();
-	const credo: CredoJSCron = await createCredoJS<CredoJSCron>(
+	const phragon: PhragonJSCron = await createPhragonJS<PhragonJSCron>(
 		rest,
 		{
 			mode: "cron",
@@ -31,23 +31,23 @@ export default async function cronService(options: Server.Options = {}) {
 
 	// load & bootstrap
 	await (
-		await registrar.load(credo)
+		await registrar.load(phragon)
 	)();
 
-	const cron = credo.config("cron");
+	const cron = phragon.config("cron");
 	if (!cron.enabled) {
 		throw new Error("Cron disabled...");
 	}
 
 	// cron
 	try {
-		await nodeSchedule(credo, cron.jobs || []);
+		await nodeSchedule(phragon, cron.jobs || []);
 	} catch (err) {
-		credo.debug.error("cron jobs failure", err);
+		phragon.debug.error("cron jobs failure", err);
 		throw err;
 	}
 
-	credo.debug("CRON Server is running [{cyan %s} jobs]", cron.jobs.length);
+	phragon.debug("CRON Server is running [{cyan %s} jobs]", cron.jobs.length);
 
 	if (isProd) {
 		const dmn = daemon();
@@ -56,12 +56,12 @@ export default async function cronService(options: Server.Options = {}) {
 			id: "cron",
 			pid: dmn.pid,
 			cid: process.pid,
-			part: (credo.process && cluster.worker?.workerData?.part) || 1,
+			part: (phragon.process && cluster.worker?.workerData?.part) || 1,
 			port: null,
 			host: null,
-			mode: credo.mode,
+			mode: phragon.mode,
 		});
 	}
 
-	return credo;
+	return phragon;
 }

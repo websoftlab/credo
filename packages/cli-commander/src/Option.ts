@@ -1,6 +1,6 @@
 import type { OptionOptions, MinOptionInterface, ValType } from "./types";
 import CommandProperty from "./CommandProperty";
-import { newError, format } from "@credo-js/cli-color";
+import { newError, format } from "@phragon/cli-color";
 import { assertOptionName, getAltNames } from "./util";
 import { opts } from "./constants";
 

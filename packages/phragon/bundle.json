@@ -1,0 +1,24 @@
+{
+	"src": [
+		{
+			"target": "node",
+			"output": ".",
+			"package.json": {
+				"bin": {
+					"phragon": "./bin.js"
+				}
+			}
+		},
+		{
+			"target": "types",
+			"output": ".",
+			"package.json": {
+				"types": "./index.d.ts"
+			}
+		}
+	],
+	"types": {
+		"target": "copy",
+		"output": "."
+	}
+}

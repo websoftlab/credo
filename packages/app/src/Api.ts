@@ -1,8 +1,8 @@
-import { makeUrl } from "@credo-js/make-url";
-import { createPlainEvent, subscribe, has } from "@credo-js/utils/events";
+import { makeUrl } from "@phragon/make-url";
+import { createPlainEvent, subscribe, has } from "@phragon/utils/events";
 import type { API, App, Page } from "./types";
-import type { URL, OnMakeURLHook } from "@credo-js/make-url";
-import type { Evn } from "@credo-js/utils/events";
+import type { URL, OnMakeURLHook } from "@phragon/make-url";
+import type { Evn } from "@phragon/utils/events";
 
 type ListenersData = Record<API.HookName, Evn[]>;
 

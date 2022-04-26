@@ -2,7 +2,7 @@ import type { ArgumentOptions, CommandOptions, ErrorOptionOptions, OptionOptions
 import Argument from "./Argument";
 import Option from "./Option";
 import ErrorOption from "./ErrorOption";
-import { newError, color } from "@credo-js/cli-color";
+import { newError, color } from "@phragon/cli-color";
 import { getOptions, isOptionName } from "./util";
 import util from "util";
 import { args, commands, opts } from "./constants";

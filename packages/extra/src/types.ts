@@ -6,7 +6,7 @@ export interface FaviconSize {
 	color?: string;
 }
 
-export interface CredoExtraFavicon {
+export interface PhragonExtraFavicon {
 	index?: string;
 	manifest?: string;
 	sizes?: FaviconSize[];

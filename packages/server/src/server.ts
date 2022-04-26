@@ -8,13 +8,13 @@ import {
 } from "./middleware";
 import cluster from "cluster";
 import { Worker, isMainThread } from "worker_threads";
-import { createCredoJS, BootManager } from "./credo";
+import { createPhragonJS, BootManager } from "./phragon";
 import cronService from "./cron/service";
 import prettyMs from "pretty-ms";
 import daemon from "./daemon";
 import { RouteManager } from "./route";
 import type { Context } from "koa";
-import type { CredoJS, Server } from "./types";
+import type { PhragonJS, Server } from "./types";
 
 export default async function server(options: Server.Options = {}) {
 	// run cron service
@@ -33,7 +33,7 @@ export default async function server(options: Server.Options = {}) {
 	const registrar = registrarOption || new BootManager();
 	const app = new Koa();
 	const isCluster = cluster.isWorker && options.process?.id === cluster.worker?.workerData?.id;
-	const credo: CredoJS = await createCredoJS<CredoJS>(
+	const phragon: PhragonJS = await createPhragonJS<PhragonJS>(
 		options,
 		{
 			mode: "app",
@@ -49,36 +49,42 @@ export default async function server(options: Server.Options = {}) {
 	);
 
 	const defaultResponders = ["json", "text", "static"];
-	if (credo.renderHTMLDriver != null) {
+	if (phragon.renderHTMLDriver != null) {
 		defaultResponders.push("page");
 	}
 
 	for (let name of defaultResponders) {
 		if (!registrar.defined("responders", name)) {
-			registrar.responder(name, (await import(`@credo-js/responder-${name}`)).responder);
+			registrar.responder(name, (await import(`@phragon/responder-${name}`)).responder);
 		}
 	}
 
 	registrar.option("responders", "static", { publicPath });
 
-	const { env, language, languages, multilingual } = credo;
+	const { env, language, languages, multilingual } = phragon;
 
 	app.on("error", (err) => {
-		credo.debug.error("Server failure", err);
+		phragon.debug.error("Server failure", err);
 	});
 
 	// check host
 	app.use(async (ctx: Context, next) => {
 		const time = Date.now();
 		const delta = () => prettyMs(Date.now() - time);
-		if (!credo.route.isHost(ctx)) {
-			credo.debug.route("invalid host {red %s} %s %s (%s) {red 400}", ctx.hostname, ctx.method, ctx.url, delta());
+		if (!phragon.route.isHost(ctx)) {
+			phragon.debug.route(
+				"invalid host {red %s} %s %s (%s) {red 400}",
+				ctx.hostname,
+				ctx.method,
+				ctx.url,
+				delta()
+			);
 			return ctx.throw(400, "Bad Request");
 		}
 		try {
 			await next();
 		} finally {
-			credo.debug.route(
+			phragon.debug.route(
 				`{blue [%s]} %s %s (%s) {${ctx.status < 300 ? "green" : "red"} %s}`,
 				ctx.hostname,
 				ctx.method,
@@ -89,12 +95,12 @@ export default async function server(options: Server.Options = {}) {
 		}
 	});
 
-	const conf = credo.config("config");
+	const conf = phragon.config("config");
 	const { store = {} } = conf;
 
-	bodyParserMiddleware(credo);
-	sessionMiddleware(credo);
-	appMiddleware(credo, {
+	bodyParserMiddleware(phragon);
+	sessionMiddleware(phragon);
+	appMiddleware(phragon, {
 		store,
 		language,
 		multilingual,
@@ -104,14 +110,14 @@ export default async function server(options: Server.Options = {}) {
 	// base routes
 	registrar.middleware(routeMiddleware);
 
-	const boot = await registrar.load(credo);
+	const boot = await registrar.load(phragon);
 
 	// add route after loading services
-	credo.define("route", new RouteManager(credo));
+	phragon.define("route", new RouteManager(phragon));
 
 	function cron<T>(serv: T): T {
-		if (isProd && !isCluster && !credo.process && !credo.isCron() && cronMode !== "disabled" && isMainThread) {
-			const cron = credo.config("cron");
+		if (isProd && !isCluster && !phragon.process && !phragon.isCron() && cronMode !== "disabled" && isMainThread) {
+			const cron = phragon.config("cron");
 			if (cron.enabled) {
 				const dmn = daemon();
 				const argv: string[] = [];
@@ -120,7 +126,7 @@ export default async function server(options: Server.Options = {}) {
 				}
 
 				let cronWorker: Worker | undefined;
-				credo.define(
+				phragon.define(
 					"cronWorker",
 					function () {
 						return cronWorker;
@@ -138,7 +144,7 @@ export default async function server(options: Server.Options = {}) {
 					});
 					cronWorker.on("exit", (code) => {
 						cronWorker = undefined;
-						credo.debug.error("Cron worker exit ({blue %s}), try restart after 10 seconds...", code);
+						phragon.debug.error("Cron worker exit ({blue %s}), try restart after 10 seconds...", code);
 						setTimeout(startCron, 10000);
 
 						// send restart count
@@ -157,7 +163,7 @@ export default async function server(options: Server.Options = {}) {
 		return serv;
 	}
 
-	renderMiddleware(credo);
+	renderMiddleware(phragon);
 
 	const host = env.get("host").default("127.0.0.1").value;
 	const port = env.get("port").default(1278).toPortNumber().value;
@@ -167,20 +173,20 @@ export default async function server(options: Server.Options = {}) {
 		const dmn = daemon();
 		dmn.send({
 			type: "detail",
-			id: credo.process ? credo.process.id : "main",
+			id: phragon.process ? phragon.process.id : "main",
 			pid: dmn.pid,
 			cid: process.pid,
-			part: (credo.process && cluster.worker?.workerData?.part) || 1,
+			part: (phragon.process && cluster.worker?.workerData?.part) || 1,
 			port,
 			host,
-			mode: credo.mode,
+			mode: phragon.mode,
 		});
 	}
 
 	return boot()
 		.then(() => {
 			return app.listen(port, host, () => {
-				credo.debug(`Server is running at http://${host}:${port}/ - {cyan ${mode}} mode`);
+				phragon.debug(`Server is running at http://${host}:${port}/ - {cyan ${mode}} mode`);
 			});
 		})
 		.then(cron);

@@ -1,9 +1,9 @@
-# @credo-js/cli-commander
+# @phragon/cli-commander
 
 The project is under construction, the description will be later
 
 ## ❯ Install
 
 ```
-$ npm install --save @credo-js/cli-commander
+$ npm install --save @phragon/cli-commander
 ```

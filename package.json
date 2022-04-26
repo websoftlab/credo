@@ -1,5 +1,5 @@
 {
-  "name": "credo-project",
+  "name": "phragon-project",
   "private": true,
   "version": "1.0.0",
   "description": "",
@@ -19,7 +19,7 @@
     "packages/*"
   ],
   "keywords": [
-    "credo", "credo-js", "credojs"
+    "phragon", "phragon-js", "phragonjs"
   ],
   "author": "gosha@rozaverta.com",
   "license": "MIT",

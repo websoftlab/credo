@@ -1,6 +1,6 @@
-import { createLoadable, TimeoutError } from "@credo-js/loadable";
+import { createLoadable, TimeoutError } from "@phragon/loadable";
 import { createContext, useContext, createElement, useState, useRef, useCallback, useEffect } from "react";
-import type { ObserverOptions } from "@credo-js/loadable";
+import type { ObserverOptions } from "@phragon/loadable";
 
 function resolve<Type>(obj: any): Type {
 	return obj && obj.__esModule ? obj.default : obj;

@@ -1,6 +1,6 @@
 import { join } from "path";
-import { exists, readJsonFile, writeJsonFile } from "credo/utils/index";
-import { debug } from "@credo-js/cli-debug";
+import { exists, readJsonFile, writeJsonFile } from "phragon/utils/index";
+import { debug } from "@phragon/cli-debug";
 
 export default async function tsConfigCompilerOptionsJSX(cwd: string) {
 	const file = join(cwd, "./tsconfig.json");

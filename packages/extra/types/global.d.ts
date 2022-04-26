@@ -1,10 +1,10 @@
-import type { Config } from "@credo-js/server";
-import type { CredoExtraFavicon } from "@credo-js/extra/types";
+import type { Config } from "@phragon/server";
+import type { PhragonExtraFavicon } from "@phragon/extra/types";
 
-declare module "@credo-js/server" {
+declare module "@phragon/server" {
 	namespace Config {
 		export interface Config {
-			favicon?: CredoExtraFavicon;
+			favicon?: PhragonExtraFavicon;
 		}
 	}
 }

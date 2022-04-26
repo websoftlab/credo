@@ -1,20 +1,20 @@
 {
-	"name": "@credo-js/server",
+	"name": "@phragon/server",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",
 		"prettier": "node ../../scripts/lib/build-prettier.js"
 	},
 	"dependencies": {
-		"@credo-js/utils": "*",
-		"@credo-js/app": "*",
-		"@credo-js/make-url": "*",
-		"@credo-js/path-to-pattern": "*",
-		"@credo-js/cli-debug": "*",
-		"@credo-js/cli-color": "*",
-		"@credo-js/cli-commander": "*",
+		"@phragon/utils": "*",
+		"@phragon/app": "*",
+		"@phragon/make-url": "*",
+		"@phragon/path-to-pattern": "*",
+		"@phragon/cli-debug": "*",
+		"@phragon/cli-color": "*",
+		"@phragon/cli-commander": "*",
 		"vary": "^1.1.2",
 		"koa": "^2.13.4",
 		"koa-bodyparser": "^4.3.0",
@@ -37,11 +37,11 @@
 		"@types/http-errors": "^1.6.3"
 	},
 	"peerDependencies": {
-		"@credo-js/responder-page": "*",
-		"@credo-js/responder-static": "*",
-		"@credo-js/responder-text": "*",
-		"@credo-js/responder-json": "*",
-		"credo": "*"
+		"@phragon/responder-page": "*",
+		"@phragon/responder-static": "*",
+		"@phragon/responder-text": "*",
+		"@phragon/responder-json": "*",
+		"phragon": "*"
 	},
 	"exports": {
 		"./": "./build/",

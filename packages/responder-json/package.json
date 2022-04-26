@@ -1,7 +1,7 @@
 {
-	"name": "@credo-js/responder-json",
+	"name": "@phragon/responder-json",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",
@@ -9,8 +9,8 @@
 	},
 	"dependencies": {
 		"http-errors": "^1.7.3",
-		"@credo-js/utils": "*",
-		"@credo-js/server": "*"
+		"@phragon/utils": "*",
+		"@phragon/server": "*"
 	},
 	"devDependencies": {
 		"@types/koa": "^2.13.3",

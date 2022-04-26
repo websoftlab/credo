@@ -1,14 +1,14 @@
 {
-	"name": "@credo-js/path-to-pattern",
+	"name": "@phragon/path-to-pattern",
 	"version": "1.0.0",
-	"author": "credo@websoftlab.com",
+	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
 		"build": "node ../../scripts/lib/build.js",
 		"prettier": "node ../../scripts/lib/build-prettier.js"
 	},
 	"dependencies": {
-		"@credo-js/utils": "*"
+		"@phragon/utils": "*"
 	},
 	"devDependencies": {},
 	"peerDependencies": {},

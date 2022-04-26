@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-04/schema#",
-	"title": "JSON schema for CredoJS lexicon.json config files",
+	"title": "JSON schema for PhragonJS lexicon.json config files",
 	"description": "Language options",
 	"type": "object",
 	"properties": {

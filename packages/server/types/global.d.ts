@@ -1,12 +1,12 @@
-import type { CredoJS, Route, Worker as WorkerCJS } from "@credo-js/server/types";
-import type { AppStore } from "@credo-js/app";
-import type { URL } from "@credo-js/make-url";
+import type { PhragonJS, Route, Worker as WorkerCJS } from "@phragon/server/types";
+import type { AppStore } from "@phragon/app";
+import type { URL } from "@phragon/make-url";
 
 declare global {
-	export var credo: CredoJS;
+	export var phragon: PhragonJS;
 }
 
-declare module "@credo-js/make-url" {
+declare module "@phragon/make-url" {
 	namespace URL {
 		interface Options {
 			name?: string;
@@ -22,7 +22,7 @@ declare module "cluster" {
 
 declare module "koa" {
 	interface Context {
-		readonly credo: CredoJS;
+		readonly phragon: PhragonJS;
 
 		// lexicon extension
 		readonly multilingual: boolean;

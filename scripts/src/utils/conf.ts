@@ -7,11 +7,11 @@ import { newError } from "../color";
 let data: Config | null = null;
 
 async function load(): Promise<Config> {
-	const stat = await existsStat(cwdPath("credo-build.conf.json"));
+	const stat = await existsStat(cwdPath("phragon-build.conf.json"));
 	if (stat && stat.isFile) {
 		return readJsonFile(stat.file);
 	}
-	throw newError("Config file {yellow %s} not found", "./credo-build.conf.json");
+	throw newError("Config file {yellow %s} not found", "./phragon-build.conf.json");
 }
 
 export default async function conf(): Promise<Config> {

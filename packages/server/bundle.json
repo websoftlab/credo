@@ -5,7 +5,7 @@
 			"output": ".",
 			"package.json": {
 				"bin": {
-					"credo-serv": "./bin/index.js"
+					"phragon-serv": "./bin/index.js"
 				}
 			}
 		},
