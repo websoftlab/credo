@@ -1,4 +1,4 @@
-import type { ElementType } from "react";
+import type { FC } from "react";
 import type { HeadTagName } from "@credo-js/html-head";
 import { createElement } from "react";
 import HeadTagComponent from "./HeadTagComponent";
@@ -70,7 +70,7 @@ export default function createHeadComponent<T = {}>(
 		attributes?: string[];
 		requiredProps?: any;
 	}
-): ElementType<T> {
+): FC<T> {
 	const { tagName = name, singleton = false, child = false, attributes = [], requiredProps = null } = options;
 
 	class HeadElm extends HeadTagComponent {

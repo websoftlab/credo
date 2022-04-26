@@ -7,6 +7,7 @@ import loadDocument from "./loadDocument";
 import { load, loaded, component } from "../loadable";
 import { AppStore } from "@credo-js/app";
 import onHistoryScroll from "./onHistoryScroll";
+import createEvent from "./createEvent";
 import type { ReactElement, ElementType } from "react";
 import type { OnAppRenderHook } from "../app";
 
@@ -86,9 +87,8 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 	}
 
 	const render = (hydrate: boolean = false) => {
-		let prevented = false;
 		let root: null | React15Root = null;
-		const evn: OnAppRenderHook = {
+		const evn: OnAppRenderHook = createEvent({
 			React,
 			ReactDOM,
 			hydrate,
@@ -98,17 +98,11 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 				api,
 				history,
 			},
-			get defaultPrevented() {
-				return prevented;
-			},
-			preventDefault() {
-				prevented = true;
-			},
-		};
+		});
 
 		api.emit<OnAppRenderHook>("onRender", evn);
 
-		if (!prevented) {
+		if (!evn.defaultPrevented) {
 			const reactDom = React.createElement(evn.App, evn.props);
 			if (evn.hydrate) {
 				if (isReact18(ReactDOM)) {

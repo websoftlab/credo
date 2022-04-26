@@ -13,4 +13,11 @@ export {
 export { default as Loader } from "./Loader";
 
 export type { LinkProps, NavLinkProps } from "./route";
-export type { OnLocationChangeHook, OnAppMountHook, OnPageTitleHook, OnPageHook, OnAppRenderHook } from "./types";
+export type {
+	OnLocationChangeHook,
+	OnAppMountHook,
+	OnPageTitleHook,
+	OnPageHook,
+	OnAppRenderHook,
+	OnPageHistoryScrollHook,
+} from "./types";

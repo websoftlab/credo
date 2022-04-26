@@ -38,3 +38,12 @@ export interface OnPageTitleHook {
 	title: string;
 	mutate: boolean;
 }
+
+export interface OnPageHistoryScrollHook {
+	scroll: {
+		x: number;
+		y: number;
+	};
+	readonly defaultPrevented: boolean;
+	preventDefault(): void;
+}
