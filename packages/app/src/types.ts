@@ -8,7 +8,7 @@ export namespace API {
 		translator: Lexicon.Translator;
 	}
 
-	export interface ApiInterface<ComponentType, State = any> extends Record<string, any> {
+	export interface ApiInterface<ComponentType, State = any> {
 		mode: "client" | "server";
 		app: App.StoreInterface<State>;
 		page: Page.StoreInterface<ComponentType>;
@@ -17,6 +17,7 @@ export namespace API {
 		title: string;
 		ssr: boolean;
 		makeUrl: URL.Handler;
+		[key: string]: any;
 
 		has(action: HookName, listener?: HookListener): boolean;
 
@@ -56,6 +57,7 @@ export namespace App {
 	export interface StoreInterface<State = any> extends Lexicon.LanguageStoreInterface {
 		readonly state: State;
 		update(state: any): void;
+		reload(state: any): void;
 	}
 }
 
@@ -69,13 +71,24 @@ export namespace Page {
 		bootloader?: ((api: API.ApiInterface<ComponentType>) => void)[];
 	};
 
-	export interface ComponentResponse<ComponentType, Data = any, Props = any> {
+	export interface DataType {
+		title?: string;
+	}
+
+	export interface ResponseDataType extends DataType {
+		$language?: string;
+		$package?: string | string[];
+		$state?: any;
+	}
+
+	export interface ComponentResponse<ComponentType, Data extends DataType = any, Props = any> {
+		name: string;
 		Component: ComponentType;
 		data: Data;
 		props: Props;
 	}
 
-	export interface Response<Data = any, Props = any> {
+	export interface Response<Data extends ResponseDataType = any, Props = any> {
 		page: string;
 		data: Data;
 		props?: Props;
@@ -109,7 +122,11 @@ export namespace Page {
 		readonly errorMessage: string | null;
 		readonly title: string;
 		readonly http: AxiosInstance;
+		readonly data: any;
 
+		setData(name: string, value: any): void;
+		setData(data: any): void;
+		loader(callback: (page: Response) => void | Promise<void>): () => void;
 		loadDocument(page: Response, url?: string, key?: string): void;
 		load(url: string, key: string, bodyPost?: any): void;
 		setError(err: Error, url?: string, key?: string): void;

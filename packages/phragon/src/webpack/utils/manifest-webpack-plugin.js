@@ -21,7 +21,7 @@ class ManifestWebpackPlugin {
 	}
 
 	/**
-	 * Get the public path from Webpack configuation
+	 * Get the public path from Webpack configuration
 	 * and add slash at the end if necessary
 	 * @return {String} The public path
 	 */

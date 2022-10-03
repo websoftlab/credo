@@ -1,6 +1,6 @@
 import { asyncResult } from "@phragon/utils";
 import { writeFile } from "fs/promises";
-import { debugBuild } from "../debug";
+import { debug } from "../debug";
 import cwdPath from "./cwdPath";
 import exists from "./exists";
 import localPathName from "./localPathName";
@@ -20,7 +20,7 @@ export default async function createCwdFileIfNotExists(
 	}
 
 	await writeFile(full, text);
-	debugBuild(`Make file {yellow %s}`, localPathName(full));
+	debug(`Make file {yellow %s}`, localPathName(full));
 
 	return full;
 }

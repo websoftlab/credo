@@ -15,3 +15,6 @@ export { default as resolveFile } from "./resolveFile";
 export { default as fireHook } from "./fireHook";
 export { default as localPathName } from "./localPathName";
 export { default as clear } from "./clear";
+export { default as isEmptyDir } from "./isEmptyDir";
+export { default as copyTemplateIfEmpty } from "./copyTemplateIfEmpty";
+export { default as fileHash } from "./fileHash";

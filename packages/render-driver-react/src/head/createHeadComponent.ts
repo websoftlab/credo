@@ -2,6 +2,7 @@ import type { FC } from "react";
 import type { HeadTagName } from "@phragon/html-head";
 import { createElement } from "react";
 import HeadTagComponent from "./HeadTagComponent";
+import { __isDev__ } from "@phragon/utils";
 
 const defaultAttributes: string[] = [
 	"id",
@@ -73,19 +74,21 @@ export default function createHeadComponent<T = {}>(
 ): FC<T> {
 	const { tagName = name, singleton = false, child = false, attributes = [], requiredProps = null } = options;
 
-	class HeadElm extends HeadTagComponent {
-		typeName: HeadTagName = name;
-		tagName: string = tagName;
-		singleton: boolean = singleton;
-	}
-
 	const Elm = function (props: any) {
 		if (requiredProps != null) {
-			Object.assign(props, requiredProps);
+			props = Object.assign({}, props, requiredProps);
 		}
-		return createElement(HeadElm, filterAttributes(props, attributes, child));
+		return createElement(HeadTagComponent, {
+			singleton,
+			name,
+			tagName,
+			tagProps: filterAttributes(props, attributes, child),
+		});
 	};
 
-	Elm.displayName = `Head${name[0].toUpperCase()}${name.substr(1)}`;
+	if (__isDev__()) {
+		Elm.displayName = `Head${name[0].toUpperCase()}${name.substring(1)}`;
+	}
+
 	return Elm;
 }

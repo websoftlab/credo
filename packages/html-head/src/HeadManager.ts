@@ -1,93 +1,73 @@
-import type { HeadTag, HeadTagName } from "./types";
+import type { HeadTag, HeadTagWithKey } from "./types";
 
-const attr: Record<HeadTagName, string[]> = {
-	title: ["children"],
-	base: ["href"],
-	charset: ["charset"],
-	viewport: ["content"],
-	link: ["href", "media", "rel", "sizes", "type"],
-	meta: ["name", "property", "httpEquiv", "content"],
-	style: ["children"],
-};
-
-function hash(node: HeadTag) {
-	const { type, props } = node;
-	const forHash: any = {};
-	(attr[type] || []).forEach((name) => {
-		if (props[name] != null) {
-			forHash[name] = props[name];
-		}
-	});
-	return JSON.stringify(forHash);
+function generateKey(prefix: string) {
+	return `${prefix}--${Math.random().toString(36).substring(2)}`;
 }
 
-function compare(node1: HeadTag, node2: HeadTag) {
-	return hash(node1) === hash(node2);
+function find(headTags: HeadTagWithKey[], key: string): number {
+	return headTags.findIndex((node) => node.key === key);
 }
-
-function find(headTags: HeadTag[], type: HeadTagName, index: number): number {
-	for (let i = 0; i < headTags.length; i++) {
-		const tag = headTags[i];
-		if (tag.type === type && (tag as any)[indexKey] == index) {
-			return i;
-		}
-	}
-	return -1;
-}
-
-const indexKey = Symbol();
 
 export default class HeadManager {
-	_lastIndex: number = 1;
+	constructor(public server: boolean, public headTags: HeadTagWithKey[]) {}
 
-	constructor(public headTags: HeadTag[]) {}
-
-	addClientTag(node: HeadTag) {
+	addClientTag(originNode: HeadTag) {
+		const { type } = originNode;
 		const { headTags } = this;
-		const { type, singleton } = node;
-
-		// search unique or exists tag
-		for (let i = 0; i < headTags.length; i++) {
-			const tag = headTags[i];
-			if (tag.type === type && (singleton || compare(tag, node))) {
-				return -1;
-			}
-		}
-
-		const index = this._lastIndex++;
-		(node as any)[indexKey] = index;
+		const node: HeadTagWithKey = { key: generateKey(type), renderable: false, ...originNode };
 
 		headTags.push(node);
 
-		return index;
+		return node.key;
 	}
 
-	shouldRenderTag(type: HeadTagName, index: number) {
+	removeClientTag(key: string) {
 		const { headTags } = this;
-		return find(headTags, type, index) !== -1;
-	}
-
-	removeClientTag(type: HeadTagName, index: number) {
-		const { headTags } = this;
-		const found = find(headTags, type, index);
+		const found = find(headTags, key);
 		if (found !== -1) {
 			headTags.splice(found, 1);
 		}
 	}
 
-	addServerTag(node: HeadTag) {
+	shouldRenderTag(key: string) {
+		const { headTags } = this;
+		const tag = headTags.find((tag) => tag.key === key);
+		if (!tag) {
+			return false;
+		}
+		if (tag.renderable) {
+			return true;
+		}
+		if (
+			tag.singleton &&
+			headTags.some((headTag) => headTag.singleton && headTag.renderable && headTag.type === tag.type)
+		) {
+			return false;
+		}
+		tag.renderable = true;
+		return true;
+	}
+
+	addServerTag(node: HeadTag): string | null {
 		const { headTags } = this;
 		const { type, singleton } = node;
 
 		for (let i = 0; i < headTags.length; i++) {
 			const tag = headTags[i];
-			if (tag.type === type) {
-				if (singleton || compare(tag, node)) {
-					return;
-				}
+			if (tag.type === type && singleton) {
+				return null;
 			}
 		}
 
-		headTags.push(node);
+		const key = generateKey(type);
+		headTags.push({ key, renderable: false, ...node });
+
+		return key;
+	}
+
+	reset() {
+		this.headTags.forEach((tag) => {
+			tag.renderable = false;
+		});
 	}
 }

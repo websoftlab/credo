@@ -1,6 +1,6 @@
 # PhragonJS Project
 
-**Attention!** The project is under development, a full description will be later. The project is in the beta testing stage.
+:warning: **Attention!** The project is under development, a full description will be later. The project is in the beta testing stage.
 
 > A small wrapper (framework) for the KOA server, and the subsequent building of the application 
 > using Webpack (client side and server side render) and Rollup (server side).
@@ -45,9 +45,9 @@ yarn phragon-serv cmd [...options]     # running an internal command
 
 | Mode   | How to discover | Comment |
 |---     |---              |---      |
-| `app`  | `phragon.isApp() === true`  | Started HTTP Server (koa) |
-| `cron` | `phragon.isCron() === true` | Started CRON Server (node-schedule) |
-| `cmd`  | `phragon.isCmd() === true`  | Started internal terminal command |
+| `app`  | `phragon.isApp()`  | Started HTTP Server (koa) |
+| `cron` | `phragon.isCron()` | Started CRON Server (node-schedule) |
+| `cmd`  | `phragon.isCmd()`  | Started internal terminal command |
 
 ### Service
 

@@ -1,29 +1,18 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { createBrowserHistory } from "history";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import { Api, Page, createHttpJsonService, PageStore } from "@phragon/app";
+import { asyncResult } from "@phragon/utils";
 import App from "./App";
 import loadDocument from "./loadDocument";
 import { load, loaded, component } from "../loadable";
 import { AppStore } from "@phragon/app";
 import onHistoryScroll from "./onHistoryScroll";
-import createEvent from "./createEvent";
-import type { ReactElement, ElementType } from "react";
+import { createEvent } from "../app/utils";
+import { __isDev__ } from "@phragon/utils";
+import { createNavigator, getHistory } from "./navigator";
+import type { ElementType } from "react";
 import type { OnAppRenderHook } from "../app";
-
-type React15Root = { render: Function };
-
-function isReact18(obj: any): obj is {
-	createRoot: (node: HTMLElement) => React15Root;
-	hydrateRoot: (node: HTMLElement, element: ReactElement) => React15Root;
-} {
-	return (
-		"createRoot" in obj &&
-		"hydrateRoot" in obj &&
-		typeof obj.createRoot === "function" &&
-		typeof obj.hydrateRoot === "function"
-	);
-}
 
 const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolean }> = async function renderPage(
 	node: HTMLElement,
@@ -58,20 +47,34 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 		loader: { load, loaded, component },
 	});
 	const api = new Api<ElementType>("client", app, page);
-	const history = createBrowserHistory();
+	const navigator = createNavigator(api);
+	const history = getHistory(navigator);
 
-	api.services.history = history;
-
-	// client system bootstrap
-	bootloader.forEach((func) => {
-		try {
-			func(api);
-		} catch (err) {
-			if (__DEV__) {
-				console.error("Bootstrap callback failure", err);
+	// change language
+	page.loader((response) => {
+		const { data } = response;
+		if (data?.$language) {
+			const doc = document.documentElement;
+			if (doc.hasAttribute("lang")) {
+				doc.setAttribute("lang", data.$language);
 			}
 		}
 	});
+
+	api.services.navigator = navigator;
+
+	// client system bootstrap
+	await Promise.all(
+		bootloader.map(async (func) => {
+			try {
+				await asyncResult(func(api));
+			} catch (err) {
+				if (__isDev__()) {
+					console.error("Bootstrap callback failure", err);
+				}
+			}
+		})
+	);
 
 	if (language) {
 		await app.loadLanguage(language);
@@ -87,7 +90,6 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 	}
 
 	const render = (hydrate: boolean = false) => {
-		let root: null | React15Root = null;
 		const evn: OnAppRenderHook = createEvent({
 			React,
 			ReactDOM,
@@ -96,7 +98,7 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 			App,
 			props: {
 				api,
-				history,
+				navigator,
 			},
 		});
 
@@ -105,24 +107,13 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 		if (!evn.defaultPrevented) {
 			const reactDom = React.createElement(evn.App, evn.props);
 			if (evn.hydrate) {
-				if (isReact18(ReactDOM)) {
-					root = ReactDOM.hydrateRoot(evn.ref, reactDom);
-				} else {
-					ReactDOM.hydrate(reactDom, evn.ref);
-				}
+				api.root = hydrateRoot(evn.ref, reactDom);
 			} else {
-				if (isReact18(ReactDOM)) {
-					root = ReactDOM.createRoot(evn.ref);
-					root.render(reactDom);
-				} else {
-					ReactDOM.render(reactDom, evn.ref);
-				}
+				api.root = createRoot(evn.ref);
+				api.root.render(reactDom);
 			}
-		}
-
-		if (root != null) {
-			// @ts-ignore
-			api.root = root;
+		} else if (evn.root) {
+			api.root = evn.root;
 		}
 	};
 
@@ -140,7 +131,6 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 		render();
 	};
 
-	// @ts-ignore
 	window.api = api;
 
 	const err1 = () => app.translate("system.errors.pageResponseIsEmpty", "Page response is empty");

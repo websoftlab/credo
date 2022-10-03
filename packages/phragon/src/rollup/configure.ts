@@ -1,3 +1,6 @@
+import type { RollupTypescriptOptions } from "@rollup/plugin-typescript";
+import type { InputOptions, OutputOptions } from "rollup";
+import type { BuildConfigureOptions, BuildConfigure } from "../types";
 import typescript from "@rollup/plugin-typescript";
 import externals from "rollup-plugin-node-externals";
 import resolvePlugin from "@rollup/plugin-node-resolve";
@@ -7,39 +10,31 @@ import replace from "@rollup/plugin-replace";
 import aliasPlugin from "@rollup/plugin-alias";
 import baseConfigure from "../configure";
 import { alias, define } from "../config";
-import { isPlainObject } from "@phragon/utils";
-import { cwdPath, buildPath, exists } from "../utils";
+import { cwdPath, buildPath, exists, readJsonFile } from "../utils";
 import progressRollupPlugin from "./plugins/progressRollupPlugin";
-import type { InputOptions, OutputOptions } from "rollup";
-import type { Alias } from "@rollup/plugin-alias";
-import type { BuildConfigureOptions, BuildConfigure } from "../types";
+import { debug } from "../debug";
 
-function mergeAliases(left: Alias[], right: any): Alias[] {
-	const merge = (find: string, replacement: string) => {
-		left.push({
-			find,
-			replacement,
-		});
+async function getTsConfig() {
+	const file = cwdPath("tsconfig.json");
+	const tsOptions: RollupTypescriptOptions = {
+		cacheDir: buildPath("ts-cache"),
 	};
-	if (Array.isArray(right)) {
-		right.forEach((item) => {
-			if (isPlainObject(item) && item.find && item.replacement) {
-				left.push(item);
-			}
-		});
-	} else if (isPlainObject(right)) {
-		Object.keys(right).forEach((key) => {
-			const value = right[key];
-			if (typeof value === "string") {
-				merge(key, value);
-			} else if (Array.isArray(value)) {
-				value.forEach((val) => {
-					typeof val === "string" && merge(key, val);
-				});
-			}
-		});
+
+	if (await exists(file)) {
+		const tsConf = await readJsonFile(file);
+		if (tsConf.compilerOptions) tsOptions.compilerOptions = tsConf.compilerOptions;
+		if (tsConf.exclude) tsOptions.exclude = tsConf.exclude;
+		if (tsConf.include) tsOptions.include = tsConf.include;
 	}
-	return left;
+
+	if (!tsOptions.exclude) {
+		tsOptions.exclude = [];
+	}
+	if (Array.isArray(tsOptions.exclude)) {
+		tsOptions.exclude.push("./src-client/**");
+	}
+
+	return tsOptions;
 }
 
 export default async function configure(
@@ -51,18 +46,14 @@ export default async function configure(
 		isDevServer,
 		isServerPage,
 		bundle,
-		progressLine,
 		cluster,
-		factory: {
-			options: { clusters },
-		},
+		factory: { cluster: clusterList },
 	} = conf;
 
 	if (isClient || isServerPage || isDevServer) {
 		throw new Error("Attention, the rollup package manager should only work in server mode!");
 	}
 
-	let aliases = mergeAliases([], await alias(conf));
 	let extensions = [".ts", ".js"];
 
 	const input: Record<string, string> = {};
@@ -73,17 +64,9 @@ export default async function configure(
 	add("server");
 	if (cluster) {
 		add(`srv/server-${cluster.mid}`);
-	} else if (clusters) {
-		for (const cluster of clusters) {
+	} else if (clusterList.length > 0) {
+		for (const cluster of clusterList) {
 			add(`srv/server-${cluster.mid}`);
-		}
-	}
-
-	let tsconfig: string | false = cwdPath("tsconfig-server.json");
-	if (!(await exists(tsconfig))) {
-		tsconfig = cwdPath("tsconfig.json");
-		if (!(await exists(tsconfig))) {
-			tsconfig = false;
 		}
 	}
 
@@ -116,24 +99,18 @@ export default async function configure(
 				})
 			),
 			aliasPlugin({
-				entries: aliases,
+				entries: await alias(conf),
 			}),
 			resolvePlugin(
 				await conf.fireOnOptionsHook("plugin.resolve", {
 					extensions,
 				})
 			),
-			typescript(
-				await conf.fireOnOptionsHook("plugin.typescript", {
-					tsconfig,
-					cacheDir: buildPath("ts-cache"),
-					allowJs: true,
-				})
-			),
+			typescript(await conf.fireOnOptionsHook("plugin.typescript", await getTsConfig())),
 		],
 	};
 
-	if (progressLine) {
+	if (debug.isTTY) {
 		config.plugins?.push(progressRollupPlugin(conf));
 	}
 

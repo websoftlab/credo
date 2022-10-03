@@ -11,7 +11,7 @@
 		"@phragon/lexicon": "*",
 		"@phragon/make-url": "*",
 		"@phragon/utils": "*",
-		"mobx": "^6.3.2",
+		"mobx": "^6.4.0",
 		"axios": "^0.26.0"
 	},
 	"devDependencies": {

@@ -1,6 +1,6 @@
 import { copyFile, mkdir, readdir, stat } from "fs/promises";
 import { dirname, join } from "path";
-import { debugBuild } from "../debug";
+import { debug } from "../debug";
 import exists from "./exists";
 import localPathName from "./localPathName";
 import normalizeFilePath from "./normalizeFilePath";
@@ -26,7 +26,7 @@ export default async function copy(src: string, dst: string) {
 		}
 
 		await copyFile(src, dst);
-		debugBuild(`Copy file from {yellow %s} to {yellow %s}`, localPathName(src), localPathName(dst));
+		debug(`Copy file from {yellow %s} to {yellow %s}`, localPathName(src), localPathName(dst));
 		return;
 	}
 
@@ -36,7 +36,7 @@ export default async function copy(src: string, dst: string) {
 
 	// create dest path
 	if (!(await exists(dst))) {
-		debugBuild(`Make directory {yellow %s}`, localPathName(dst));
+		debug(`Make directory {yellow %s}`, localPathName(dst));
 		await mkdir(dst, { recursive: true });
 	}
 
@@ -60,7 +60,7 @@ export default async function copy(src: string, dst: string) {
 				const dstFilePath = join(dstPath, file);
 				if (!(await exists(dstFilePath))) {
 					await copyFile(srcFilePath, dstFilePath);
-					debugBuild(
+					debug(
 						`Copy file from {yellow %s} to {yellow %s}`,
 						localPathName(srcFilePath),
 						localPathName(dstFilePath)

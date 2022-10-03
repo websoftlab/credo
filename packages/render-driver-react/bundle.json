@@ -15,5 +15,9 @@
 	"types": {
 		"target": "copy",
 		"output": "."
+	},
+	"template": {
+		"target": "copy",
+		"output": "template"
 	}
 }

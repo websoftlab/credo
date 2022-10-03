@@ -3,23 +3,26 @@ import compiler from "../compiler";
 import createWatch from "../rollup/createWatch";
 import type { RollupWatcher } from "rollup";
 import type { PhragonPlugin, Watch } from "../types";
+import type { CmdDebugWaiter } from "../debug";
 import isWindows from "is-windows";
 import { RollupBuild, RollupWatcherEvent } from "rollup";
 import { ChildProcessByStdio, fork } from "child_process";
 import { cwdPath } from "../utils";
 import { EventEmitter } from "events";
+import { debug } from "../debug";
+import { isPlainObject } from "@phragon/utils";
 
 function isEventResult(event: any): event is { result: RollupBuild } {
 	return event && event.result != null;
 }
 
-function getConfigCluster(id: string | undefined, options: PhragonPlugin.RootOptions) {
-	const { clusters } = options;
-	if (clusters && clusters.length) {
+function getConfigCluster(id: string | undefined, factory: PhragonPlugin.Factory) {
+	const { cluster: clusterList } = factory;
+	if (clusterList.length) {
 		if (!id) {
-			return clusters[0];
+			return clusterList[0];
 		}
-		for (const cluster of clusters) {
+		for (const cluster of clusterList) {
 			if (cluster.id === id) {
 				return cluster;
 			}
@@ -63,20 +66,24 @@ function abortChildProcess(serve: WatchServe) {
 	return true;
 }
 
+function isMessageProgress(
+	message: any
+): message is { event: { message: string; progress: number | null; done: boolean } } {
+	return isPlainObject(message) && message.action === "progress";
+}
+
 export default class WatchServe extends EventEmitter implements Watch.Serve {
 	_restartRepeat: boolean = false;
 	_restartStop: boolean = false;
 	_restartWaiter: Promise<boolean> | null = null;
 	_options: Required<Watch.CMDOptions>;
 	_bundleID = 1;
+	_waiter: CmdDebugWaiter;
 
 	watcher: RollupWatcher | null = null;
 	child: ChildProcessByStdio<any, any, any> | null = null;
 	factory: PhragonPlugin.Factory | null = null;
 
-	get progress(): boolean {
-		return !this._options.noBoard;
-	}
 	get port(): number {
 		return this._options.port;
 	}
@@ -95,10 +102,10 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 	get clusterId(): string | null {
 		return this._options.cluster || null;
 	}
-	get cluster(): PhragonPlugin.RootClusterOptions | undefined {
+	get cluster(): PhragonPlugin.ClusterOptions | undefined {
 		const id = this._options.cluster;
 		if (id && this.factory) {
-			return getConfigCluster(id, this.factory.options);
+			return getConfigCluster(id, this.factory);
 		}
 		return undefined;
 	}
@@ -118,6 +125,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 			cluster = "",
 		} = options;
 
+		this._waiter = debug.wait("serve");
 		this._options = {
 			port,
 			devPort,
@@ -125,7 +133,6 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 			devHost,
 			ssr,
 			cluster,
-			noBoard: options.noBoard === true,
 		};
 	}
 
@@ -146,6 +153,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 
 		if (abortChildProcess(this)) {
 			this.emit("stop");
+			this._waiter.end();
 		}
 
 		if (err) {
@@ -187,11 +195,11 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 		this.child = child;
 
 		child.stdout.on("data", (data: string | Buffer) => {
-			this.emit("debug", { message: data.toString(), context: "system", error: false });
+			debug.write(data);
 		});
 
 		child.stderr.on("data", (data: string | Buffer) => {
-			this.emit("debug", { message: data.toString(), context: "system", error: true });
+			debug.error(data);
 		});
 
 		child.on("error", (err) => {
@@ -203,6 +211,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 				}
 				this.child = null;
 				this.emit("stop");
+				this._waiter.end();
 			}
 		});
 
@@ -210,11 +219,21 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 			child = null;
 		});
 
-		this.emit("start");
-	}
+		child.on("message", (data) => {
+			if (isMessageProgress(data)) {
+				const { message, done, progress } = data.event;
+				if (done) {
+					this._waiter.end();
+				} else {
+					this._waiter.write(message);
+					if (progress != null) {
+						this._waiter.progress = progress;
+					}
+				}
+			}
+		});
 
-	private _emitDebug(message: string, error: boolean = false) {
-		this.emit("debug", { message, context: "server", error });
+		this.emit("start");
 	}
 
 	private async _tryStart() {
@@ -228,10 +247,6 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 			factory: this.factory,
 			cluster: this.cluster,
 			ssr: this.ssr,
-			progressLine: this.progress,
-			debug: (message: string, error?: boolean) => {
-				this._emitDebug(message, error);
-			},
 		});
 
 		let lastError: Error | false = false;
@@ -254,14 +269,6 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 				init = true;
 				ok();
 			}
-			if (this.progress) {
-				this._emitDebug("[progress 100%] Bundle complete");
-				if (err) {
-					this._emitDebug(`[status error] ${err.message}`);
-				} else {
-					this._emitDebug(`[status wait] Watching...`);
-				}
-			}
 			this._restartServe(err).catch((err) => {
 				this.emit("error", err);
 			});
@@ -276,7 +283,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 
 			if (event.code === "BUNDLE_START") {
 				lastError = false;
-				this._emitDebug("[status wait] Bundle start");
+				this._waiter.start();
 			} else if (event.code === "ERROR") {
 				restart(event.error as Error);
 			} else if (event.code === "BUNDLE_END" && !lastError) {
@@ -287,6 +294,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 			if (isEventResult(event)) {
 				event.result.close().catch((err) => {
 					this.emit("error", err);
+					this._waiter.end();
 				});
 			}
 		});
@@ -303,6 +311,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 		abortWatcher(this);
 
 		this.factory = null;
+		this._waiter.end();
 	}
 
 	async restart() {
@@ -380,24 +389,5 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 		}
 
 		return true;
-	}
-
-	emit(name: string, event?: any): boolean {
-		if (name === "debug") {
-			if (typeof event === "string") {
-				event = {
-					message: event,
-				};
-			} else if (event instanceof Error) {
-				event = {
-					message: event.stack || event.message,
-					error: true,
-				};
-			}
-			if (!event) {
-				return false;
-			}
-		}
-		return super.emit(name, event);
 	}
 }

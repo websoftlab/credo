@@ -1,10 +1,11 @@
 import type { Context } from "koa";
 import type { PhragonJS, Ctor, Route, RouteVariant } from "@phragon/server";
-import type { ResponderJsonConfigOptions } from "./types";
+import type { OnJSONResponseErrorHook, OnJSONResponseHook, ResponderJsonConfigOptions } from "./types";
 import { RouteEntity } from "@phragon/server";
 import createHttpError from "http-errors";
 import HttpJSON from "./HttpJSON";
 import asyncResult from "@phragon/utils/asyncResult";
+import { isPlainObject } from "@phragon/utils";
 
 type OriginOptions = {
 	origin: string;
@@ -74,11 +75,29 @@ export default (function responder(phragon: PhragonJS, name: string): Route.Resp
 		}
 	}
 
-	function send(ctx: Context, body: HttpJSON) {
+	async function send(ctx: Context, body: HttpJSON) {
+		await phragon.hooks.emit<OnJSONResponseHook>("onJSONResponse", { ctx, json: body });
 		ctx.bodyEnd(body.toJSON(), body.status);
 	}
 
 	async function sendError(ctx: Context, error: Error, withOrigin: boolean) {
+		let httpJson: HttpJSON | null = null;
+		await phragon.hooks.emit<OnJSONResponseErrorHook>("onJSONResponseError", {
+			ctx,
+			error,
+			json<Plain extends {} = {}>(json: Plain | HttpJSON, status?: number) {
+				if (json instanceof HttpJSON) {
+					httpJson = json;
+				} else if (isPlainObject(json)) {
+					httpJson = new HttpJSON(json, status);
+				}
+			},
+		});
+
+		if (httpJson) {
+			return send(ctx, httpJson);
+		}
+
 		if (typeof errorHandler === "function") {
 			return send(ctx, await asyncResult(errorHandler(error)));
 		}
@@ -109,7 +128,7 @@ export default (function responder(phragon: PhragonJS, name: string): Route.Resp
 			body.details = error.details;
 		}
 
-		ctx.bodyEnd(body, code < 600 ? code : 500);
+		return send(ctx, new HttpJSON(body, code < 600 ? code : 500));
 	}
 
 	async function setOrigin(ctx: Context): Promise<OriginOptions | false> {
@@ -214,7 +233,7 @@ export default (function responder(phragon: PhragonJS, name: string): Route.Resp
 					return sendError(ctx, err as Error, false);
 				}
 			}
-			send(ctx, body);
+			await send(ctx, body);
 		},
 		error(ctx: Context, error: Error) {
 			return sendError(ctx, error, true);

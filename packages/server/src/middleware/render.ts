@@ -198,14 +198,18 @@ export function middleware(phragon: PhragonJS) {
 
 			// save cache
 			if (cacheable && cache.mode === "controller") {
-				phragon.cache.save(
-					cacheKey,
-					{
-						mode: "controller",
-						body: result,
-					},
-					{ ttl: cache.ttl }
-				);
+				if (phragon.cache) {
+					phragon.cache.save(
+						cacheKey,
+						{
+							mode: "controller",
+							body: result,
+						},
+						{ ttl: cache.ttl }
+					);
+				} else {
+					phragon.debug.error("Redis cache driver is not defined!");
+				}
 			}
 
 			try {
@@ -232,18 +236,27 @@ export function middleware(phragon: PhragonJS) {
 			ctx.status !== 204 &&
 			String(ctx.status).startsWith("20")
 		) {
-			phragon.cache.save(
-				cacheKey,
-				{
-					mode: "body",
-					status: ctx.status,
-					type: ctx.type,
-					body: ctx.body,
-				},
-				{ ttl: cache.ttl }
-			);
+			if (phragon.cache) {
+				phragon.cache.save(
+					cacheKey,
+					{
+						mode: "body",
+						status: ctx.status,
+						type: ctx.type,
+						body: ctx.body,
+					},
+					{ ttl: cache.ttl }
+				);
+			} else {
+				phragon.debug.error("Redis cache driver is not defined!");
+			}
 		}
 	}
 
-	phragon.app.use((ctx: Context) => render(ctx));
+	phragon.app.use(async (ctx: Context, next) => {
+		if (!ctx.isBodyEnded) {
+			await render(ctx);
+		}
+		return next();
+	});
 }

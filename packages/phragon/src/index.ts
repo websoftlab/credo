@@ -10,6 +10,7 @@ export {
 } from "./dependencies";
 
 export type {
+	InstallPhragonJSOptions,
 	PhragonPlugin,
 	PhragonConfig,
 	Watch,
@@ -25,3 +26,5 @@ export type {
 	EStat,
 	DaemonSignKill,
 } from "./types";
+
+export type { BuilderI, WebpackBuilderI, RollupBuilderI, PhragonBuilderI } from "./builder";

@@ -1,8 +1,8 @@
-import type { OnPageHook } from "../app";
+import type { OnPageMountHook, OnPageHistoryScrollHook, OnBeforeNavigateHook } from "../app";
 import type { Api } from "@phragon/app";
 import type { ElementType } from "react";
-import type { OnPageHistoryScrollHook } from "../app/types";
-import createEvent from "./createEvent";
+import { createEvent } from "../app/utils";
+import { getHistory } from "./navigator";
 
 type ScrollXY = {
 	x: number;
@@ -26,10 +26,13 @@ function historySave(__scroll?: ScrollXY) {
 	history.replaceState({ ...history.state, __scroll }, document.title);
 }
 
+function define(api: Api<ElementType>, value: boolean) {
+	Object.defineProperty(api, "hasHistoryScroll", { value, writable: false, configurable: false, enumerable: true });
+}
+
 export default function onHistoryScroll(api: Api<ElementType>) {
-	const { history: historyService } = api.services;
-	if (!historyService) {
-		return;
+	if (!api.services.navigator) {
+		return define(api, false);
 	}
 
 	const history = window.history;
@@ -39,8 +42,15 @@ export default function onHistoryScroll(api: Api<ElementType>) {
 
 	let lastMountKey = "";
 
-	function onPageMount(e: OnPageHook & { name: string }) {
-		const key = e.history.location.key;
+	function onBeforeHistoryStateChange(e: OnBeforeNavigateHook & { name: string }) {
+		if (!e.replace) {
+			historySave();
+		}
+	}
+
+	function onPageMount(e: OnPageMountHook & { name: string }) {
+		const historyService = getHistory(e.navigator);
+		const key = historyService.location.key;
 
 		// ignore remount
 		if (!key || key === lastMountKey) {
@@ -49,7 +59,7 @@ export default function onHistoryScroll(api: Api<ElementType>) {
 
 		lastMountKey = key;
 
-		const action = e.history.action;
+		const action = historyService.action;
 		const goTo: ScrollXY = {
 			x: 0,
 			y: 0,
@@ -58,7 +68,7 @@ export default function onHistoryScroll(api: Api<ElementType>) {
 		if (action === "POP") {
 			const xy = history.state?.__scroll;
 			if (xy != null) {
-				if (e.name === "onPageMount") {
+				if (!e.error) {
 					goTo.x = xy.x;
 					goTo.y = xy.y;
 				}
@@ -103,11 +113,8 @@ export default function onHistoryScroll(api: Api<ElementType>) {
 		tick();
 	});
 
-	historyService.block((_, action) => {
-		if (action === "PUSH") {
-			historySave();
-		}
-	});
+	api.subscribe<OnBeforeNavigateHook>("onBeforeHistoryChange", onBeforeHistoryStateChange);
+	api.subscribe<OnPageMountHook>("onPageMount", onPageMount);
 
-	api.subscribe<OnPageHook>(["onPageMount", "onPageError"], onPageMount);
+	define(api, true);
 }

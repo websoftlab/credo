@@ -2,14 +2,6 @@ import createTranslator from "./createTranslator";
 import { reload, load } from "./lexicon";
 import type { Lexicon } from "./types";
 
-function lang(this: LanguageStore, data: Lexicon.Data) {
-	const { id, lexicon, lambda, packages } = data;
-	this.language = id;
-	this.lexicon = lexicon;
-	this.lambda = lambda;
-	this.packages = packages;
-}
-
 export default class LanguageStore implements Lexicon.LanguageStoreInterface {
 	readonly translator!: Lexicon.Translator;
 
@@ -38,15 +30,23 @@ export default class LanguageStore implements Lexicon.LanguageStoreInterface {
 		return alternative == null ? key : alternative;
 	}
 
+	setLanguageData(data: Lexicon.Data) {
+		const { id, lexicon, lambda, packages } = data;
+		this.language = id;
+		this.lexicon = lexicon;
+		this.lambda = lambda;
+		this.packages = packages;
+	}
+
 	*reloadLanguage(id: string) {
 		return reload(id).then((data: Lexicon.Data) => {
-			lang.call(this, data);
+			this.setLanguageData(data);
 		});
 	}
 
 	*loadLanguage(id: string, packageName?: string) {
 		return load(id, packageName).then((data: Lexicon.Data) => {
-			lang.call(this, data);
+			this.setLanguageData(data);
 		});
 	}
 }

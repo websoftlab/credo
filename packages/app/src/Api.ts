@@ -20,11 +20,37 @@ function observe(evn: Evn) {
 	};
 }
 
+async function loader(app: App.StoreInterface, response: Page.Response) {
+	const { $language, $package, $state, ...data } = response.data || {};
+
+	response.data = data;
+
+	// language
+	if ($language && app.language !== $language) {
+		await app.loadLanguage($language);
+	}
+
+	// language package
+	if ($package) {
+		if (Array.isArray($package)) {
+			for (const pg of $package) {
+				await app.loadLanguage(app.language, pg);
+			}
+		} else {
+			await app.loadLanguage(app.language, $package);
+		}
+	}
+
+	// global state
+	app.reload($state || {});
+}
+
 export default class Api<ComponentType, Store = any> implements API.ApiInterface<ComponentType> {
 	title: string = "";
 	ssr: boolean = false;
 	baseUrl: string = "/";
 	services: API.Services;
+	[key: string]: any;
 
 	private _listeners: ListenersData = {};
 
@@ -33,6 +59,7 @@ export default class Api<ComponentType, Store = any> implements API.ApiInterface
 		public app: App.StoreInterface<Store>,
 		public page: Page.StoreInterface<ComponentType>
 	) {
+		page.loader((response) => loader(app, response));
 		this.services = {
 			translator: app.translator,
 			http: page.http,

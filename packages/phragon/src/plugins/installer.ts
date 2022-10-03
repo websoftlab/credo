@@ -1,10 +1,9 @@
+import type { PhragonPlugin, InstallPhragonJSOptions } from "../types";
 import { readdir } from "fs/promises";
-import { newError } from "@phragon/cli-color";
+import { format, newError } from "@phragon/cli-color";
 import {
 	cwdPath,
-	exists,
 	readJsonFile,
-	writeJsonFile,
 	existsStat,
 	createCwdDirectoryIfNotExists,
 	createCwdFileIfNotExists,
@@ -12,14 +11,15 @@ import {
 	resolveFile,
 } from "../utils";
 import JsonFileInstall from "./JsonFileInstall";
-import pluginInstall from "./pluginInstall";
-import { loadAllPlugins, loadPlugin, loadRootPluginOnly } from "./loader";
 import { randomBytes } from "crypto";
-import { debugError, debugInstall } from "../debug";
-import { installDependencies, splitModule } from "../dependencies";
-import createPluginFactory from "./createPluginFactory";
-import type { PhragonPlugin } from "../types";
+import { debug } from "../debug";
+import { installDependencies, packageJson, uninstallDependencies } from "../dependencies";
 import docTypeReference from "./docTypeReference";
+import { Builder, prebuild } from "../builder";
+import semver from "semver/preload";
+import { asyncResult, isPlainObject } from "@phragon/utils";
+import { phragonLexicon, phragonRender } from "../builder/configure";
+import cwdSearchFile from "../utils/cwdSearchFile";
 
 async function createJsonFileInstall() {
 	const fi = new JsonFileInstall();
@@ -36,76 +36,120 @@ function toJSON<T>(value: T) {
 	return JSON.stringify(value, null, 2);
 }
 
-async function installPlugs(fi?: JsonFileInstall, plugins?: PhragonPlugin.Plugin[]) {
+// ---
+
+async function process(
+	fi: JsonFileInstall,
+	options: {
+		file?: string;
+		name: string;
+		version?: string;
+		args?: any[];
+		action: "install" | "update" | "uninstall";
+		message: string;
+	}
+) {
+	const { name, file = `${name}/phragon.config.js`, args = [], version, action, message } = options;
+	let plugin: { install?: Function; uninstall?: Function; update?: Function } | undefined;
+
+	try {
+		plugin = require(file);
+	} catch (err) {
+		if (action === "uninstall") {
+			debug(`Plugin {yellow %s} not found, ignore uninstall...`, name);
+			return fi.transaction(() => {
+				delete fi.plugins[name];
+			});
+		}
+		throw newError("The {yellow %s} plugin not found.", name);
+	}
+
+	await fi.transaction(async () => {
+		const proc = plugin ? plugin[action] : null;
+		let details = {};
+		if (typeof proc === "function") {
+			debug(message);
+			details = await asyncResult(proc(...args));
+		}
+		if (action === "uninstall") {
+			delete fi.plugins[name];
+			await uninstallDependencies(name);
+		} else if (version) {
+			fi.plugins[name] = {
+				version,
+				details: isPlainObject(details) ? details : {},
+			};
+		}
+	});
+}
+
+export async function installPluginProcess(list: PhragonPlugin.Plugin[], fi?: JsonFileInstall) {
 	if (!fi) {
 		fi = await createJsonFileInstall();
 	}
-
-	if (!plugins) {
-		plugins = await loadAllPlugins();
+	if (!fi.installed) {
+		throw newError(`{red Failure.} PhragonJS system not installed!`);
 	}
 
-	const builder = await createPluginFactory(plugins, Object.keys(fi.plugins));
-	for (const plugin of plugins) {
-		await installPlug(plugin, builder, fi);
-	}
-}
+	const names = Object.keys(fi.plugins);
 
-async function installPlug(plugin: PhragonPlugin.Plugin, factory: PhragonPlugin.Factory, fi: JsonFileInstall) {
-	const { name } = plugin;
+	for (const plugin of list) {
+		const { name } = plugin;
+		const index = names.indexOf(name);
+		const file = plugin.joinPath(plugin.root ? "./.phragon/config.js" : "./phragon.config.js");
 
-	const installList: string[] = Object.keys(fi.plugins);
-	if (installList.includes(name)) {
-		return debugInstall(`Plugin {yellow %s} already installed, ignore...`, name);
-	}
-
-	const details: Record<string, any> = {};
-	const department: PhragonPlugin.Department = {
-		get name() {
-			return name;
-		},
-		get plugin() {
-			return plugin;
-		},
-		get<T = any>(key: string, defaultValue?: T): T {
-			return details.hasOwnProperty(key) ? details[key] : defaultValue;
-		},
-		set<T = any>(key: string, value: T) {
-			details[key] = value;
-		},
-		del(key: string) {
-			delete details[key];
-		},
-	};
-
-	debugInstall(`Plugin {yellow %s} installation started...`, name);
-
-	try {
-		await fi.transaction(async () => {
-			await pluginInstall(name, factory, department);
-			installList.push(name);
-			fi.plugins[name] = {
+		if (index === -1) {
+			await process(fi, {
+				file,
+				name,
 				version: plugin.version,
-				details,
-			};
-		});
-	} catch (err) {
-		debugError(`Plugin {yellow %s} installation failure`, name);
-		throw err;
+				action: "install",
+				message: format("Install {yellow %s} plugin", name),
+			});
+		} else {
+			names.splice(index, 1);
+			if (semver.lt(plugin.version, fi.plugins[name].version)) {
+				debug.error(
+					`The installed version of the {yellow %s} plugin is greater than the specified version `,
+					name
+				);
+			} else if (semver.gt(plugin.version, fi.plugins[name].version)) {
+				await process(fi, {
+					file,
+					name,
+					version: plugin.version,
+					action: "update",
+					args: [fi.plugins[name].version, fi.plugins[name].details],
+					message: format(
+						"Update {yellow %s} plugin {cyan %s} -> {cyan %s}",
+						name,
+						fi.plugins[name].version,
+						plugin.version
+					),
+				});
+			}
+		}
 	}
 
-	debugInstall(`Plugin {yellow %s} installation completed`, name);
+	if (names.length > 0) {
+		for (const name of names) {
+			await process(fi, {
+				name,
+				action: "uninstall",
+				args: [fi.plugins[name].version, fi.plugins[name].details],
+				message: format("Uninstall {yellow %s} plugin", name),
+			});
+		}
+	}
 }
 
-// ---
-
-export async function installPhragonJS() {
+export async function installPhragonJS(parameters: InstallPhragonJSOptions) {
 	const fi = await createJsonFileInstall();
 	if (fi.installed) {
-		return debugError(`System already {cyan installed}, exit...`);
+		return debug.error(`System already {cyan installed}, exit...`);
 	}
 
-	debugInstall(`Installation started...`);
+	debug(`Installation started...`);
 
 	const mkdirList: string[] = [];
 	const notEmpty = [".phragon", "dev", "build"];
@@ -126,29 +170,78 @@ export async function installPhragonJS() {
 		}
 	}
 
-	const file = cwdPath("phragon.json");
-	const stat = await existsStat(file);
-	if (!stat) {
-		await createCwdDirectoryIfNotExists("public");
-		await createCwdFileIfNotExists("public/robots.txt", "User-agent: *\nDisallow: /\n");
-		await createCwdFileIfNotExists("phragon.json", () =>
-			toJSON({
-				dependencies: [],
-				public: "./public",
-				options: {
-					renderDriver: false,
-				},
-			})
-		);
-	} else if (!stat.isFile) {
-		throw newError("Path {yellow %s} must be a file", "./phragon.json");
+	// installation options
+	const { render } = parameters;
+	if (render && !["react"].includes(render)) {
+		throw newError("The {cyan %s} render driver is not supported", render);
 	}
-
-	const done = await fi.createTransaction();
 
 	for (const dir of mkdirList) {
 		await createCwdDirectoryIfNotExists(dir);
 	}
+
+	let makeDefault = false;
+
+	const file = await cwdSearchFile("phragon.config.ts");
+	if (!file) {
+		makeDefault = true;
+		await createCwdDirectoryIfNotExists("public");
+		await createCwdFileIfNotExists("public/robots.txt", "User-agent: *\nDisallow: /\n");
+		await createCwdFileIfNotExists(
+			"phragon.config.ts",
+			() =>
+				`import type { BuilderI } from "phragon";
+export default function config(builder: BuilderI) { 
+	builder
+		.phragon${render ? `\n\t\t.render(${toJSON(render)}, true)` : ""}
+		.service("hello", "./src-server/hello-controller")
+		.publicPath("./public"); 
+}\n`
+		);
+		await createCwdFileIfNotExists(
+			"src-server/hello-controller.ts",
+			() =>
+				`import {Context} from "koa";
+export default function() {
+	return {
+		text(ctx: Context) {
+			return ctx.store.translate("hello", "Hi!");
+		},
+		page(ctx: Context) {
+			return {
+				code: 200,
+				data: {
+					title: "PhragonJS",
+					text: ctx.store.translate("hello", "Hi!"),
+				},
+			};
+		},
+	};
+}\n`
+		);
+	}
+
+	const pg = await packageJson();
+	const builder = new Builder(pg.data.name, pg.data.version);
+
+	// load config file
+	await builder.defineConfig(await prebuild());
+
+	const renderConfig = await phragonRender(builder.getStore());
+
+	// check render
+	if (render) {
+		const userRender = renderConfig?.name;
+		if (render !== userRender) {
+			throw newError(
+				"Phragon JSON render driver and install render driver are not equivalent: {yellow %s} != {yellow %s}",
+				userRender || "[no-config-driver]",
+				render
+			);
+		}
+	}
+
+	const done = await fi.createTransaction();
 
 	await createCwdFileIfNotExists(".env", "DEBUG=phragon:*");
 	await docTypeReference(["@phragon/server", "@phragon/types"]);
@@ -190,14 +283,15 @@ export async function installPhragonJS() {
 
 	// lexicon.js(on)?
 	if (!(await cwdSearchExists("config/lexicon", [".js", ".json"]))) {
+		const { language, languages, multilingual } = await phragonLexicon(builder.getStore());
 		await createCwdFileIfNotExists("config/lexicon.json", () =>
 			toJSON({
-				multilingual: false,
-				language: "en",
-				languages: ["en"],
+				multilingual,
+				language,
+				languages,
 			})
 		);
-		await createCwdFileIfNotExists("lexicon/en.json", () =>
+		await createCwdFileIfNotExists(`lexicon/${language}.json`, () =>
 			toJSON({
 				hello: "Hello world!",
 			})
@@ -206,36 +300,16 @@ export async function installPhragonJS() {
 
 	// routes.js(on)?
 	if (!(await cwdSearchExists("config/routes", [".js", ".json"]))) {
-		const routes: Array<{ name: string; responder: string; path: string; controller: string }> = [];
-		const phragonJson = await readJsonFile("./phragon.json");
+		const routes: Array<{ name: string; responder: string | [string, any]; path: string; controller: string }> = [];
 
 		// add hello controller
-		if (
-			!phragonJson.controllers?.hello &&
-			!(await exists("./src-server/hello-controller.ts")) &&
-			!(await exists("./src-server/hello-controller.js"))
-		) {
-			if (!phragonJson.controllers) {
-				phragonJson.controllers = {};
-			}
-			phragonJson.controllers["hello"] = "./src-server/hello-controller";
+		if (makeDefault) {
 			routes.push({
 				name: "hello-world",
-				responder: "text",
+				responder: renderConfig ? ["page", { page: "page" }] : "text",
 				path: "/",
-				controller: "hello",
+				controller: renderConfig ? "hello.page" : "hello.text",
 			});
-			await writeJsonFile("./phragon.json", phragonJson);
-			await createCwdFileIfNotExists(
-				"src-server/hello-controller.ts",
-				() =>
-					`import {Context} from "koa";
-export default function() {
-	return function(ctx: Context) {
-		return ctx.store.translate("hello", "Hi!");
-	};
-}\n`
-			);
 		}
 
 		await createCwdFileIfNotExists("config/routes.json", () =>
@@ -255,10 +329,8 @@ export default function() {
 		"@phragon/responder-static": "latest",
 	};
 
-	const phragonJson = await readJsonFile("./phragon.json");
-
 	// add system page responder
-	if (phragonJson.options?.renderDriver) {
+	if (renderConfig) {
 		dependencies["@phragon/responder-page"] = "latest";
 	}
 
@@ -275,71 +347,19 @@ export default function() {
 
 	await installDependencies({}, (await readJsonFile(phragonPackageJson)).devDependencies || {});
 
-	const packageJson = await readJsonFile("./package.json");
-	if (!packageJson.scripts || Object.keys(packageJson.scripts).length === 0) {
-		packageJson.scripts = {
-			dev: "phragon dev",
-			build: "phragon build",
-			start: "phragon-serv start",
-		};
-		await writeJsonFile("./package.json", packageJson);
+	//const packageJson = await readJsonFile("./package.json");
+	if (!pg.data.scripts || Object.keys(pg.data.scripts).length === 0) {
+		await pg.write({
+			scripts: {
+				dev: "phragon dev",
+				build: "phragon build",
+				start: "phragon-serv start",
+			},
+		});
 	}
 
 	fi.installed = true;
 
 	await done();
-
-	await installPlugs(fi);
-}
-
-export async function installPlugin(module: string) {
-	const fi = await createJsonFileInstall();
-	if (!fi.installed) {
-		throw newError(`{red Failure.} PhragonJS system not installed!`);
-	}
-
-	const { name, version } = splitModule(module);
-	if (fi.has(name)) {
-		return debugError("The {yellow %s} plugin already installed", name);
-	}
-
-	let plugins: PhragonPlugin.Plugin[] = [];
-
-	await fi.transaction(async () => {
-		debugInstall("Check dependencies...");
-
-		plugins = await loadPlugin(module);
-
-		const plugin = plugins.find((m) => m.name === name);
-		if (!plugin) {
-			throw newError(`{red Failure.} The {yellow %s} plugin not found`, name);
-		}
-
-		// root not defined
-		if (!plugins.some((plugin) => plugin.root)) {
-			const root = await loadRootPluginOnly();
-			plugins.unshift(root);
-		}
-
-		const data = await readJsonFile("./phragon.json");
-		if (!data.dependencies) {
-			data.dependencies = [];
-		}
-
-		// add dependency in ./phragon.json file
-		if (!data.dependencies.some((m: string) => splitModule(m).name === name)) {
-			data.dependencies.push(
-				`${name}@${version === "*" || version === "latest" ? `^${plugin.version}` : version}`
-			);
-			await writeJsonFile("./phragon.json", data);
-		}
-	});
-
-	debugInstall(`Installation {cyan %s} plugin started...`, name);
-
-	return installPlugs(fi, plugins);
-}
-
-export async function installAllPlugins() {
-	return installPlugs();
+	await installPluginProcess(builder.pluginList, fi);
 }

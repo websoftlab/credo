@@ -59,7 +59,7 @@ async function run() {
 	await mkDir(join(directory, "src"));
 
 	await mkFile(join(directory, "src/index.ts"), "export {}");
-	await mkFile(join(directory, "global.d.ts"), '/// <reference path="../types/index.d.ts" />');
+	await mkFile(join(directory, "global.d.ts"), '/// <reference path="../types/global.d.ts" />');
 	await mkFile(join(directory, "bundle-version.json"), { version });
 	await mkFile(join(directory, "bundle.json"), {
 		src: [
@@ -117,8 +117,6 @@ $ npm install --save ${name}
 			prettier: "node ../../scripts/lib/build-prettier.js",
 		},
 		dependencies: {},
-		devDependencies: {},
-		peerDependencies: {},
 		exports: {
 			"./": "./build/",
 			".": {

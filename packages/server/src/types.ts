@@ -15,6 +15,7 @@ import type { PhragonJSCmd, OnBuildHook, CommanderCtor } from "./cmd/types";
 import type { RouteManager } from "./route";
 import type { Command } from "@phragon/cli-commander";
 import type { Promisify } from "./helpTypes";
+import type { RedisCache } from "./redis";
 
 export type EnvMode = "development" | "production";
 
@@ -56,7 +57,7 @@ export interface PhragonJSGlobal {
 	multilingual: boolean;
 	env: Env;
 	services: PhragonServices;
-	cache?: any;
+	cache?: RedisCache;
 	worker?: WorkerCluster;
 	workerData?: Worker.Data;
 	process?: PType;
@@ -117,7 +118,7 @@ export type Env = Record<string, EnvVar> & {
 };
 
 export interface ConfigHandler {
-	<T extends object = any>(name: string, def?: Partial<T>): T;
+	<T extends object = any>(name: string, def?: Partial<T>, env?: Env): T;
 	(name: "redis", def?: Partial<Config.Redis>): Config.Redis;
 	(name: "koa/body-parser", def?: Partial<Config.KoaBodyParser>): Config.KoaBodyParser;
 	(name: "koa/session", def?: Partial<Config.KoaSession>): Config.KoaSession;
@@ -195,10 +196,7 @@ export namespace Server {
 		subscribe(action: "onBuild", event: HookListener<OnBuildHook, "onBuild">): HookUnsubscribe;
 		subscribe(action: "onLoad", event: HookListener<OnLoadHook, "onLoad">): HookUnsubscribe;
 		subscribe(action: "onBoot", event: HookListener<OnBootHook, "onBoot">): HookUnsubscribe;
-		subscribe(
-			action: "onMakeURLServer",
-			event: HookListener<OnMakeURLServerHook, "onMakeURLServer">
-		): HookUnsubscribe;
+		subscribe(action: "onMakeURL", event: HookListener<OnMakeURLServerHook, "onMakeURL">): HookUnsubscribe;
 		subscribe(action: "onAppState", event: HookListener<OnAppStateHook, "onAppState">): HookUnsubscribe;
 		subscribe(action: "onResponse", event: HookListener<OnResponseHook, "onResponse">): HookUnsubscribe;
 		subscribe(
@@ -223,7 +221,7 @@ export namespace Server {
 		once(action: "onBuild", event: HookListener<OnBuildHook, "onBuild">): HookUnsubscribe;
 		once(action: "onLoad", event: HookListener<OnLoadHook, "onLoad">): HookUnsubscribe;
 		once(action: "onBoot", event: HookListener<OnBootHook, "onBoot">): HookUnsubscribe;
-		once(action: "onMakeURLServer", event: HookListener<OnMakeURLServerHook, "onMakeURLServer">): HookUnsubscribe;
+		once(action: "onMakeURL", event: HookListener<OnMakeURLServerHook, "onMakeURL">): HookUnsubscribe;
 		once(action: "onAppState", event: HookListener<OnAppStateHook, "onAppState">): HookUnsubscribe;
 		once(action: "onResponse", event: HookListener<OnResponseHook, "onResponse">): HookUnsubscribe;
 		once(action: "onResponseRoute", event: HookListener<OnResponseRouteHook, "onResponseRoute">): HookUnsubscribe;
@@ -242,7 +240,7 @@ export namespace Server {
 		emit(action: "onBuild", event: OnBuildHook): Promise<void>;
 		emit(action: "onLoad", event: OnLoadHook): Promise<void>;
 		emit(action: "onBoot", event: OnBootHook): Promise<void>;
-		emit(action: "onMakeURLServer", event: OnMakeURLServerHook): Promise<void>;
+		emit(action: "onMakeURL", event: OnMakeURLServerHook): Promise<void>;
 		emit(action: "onAppState", event: OnAppStateHook): Promise<void>;
 		emit(action: "onResponse", event: OnResponseHook): Promise<void>;
 		emit(action: "onResponseRoute", event: OnResponseRouteHook): Promise<void>;
@@ -301,7 +299,7 @@ export namespace RouteConfig {
 
 	export type ExtraMiddlewareType<MProps = any> = string | [string, MProps] | [null, string];
 
-	export type NRPCType<RProps = any, CProps = any, Details = any> =
+	export type NRCPType<RProps = any, CProps = any, Details = any> =
 		| string
 		| [string, RProps]
 		| [string, RProps, CProps]
@@ -332,28 +330,28 @@ export namespace RouteConfig {
 		| PathPattern;
 
 	export type Route =
-		| NRPCType
+		| NRCPType
 		| (RouteBase & {
 				method?: Method;
 				name?: string;
 				responder?: string | [string, any];
 				path?: Path;
-				controller: Controller;
+				controller?: Controller;
 		  })
 		| (RouteBase & {
-				nrpc: string; // [method:]name@responder[|path|controller]
+				nrcp: string; // [method:]name@responder[|path|controller]
 		  });
 
 	export type EmptyRoute =
-		| NRPCType
+		| NRCPType
 		| (Omit<RouteBase, "routes" | "group"> & {
 				method?: Method;
 				name?: string;
 				responder?: string | [string, any];
-				controller: Controller;
+				controller?: Controller;
 		  })
 		| (Omit<RouteBase, "routes" | "group"> & {
-				nrpc: NRPCType;
+				nrcp: NRCPType;
 		  });
 
 	export type Cache = boolean | number | "body" | "controller" | Partial<Route.CacheOptions>;
@@ -366,7 +364,8 @@ export namespace RouteConfig {
 
 export namespace Route {
 	export type MatchToPath<Params extends { [K in keyof Params]?: string } = {}> = (
-		params?: Params
+		params: Params | undefined,
+		ctx: Koa.Context
 	) => Promisify<string>;
 
 	export type Match<Params extends { [K in keyof Params]?: string } = {}> = (

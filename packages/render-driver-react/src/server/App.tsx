@@ -1,29 +1,28 @@
 import React from "react";
-import { StaticRouter } from "react-router-dom";
+import StaticRouter from "./StaticRouter";
 import { Head } from "../head";
 import { ApiContext, Loader } from "../app";
 import { CaptureContext } from "../loadable";
 import type { API } from "@phragon/app";
-import type { HeadTag } from "@phragon/html-head";
+import type { HeadTagWithKey } from "@phragon/html-head";
 import type { ElementType } from "react";
 
 export default function App(props: {
 	api: API.ApiInterface<ElementType>;
-	context: any;
 	location: string;
-	headTags: HeadTag[];
+	headTags: HeadTagWithKey[];
 	loadableContext: string[];
 }) {
-	const { api, context, location = "/", headTags, loadableContext } = props;
+	const { api, location = "/", headTags, loadableContext } = props;
 	const { page } = api;
 	return (
 		<ApiContext.Provider value={api}>
 			<CaptureContext.Provider value={loadableContext}>
-				<Head headTags={headTags}>
-					<StaticRouter location={location} context={context}>
+				<StaticRouter location={location}>
+					<Head server headTags={headTags}>
 						<Loader page={page} onMount={() => {}} />
-					</StaticRouter>
-				</Head>
+					</Head>
+				</StaticRouter>
 			</CaptureContext.Provider>
 		</ApiContext.Provider>
 	);

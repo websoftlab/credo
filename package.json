@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "build": "lerna run build",
+    "prettier": "lerna run prettier",
     "bootstrap": "lerna bootstrap",
     "prebuild:scripts": "rimraf ./scripts/lib",
     "build:scripts": "tsc -p ./scripts/tsconfig.json",
@@ -55,7 +56,10 @@
       "> 1%"
     ],
     "node": [
-      "node 12"
+      "node 14"
     ]
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 }

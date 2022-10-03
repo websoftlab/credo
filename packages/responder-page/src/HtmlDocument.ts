@@ -31,6 +31,12 @@ export default class HtmlDocument {
 	get noscriptBanner(): string | null {
 		return drv(this).noscriptBanner;
 	}
+	get viewport(): string | null {
+		return drv(this).viewport;
+	}
+	get autoMetaTags(): string[] {
+		return drv(this).autoMetaTags;
+	}
 	get getQueryId(): string {
 		return drv(this).getQueryId;
 	}
@@ -64,6 +70,12 @@ export default class HtmlDocument {
 	}
 	set noscriptBanner(value: string | null) {
 		drv(this).noscriptBanner = value;
+	}
+	set viewport(value: string | null) {
+		drv(this).viewport = value;
+	}
+	set autoMetaTags(value: string[]) {
+		drv(this).autoMetaTags = value;
 	}
 	set getQueryId(value: string) {
 		drv(this).getQueryId = value;

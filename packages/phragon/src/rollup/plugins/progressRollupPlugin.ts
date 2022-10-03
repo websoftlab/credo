@@ -1,46 +1,51 @@
 import { localPathName } from "../../utils";
-import { debugBuild } from "../../debug";
+import { debug } from "../../debug";
 import type { Plugin } from "rollup";
 import type { BuildConfigure } from "../../types";
 
-export default function progressRollupPlugin(conf: BuildConfigure) {
-	const progress = {
+export default function progressRollupPlugin(_conf: BuildConfigure) {
+	const waiter = debug.wait("serve");
+	const stat = {
 		total: 0,
 		loaded: 0,
 	};
 
-	function debug(message: string) {
-		if (conf.debug) {
-			conf.debug(message);
+	function send(message: string, progress: number | null = null, done: boolean = false) {
+		if (done) {
+			if (waiter.opened) {
+				waiter.end(message || "End build");
+			}
 		} else {
-			debugBuild(message);
+			waiter.write(message);
+			if (progress != null) {
+				waiter.progress = progress;
+			}
 		}
 	}
 
 	return <Plugin>{
 		name: "progress",
 		load() {
-			progress.loaded += 1;
+			stat.loaded += 1;
 		},
 		watchChange(id) {
 			const file = localPathName(id);
 			if (!file.includes(":")) {
-				debug(`change watch: ${file}`);
+				send(`change watch: ${file}`);
 			}
 		},
 		buildStart() {
-			debug("[status build] start build");
+			send("Start build", 0);
 		},
 		buildEnd(err) {
+			send("End build", null, true);
 			if (err) {
-				debug(`[status error] build failure: ${err.message}`);
-			} else {
-				debug("[status build] end build");
+				debug.error(`[status error] build failure: ${err.message}`);
 			}
 		},
 		generateBundle() {
-			progress.total = progress.loaded;
-			progress.loaded = 0;
+			stat.total = stat.loaded;
+			stat.loaded = 0;
 		},
 		transform(_code: string, id: string) {
 			const file = localPathName(id);
@@ -48,19 +53,20 @@ export default function progressRollupPlugin(conf: BuildConfigure) {
 				return;
 			}
 
-			let output = "";
+			let progress = 0;
+			let text: string;
 
-			if (progress.total > 0) {
-				if (progress.total < progress.loaded) {
-					progress.loaded = progress.total;
+			if (stat.total > 0) {
+				text = `${stat.loaded} / ${stat.total}: ${file}`;
+				if (stat.total < stat.loaded) {
+					stat.loaded = stat.total;
 				}
-				output += `[progress ${Math.round((100 * progress.loaded) / progress.total)}%] `;
-				output += `${progress.loaded} / ${progress.total}: `;
+				progress = stat.loaded / stat.total;
 			} else {
-				output += `[status wait] ${progress.loaded}: `;
+				text = `${stat.loaded}: ${file}`;
 			}
 
-			debug(output + file);
+			send(text, progress);
 		},
 	};
 }

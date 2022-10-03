@@ -1,5 +1,5 @@
 import { cwdPath, exists, readJsonFile, writeJsonFile } from "../utils";
-import { debugError } from "../debug";
+import { debug } from "../debug";
 
 type JsonFileInstallData = {
 	installed: boolean;
@@ -7,7 +7,8 @@ type JsonFileInstallData = {
 	time: number;
 	lastError: string | null;
 	lastDuration: number;
-	plugins: Record<string, any>;
+	hash?: string;
+	plugins: Record<string, { version: string; details: any }>;
 };
 
 const jsonFileInstallPath = cwdPath("phragon.json.install");
@@ -116,7 +117,7 @@ export default class JsonFileInstall {
 			process.off("exit", listener);
 
 			return update(time).catch((err) => {
-				debugError("{yellow %s} write failure", "./phragon.json.install", err);
+				debug.error("{yellow %s} write failure", "./phragon.json.install", err);
 			});
 		};
 

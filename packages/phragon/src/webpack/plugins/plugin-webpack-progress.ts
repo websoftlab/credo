@@ -1,31 +1,15 @@
 import type { BuildConfigure } from "../../types";
 import webpack from "webpack";
-import { debugBuild } from "../../debug";
+import { debug } from "../../debug";
 
 const ProgressPlugin = webpack.ProgressPlugin;
 
 export default function (conf: BuildConfigure) {
-	let wait = true;
-	function debug(text: string) {
-		if (conf.debug) {
-			conf.debug(text);
-		} else {
-			debugBuild(text);
-		}
-	}
-
+	const waiter = debug.wait(conf.type === "client" ? "web" : "web-ssr");
 	return new ProgressPlugin((percentage: number, msg: string, ...args: string[]) => {
-		let text = "";
-
 		if (percentage < 1) {
-			// set status
-			if (wait) {
-				wait = false;
-				debug("[status wait]");
-			}
-
 			let [current, active, modulePath] = args;
-			text += `[progress ${(percentage * 100).toFixed(0)}%] ${msg}`;
+			let text = msg || "webpack";
 			if (current) {
 				text += ` ${current}`;
 			}
@@ -35,15 +19,15 @@ export default function (conf: BuildConfigure) {
 			if (modulePath) {
 				text += ` …${modulePath.substring(modulePath.length - 30)}`;
 			}
-		} else if (percentage === 1) {
-			text += `[status complete] Webpack complete.`;
-			wait = true;
-		} else if (msg) {
-			text += msg;
-		} else {
-			return;
-		}
 
-		debug(text);
+			waiter.write(text);
+			waiter.progress = percentage;
+		} else if (percentage === 1) {
+			if (waiter.opened) {
+				waiter.end("End build");
+			}
+		} else if (msg) {
+			debug(msg);
+		}
 	});
 }

@@ -1,20 +1,22 @@
 import type { ReactNode } from "react";
-import type { HeadTag } from "@phragon/html-head";
+import type { HeadTagWithKey } from "@phragon/html-head";
 import { useLayoutEffect, createElement, Fragment } from "react";
 import { Provider, useHeadContext } from "./context";
 import { HeadManager, clearHeadDOMTags } from "@phragon/html-head";
+import { __isWeb__ } from "@phragon/utils";
 
 export interface HeadProps {
 	children: ReactNode | ReactNode[];
-	headTags?: HeadTag[];
+	server?: boolean;
+	headTags?: HeadTagWithKey[];
 }
 
 export default function Head(props: HeadProps) {
-	const { children, headTags = [] } = props;
+	const { children, server = false, headTags = [] } = props;
 	const parent = useHeadContext();
-	const ctx: HeadManager = parent || new HeadManager(headTags);
+	const ctx: HeadManager = parent || new HeadManager(server, headTags);
 
-	if (__WEB__) {
+	if (__isWeb__()) {
 		useLayoutEffect(() => {
 			if (!parent) {
 				clearHeadDOMTags();
@@ -23,8 +25,12 @@ export default function Head(props: HeadProps) {
 	}
 
 	if (parent) {
-		return createElement(Fragment, null, children);
+		return createElement(Fragment, { children });
 	}
 
-	return createElement(Provider, { value: ctx }, children);
+	// set status - false for all meta
+	// but without rerender
+	ctx.reset();
+
+	return createElement(Provider, { value: ctx, children });
 }

@@ -1,13 +1,19 @@
 import React from "react";
-import { Router } from "react-router-dom";
-import { observe } from "mobx";
+import { reaction } from "mobx";
 import { Head } from "../head";
-import { ApiContext, Loader } from "../app";
+import { ApiContext, Loader, Router } from "../app";
+import { getHistory } from "./navigator";
 import type { MutableRefObject, ElementType } from "react";
-import type { Action, History, Location } from "history";
 import type { Lambda } from "mobx";
 import type { API } from "@phragon/app";
-import type { OnAppMountHook, OnLocationChangeHook, OnPageHook, OnPageTitleHook } from "../app";
+import type {
+	Navigator,
+	OnAppMountHook,
+	OnLocationChangeHook,
+	OnPageMountHook,
+	OnPageErrorHook,
+	OnPageTitleHook,
+} from "../app";
 
 const initialId: symbol = Symbol();
 
@@ -26,21 +32,34 @@ function hookPageTitle(api: API.ApiInterface<ElementType>, pid: MutableRefObject
 	}
 }
 
-export default function App(props: { api: API.ApiInterface<ElementType>; history: History }) {
-	const { api, history } = props;
+export default function App(props: { api: API.ApiInterface<ElementType>; navigator: Navigator }) {
+	const { api, navigator } = props;
 	const { app, page } = api;
 	const pid = React.useRef<symbol>(initialId);
 	const pgt = React.useRef<string>("");
+	const history = getHistory(navigator);
+
+	const [state, setState] = React.useState({
+		action: history.action,
+		location: history.location,
+	});
+
+	React.useLayoutEffect(() => history.listen(setState), [history]);
 
 	// page mount & error
 	const onMount = () => {
 		if (pid.current !== page.id) {
 			pid.current = page.id;
-			const { error, response } = page;
-			if (error) {
-				api.emit<OnPageHook>("onPageError", { page, history });
-			} else if (response) {
-				api.emit<OnPageHook>("onPageMount", { page, history });
+			const { error } = page;
+			if (error || page.response) {
+				const { location, action } = getHistory(navigator);
+				api.emit<OnPageMountHook>("onPageMount", { navigator, location, action, page, error });
+				if (error) {
+					api.emit<OnPageErrorHook>("onPageError", {
+						code: page.code,
+						message: page.errorMessage || app.translate("system.errors.unknown", "Unknown error"),
+					});
+				}
 			}
 		}
 	};
@@ -54,30 +73,33 @@ export default function App(props: { api: API.ApiInterface<ElementType>; history
 
 		// change page title
 		unmount.push(
-			observe(page, "title", () => {
-				hookPageTitle(api, pgt);
-			})
+			reaction(
+				() => page.title,
+				() => {
+					hookPageTitle(api, pgt);
+				}
+			)
 		);
 
 		// history change
 		unmount.push(
-			history.listen((location: Location, action: Action) => {
-				api.emit<OnLocationChangeHook>("onLocationChange", { location, action });
+			history.listen(({ location, action }) => {
+				api.emit<OnLocationChangeHook>("onLocationChange", { navigator, location, action });
 			})
 		);
 
 		return () => {
 			unmount.forEach((func) => func());
 		};
-	}, []);
+	}, [navigator, api, app, page]);
 
 	return (
 		<ApiContext.Provider value={api}>
-			<Head>
-				<Router history={history}>
+			<Router location={state.location} navigationType={state.action} navigator={navigator}>
+				<Head>
 					<Loader page={page} onMount={onMount} />
-				</Router>
-			</Head>
+				</Head>
+			</Router>
 		</ApiContext.Provider>
 	);
 }

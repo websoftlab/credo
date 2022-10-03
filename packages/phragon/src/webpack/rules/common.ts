@@ -3,7 +3,7 @@ import { existsStat } from "../../utils";
 import type { BuildRule } from "../types";
 import type { BuildConfigure } from "../../types";
 
-function createExtensions(extensions: string[], renderDriverExtensions?: string[]) {
+export function createExtensions(extensions: string[], renderDriverExtensions?: string[]) {
 	if (renderDriverExtensions) {
 		for (let ext of renderDriverExtensions) {
 			const m = ext.match(/^\.([a-z]+)$/);
@@ -20,9 +20,7 @@ function createExtensions(extensions: string[], renderDriverExtensions?: string[
  */
 async function typescriptRule(config: BuildConfigure): Promise<BuildRule> {
 	const {
-		factory: {
-			options: { renderDriver },
-		},
+		factory: { render },
 	} = config;
 	const options: any = {
 		transpileOnly: true,
@@ -35,14 +33,14 @@ async function typescriptRule(config: BuildConfigure): Promise<BuildRule> {
 
 	if (stat && stat.isFile) {
 		options.configFile = stat.file;
-	} else if (renderDriver?.name === "react") {
+	} else if (render?.name === "react") {
 		options.compilerOptions = {
 			jsx: "react-jsx",
 		};
 	}
 
 	return config.fireOnOptionsHook("module.rule.typescript", {
-		test: createExtensions(["ts"], renderDriver?.extensions?.typescript),
+		test: createExtensions(["ts"], render?.extensions?.typescript),
 		loader: "ts-loader",
 		options,
 		exclude: /node_modules/,
@@ -54,12 +52,10 @@ async function typescriptRule(config: BuildConfigure): Promise<BuildRule> {
  */
 async function javascriptRule(config: BuildConfigure): Promise<BuildRule> {
 	const {
-		factory: {
-			options: { renderDriver },
-		},
+		factory: { render },
 	} = config;
 	return config.fireOnOptionsHook("module.rule.javascript", {
-		test: createExtensions(["js"], renderDriver?.extensions?.javascript),
+		test: createExtensions(["js"], render?.extensions?.javascript),
 		use: [await babelLoader(config)],
 		exclude: /node_modules/,
 	});

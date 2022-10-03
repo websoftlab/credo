@@ -8,12 +8,12 @@
 		"prettier": "node ../../scripts/lib/build-prettier.js"
 	},
 	"dependencies": {
-		"mobx": "^6.3.2"
+		"mobx": "^6.4.0"
 	},
 	"devDependencies": {},
 	"peerDependencies": {},
 	"exports": {
-		"./": "./src/",
+		"./": "./build/",
 		".": {
 			"require": "./build/index.js"
 		}

@@ -1,6 +1,6 @@
 import type { Env, EnvVar } from "./types";
 
-const base64Regex = /^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$/;
+const base64Regex = /^([A-Za-z\d+/]{4})*([A-Za-z\d+/]{4}|[A-Za-z\d+/]{3}=|[A-Za-z\d+/]{2}==)$/;
 const accessors: Record<string, (value: any, ...args: any[]) => any> = {
 	toArray(value, delimiter = ",") {
 		if (Array.isArray(value)) {
@@ -153,26 +153,38 @@ function getEnv(value: any, keyName: string): EnvVar {
 	let defaultValue: any = undefined;
 	let isRequired = false;
 	let isBase64 = false;
+	let isBase64Calc = false;
 	let isMap = false;
+
+	function base64(val: any) {
+		if (!isBase64 || isBase64Calc) {
+			return val;
+		}
+		if (typeof val !== "string" || !val.match(base64Regex)) {
+			throw new Error(
+				`should be a valid base64 string if using convertFromBase64 for the (${keyName}) ENV variable`
+			);
+		}
+		val = Buffer.from(value, "base64").toString();
+		isBase64Calc = true;
+		return val;
+	}
 
 	const result = {
 		get originValue() {
 			return value;
 		},
 		get value() {
-			let val = isNil() ? defaultValue : format;
-
-			if (isRequired && (val == null || (typeof val === "string" && val.trim().length === 0))) {
-				throw new Error(`is a required ENV variable (${keyName}), but its value was empty`);
+			if (isNil()) {
+				format = defaultValue;
+				defaultValue = undefined;
+			} else if (isBase64) {
+				format = base64(format);
 			}
 
-			if (isBase64) {
-				if (typeof val !== "string" || !val.match(base64Regex)) {
-					throw new Error(
-						`should be a valid base64 string if using convertFromBase64 for the (${keyName}) ENV variable`
-					);
-				}
-				val = Buffer.from(value, "base64").toString();
+			let val: any = format;
+			if (isRequired && (val == null || (typeof val === "string" && val.trim().length === 0))) {
+				throw new Error(`is a required ENV variable (${keyName}), but its value was empty`);
 			}
 
 			if (isMap) {
@@ -210,6 +222,8 @@ function getEnv(value: any, keyName: string): EnvVar {
 		if (isNil()) {
 			format = defaultValue;
 			defaultValue = undefined;
+		} else if (isBase64) {
+			format = base64(format);
 		}
 		if (isMap) {
 			isMap = false;

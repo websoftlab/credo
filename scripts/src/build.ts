@@ -155,6 +155,7 @@ async function run() {
 		// remove nextVersion
 		await writeJsonFile<BundleVersionJson>(pg.cwdPath("bundle-version.json"), {
 			version: pg.nextVersion,
+			ignoreChannel: pg.ignoreChannel,
 			release: pg.release,
 		});
 	}

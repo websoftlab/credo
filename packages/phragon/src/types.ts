@@ -1,7 +1,12 @@
 import type { InputOptions, OutputOptions } from "rollup";
 import type { Configuration } from "webpack";
-import { RollupWatcher } from "rollup";
-import { ChildProcessByStdio } from "child_process";
+import type { RollupWatcher } from "rollup";
+import type { ChildProcessByStdio } from "child_process";
+import type Builder from "./builder/Builder";
+
+export interface InstallPhragonJSOptions {
+	render?: string;
+}
 
 export type BuildMode = "production" | "development";
 
@@ -44,8 +49,7 @@ export type RollupConfigure = InputOptions & { output: OutputOptions };
 export interface BuildOptions {
 	mode: BuildMode;
 	factory: PhragonPlugin.Factory;
-	cluster?: PhragonPlugin.RootClusterOptions;
-	progressLine: boolean;
+	cluster?: PhragonPlugin.ClusterOptions;
 }
 
 export interface BuildConfigureOptions extends Partial<Configure>, Omit<BuildOptions, "mode"> {
@@ -92,13 +96,6 @@ export declare namespace Watch {
 		port?: number;
 		ssr?: boolean;
 		cluster?: string;
-		noBoard?: boolean;
-	}
-
-	export interface DebugEvent {
-		message: string;
-		error?: boolean;
-		context?: string;
 	}
 
 	export interface Serve {
@@ -106,14 +103,13 @@ export declare namespace Watch {
 		child: ChildProcessByStdio<any, any, any> | null;
 		factory: PhragonPlugin.Factory | null;
 
-		readonly progress: boolean;
 		readonly port: number;
 		readonly devPort: number;
 		readonly host: string;
 		readonly devHost: string;
 		readonly ssr: boolean;
 		readonly clusterId: string | null;
-		readonly cluster?: PhragonPlugin.RootClusterOptions | undefined;
+		readonly cluster?: PhragonPlugin.ClusterOptions | undefined;
 		readonly started: boolean;
 
 		start(): Promise<boolean>;
@@ -121,7 +117,6 @@ export declare namespace Watch {
 		stop(): Promise<boolean>;
 
 		on(name: "error", listener: (error: Error) => void): this;
-		on(name: "debug", listener: (event: DebugEvent) => void): this;
 		on(name: "stop", listener: () => void): this;
 		on(name: "onBeforeBuild", listener: () => void): this;
 		on(name: "build", listener: () => void): this;
@@ -129,7 +124,6 @@ export declare namespace Watch {
 		on(name: "start", listener: () => void): this;
 
 		once(name: "error", listener: (error: Error) => void): this;
-		once(name: "debug", listener: (event: DebugEvent) => void): this;
 		once(name: "stop", listener: () => void): this;
 		once(name: "onBeforeBuild", listener: () => void): this;
 		once(name: "build", listener: () => void): this;
@@ -137,7 +131,6 @@ export declare namespace Watch {
 		once(name: "start", listener: () => void): this;
 
 		addListener(name: "error", listener: (error: Error) => void): this;
-		addListener(name: "debug", listener: (event: DebugEvent) => void): this;
 		addListener(name: "stop", listener: () => void): this;
 		addListener(name: "onBeforeBuild", listener: () => void): this;
 		addListener(name: "build", listener: () => void): this;
@@ -145,7 +138,6 @@ export declare namespace Watch {
 		addListener(name: "start", listener: () => void): this;
 
 		off(name: "error", listener: (error: Error) => void): this;
-		off(name: "debug", listener: (event: DebugEvent) => void): this;
 		off(name: "stop", listener: () => void): this;
 		off(name: "onBeforeBuild", listener: () => void): this;
 		off(name: "build", listener: () => void): this;
@@ -153,7 +145,6 @@ export declare namespace Watch {
 		off(name: "start", listener: () => void): this;
 
 		removeListener(name: "error", listener: (error: Error) => void): this;
-		removeListener(name: "debug", listener: (event: DebugEvent) => void): this;
 		removeListener(name: "stop", listener: () => void): this;
 		removeListener(name: "onBeforeBuild", listener: () => void): this;
 		removeListener(name: "build", listener: () => void): this;
@@ -161,7 +152,6 @@ export declare namespace Watch {
 		removeListener(name: "start", listener: () => void): this;
 
 		emit(name: "error", error: Error): boolean;
-		emit(name: "debug", event: string | Error | DebugEvent): boolean;
 		emit(name: "stop"): boolean;
 		emit(name: "onBeforeBuild"): boolean;
 		emit(name: "build"): boolean;
@@ -169,7 +159,6 @@ export declare namespace Watch {
 		emit(name: "start"): boolean;
 
 		removeAllListeners(name: "error"): this;
-		removeAllListeners(name: "debug"): this;
 		removeAllListeners(name: "stop"): this;
 		removeAllListeners(name: "onBeforeBuild"): this;
 		removeAllListeners(name: "build"): this;
@@ -187,59 +176,31 @@ export declare namespace PhragonConfig {
 				options?: any; // undefined
 		  };
 
-	export interface FileJSON {
-		dependencies?: string[];
-		bootloader?: Handler;
-		bootstrap?: Handler;
-		middleware?: Handler[];
-		extraMiddleware?: Record<string, Handler>;
-		responders?: Record<string, Handler>;
-		cmd?: Record<string, Handler>;
-		public?: string | true; // true eq "./public"
-		lexicon?: string | true; // true eq "./lexicon"
-		config?: string | true; // true eq "./config"
-		services?: Record<string, Handler>;
-		controllers?: Record<string, Handler>;
-		hooks?: Record<string, Handler>;
-	}
-
-	export interface RootCluster {
+	export interface Cluster {
 		id: string;
 		mode?: "app" | "cron";
 		count?: number;
 		ssr?: boolean;
-		public?: string;
-		bootstrap?: Handler;
-		bootloader?: Handler;
+		publicPath?: string;
+		render?: boolean;
+		renderOptions?: any;
 		env?: Record<string, string>;
 	}
 
-	type RootLexiconExcludeInclude = string | { name: string; type?: "lambda" | "data" | "all" };
+	type LexiconExcludeInclude = string | { name: string; type?: "lambda" | "data" | "all" };
 
-	export interface RootLexicon {
-		language: string;
+	export interface Lexicon {
+		language?: string;
 		languages?: string[];
 		multilingual?: boolean;
-		exclude?: RootLexiconExcludeInclude[];
-		include?: RootLexiconExcludeInclude[];
+		exclude?: LexiconExcludeInclude[];
+		include?: LexiconExcludeInclude[];
 		route?: {
 			method?: string;
 			path: string;
 			service: string;
 		};
 		packages?: string[];
-	}
-
-	export interface Root {
-		clusters?: RootCluster[];
-		ssr?: boolean;
-		lexicon?: RootLexicon;
-		configLoaders?: Record<string, Handler>;
-		renderDriver?: string | false;
-	}
-
-	export interface FileJSONRoot extends FileJSON {
-		options?: Root;
 	}
 }
 
@@ -268,10 +229,36 @@ export declare namespace PhragonPlugin {
 		hooks?: Hooks;
 	}
 
+	export interface RenderPage {
+		path: string;
+		ssr: boolean;
+	}
+
 	export interface Factory {
+		readonly builder: Builder;
 		readonly root: Plugin;
-		readonly options: RootOptions;
+		readonly renderPlugin: Plugin | null;
 		readonly plugins: Plugin[];
+		readonly lexicon: LexiconOptions;
+		readonly cluster: ClusterOptions[];
+		readonly render: RenderDriver | null;
+		readonly renderOptions: any;
+		readonly page: ConfigType<"render", RenderPage> | null;
+		readonly components: ConfigType<"components", Record<string, Handler>>;
+		readonly cmd: ConfigType<"cmd", HandlerOptional, { name: string }>[];
+		readonly configLoader: ConfigType<"loader", HandlerOptional, { type: string }>[];
+		readonly extraMiddleware: ConfigType<"middleware", HandlerOptional, { name: string }>[];
+		readonly middleware: ConfigType<"middleware", HandlerOptional>[];
+		readonly responder: ConfigType<"responder", HandlerOptional, { name: string }>[];
+		readonly controller: ConfigType<"controller", HandlerOptional, { name: string }>[];
+		readonly service: ConfigType<"service", HandlerOptional, { name: string }>[];
+		readonly publicPath: ConfigType<"path", string, { relativePath: string }>[];
+		readonly daemon: DaemonOptions | null;
+		readonly ssr: boolean;
+		readonly bootstrap: ConfigType<"bootstrap", Handler>[];
+		readonly bootloader: ConfigType<"bootloader", Handler>[];
+
+		buildTimeout: string | null;
 
 		plugin(name: string): Plugin | null;
 		installed(name: string): boolean;
@@ -284,32 +271,31 @@ export declare namespace PhragonPlugin {
 		): void;
 		on(
 			name: "onWebpackConfigure",
-			listener: (config: WebpackConfigure, options: BuildConfigure) => void | Promise<void>
+			listener: (event: { rollup: RollupConfigure; config: BuildConfigure }) => void | Promise<void>
 		): void;
 		on(
 			name: "onRollupConfigure",
-			listener: (config: RollupConfigure, options: BuildConfigure) => void | Promise<void>
+			listener: (event: { rollup: RollupConfigure; config: BuildConfigure }) => void | Promise<void>
 		): void;
 		on<T = any>(
 			name: "onOptions",
-			listener: (event: { name: string; option: T }, options: BuildConfigure) => void | Promise<void>
+			listener: (event: { name: string; option: T; config: BuildConfigure }) => void | Promise<void>
 		): void;
 
-		off(name: "onBuild", listener?: Function): void;
-		off(name: "onInstall", listener?: Function): void;
-		off(name: "onWebpackConfigure", listener?: Function): void;
-		off(name: "onRollupConfigure", listener?: Function): void;
-		off(name: "onOptions", listener?: Function): void;
+		off(name: "onBuild", listener: Function): void;
+		off(name: "onInstall", listener: Function): void;
+		off(name: "onWebpackConfigure", listener: Function): void;
+		off(name: "onRollupConfigure", listener: Function): void;
+		off(name: "onOptions", listener: Function): void;
 
 		fireHook(name: "onBuild", options: Factory): Promise<void>;
 		fireHook(name: "onInstall", options: { name: string; factory: Factory; department: Department }): Promise<void>;
-		fireHook(name: "onWebpackConfigure", config: WebpackConfigure, options: BuildConfigure): Promise<void>;
-		fireHook(name: "onRollupConfigure", config: RollupConfigure, options: BuildConfigure): Promise<void>;
-		fireHook<T = any>(
-			name: "onOptions",
-			event: { name: string; option: T },
-			options: BuildConfigure
+		fireHook(
+			name: "onWebpackConfigure",
+			event: { webpack: WebpackConfigure; config: BuildConfigure }
 		): Promise<void>;
+		fireHook(name: "onRollupConfigure", event: { rollup: RollupConfigure; config: BuildConfigure }): Promise<void>;
+		fireHook<T = any>(name: "onOptions", event: { name: string; option: T; config: BuildConfigure }): Promise<void>;
 	}
 
 	export interface Department {
@@ -326,32 +312,30 @@ export declare namespace PhragonPlugin {
 		onInstall?(options: { name: string; factory: Factory; department: Department }): void | Promise<void>;
 		onWebpackConfigure?(config: WebpackConfigure, options: BuildConfigure): void | Promise<void>;
 		onRollupConfigure?(config: RollupConfigure, options: BuildConfigure): void | Promise<void>;
-		onOptions?<T = any>(event: { name: string; option: T }, options: BuildConfigure): void | Promise<void>;
+		onOptions?<T = any>(event: { name: string; option: T; config: BuildConfigure }): void | Promise<void>;
 	}
 
 	export type HooksEvent = keyof Hooks;
 	export type HooksBundleEvent = "onWebpackConfigure" | "onRollupConfigure";
 
-	interface BaseOptions {
-		pages: string | false;
-		components?: Record<string, string>;
+	export interface ClusterOptions {
+		page?: RenderPage;
+		components?: Record<string, Handler>;
 		renderOptions?: any;
-	}
-
-	export interface RootClusterOptions extends BaseOptions {
 		id: string;
 		mid: number;
 		mode: "app" | "cron";
 		count: number;
+		render: boolean;
 		ssr: boolean;
 		publicPath?: string;
-		bootstrap?: HandlerOptional;
-		bootloader?: HandlerOptional;
+		bootstrap?: Handler;
+		bootloader?: Handler;
 		env?: Record<string, string>;
 	}
 
-	export interface RootLexiconOptions {
-		language?: string;
+	export interface LexiconOptions {
+		language: string;
 		languages: string[];
 		multilingual: boolean;
 		exclude?: Array<{ name: string; type: "lambda" | "data" | "all" }>;
@@ -364,45 +348,23 @@ export declare namespace PhragonPlugin {
 		packages?: string[];
 	}
 
-	export interface RootDaemonOptions {
+	export interface DaemonOptions {
 		delay?: number;
 		cpuPoint?: number;
 		killSignal?: DaemonSignKill;
 		pid?: string;
 	}
 
-	export interface RootOptions extends BaseOptions {
-		clusters?: RootClusterOptions[];
-		ssr: boolean;
-		lexicon: RootLexiconOptions;
-		configLoaders?: Record<string, Handler>;
-		renderDriver?: RenderDriver;
-		onBuildTimeout?: string | number;
-		daemon?: RootDaemonOptions;
-	}
+	export type ConfigType<Key extends string, Type, Rest = {}> = { [P in Key]: Type } & Rest & {
+			__plugin: Plugin;
+		};
 
 	export interface Plugin {
-		name: string;
-		root: boolean;
-		version: string;
-		pluginPath: string;
-		phragonJsonPath: string;
-
-		hooks: Partial<Record<HooksEvent, Handler>>;
-		dependencies: string[];
-		services: Record<string, HandlerOptional>;
-		controllers: Record<string, HandlerOptional>;
-		middleware: HandlerOptional[];
-		responders: Record<string, HandlerOptional>;
-		extraMiddleware: Record<string, HandlerOptional>;
-		cmd: Record<string, HandlerOptional>;
-		bootloader?: HandlerOptional;
-		bootstrap?: HandlerOptional;
-		public?: string;
-		lexicon?: string;
-		config?: string;
+		readonly cwd: string;
+		readonly name: string;
+		readonly version: string;
+		readonly root: boolean;
 
 		joinPath(...args: string[]): string;
-		resolver(file: string | string[], mode?: "mixed" | "file" | "directory"): Promise<null | EStat>;
 	}
 }

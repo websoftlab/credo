@@ -2,6 +2,7 @@ import type { Watch } from "../types";
 import configure from "./configure";
 import webpack from "webpack";
 import WebpackDevServer from "webpack-dev-server";
+import { debug } from "../debug";
 
 export default async function devWatcher(serve: Watch.Serve) {
 	let server: WebpackDevServer | null = null;
@@ -26,14 +27,6 @@ export default async function devWatcher(serve: Watch.Serve) {
 		serve.emit("error", error);
 	}
 
-	function debug(message: string) {
-		serve.emit("debug", { message, context: "client" });
-	}
-
-	function disable(text: string = "") {
-		debug(`[status disabled] ${text}`);
-	}
-
 	serve.on("onBeforeBuild", abort);
 	serve.on("build", () => {
 		abort();
@@ -45,11 +38,11 @@ export default async function devWatcher(serve: Watch.Serve) {
 
 		const { cluster } = serve;
 		if (cluster && cluster.mode !== "app") {
-			return disable();
+			return debug("Bundle mode is not an application, DevServer is ignored");
 		}
 
-		if (!factory.options.renderDriver) {
-			return disable("Render driver not registered, ignore DevServer");
+		if (!factory.render) {
+			return debug("Render driver not registered, DevServer is ignored");
 		}
 
 		if (restart) {
@@ -72,11 +65,6 @@ export default async function devWatcher(serve: Watch.Serve) {
 						isDevServer: true,
 						devServerHost: serve.devHost,
 						devServerPort: String(serve.devPort),
-						progressLine: serve.progress,
-						debug: serve.progress
-							? (message: string, error?: boolean) =>
-									serve.emit("debug", { message, context: "client", error })
-							: undefined,
 						factory,
 						cluster,
 					})

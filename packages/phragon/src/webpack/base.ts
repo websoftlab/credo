@@ -1,14 +1,52 @@
-import type { Configuration } from "webpack";
-import { join as joinPath } from "path";
+import type { Configuration, RuleSetRule, Compiler, WebpackPluginInstance } from "webpack";
 import type { BuildConfigure } from "../types";
+import { join as joinPath, sep } from "path";
 import { externals } from "./config";
 import { alias } from "../config";
 import optimization from "./optimization";
 import * as plugins from "./plugins";
 import * as rules from "./rules";
 import { mergeExtensions, buildPath } from "../utils";
+import { webpack as webpackStore } from "../builder/configure";
+import { asyncResult } from "@phragon/utils";
+import { debug } from "../debug";
 const nodeExternals = require("webpack-node-externals");
 const IgnoreConfigRequire = require("./utils/ignore-config-require");
+
+function createStartsWith(item: string) {
+	const dir = item.endsWith("/");
+	item = joinPath(process.cwd(), item);
+	if (dir) {
+		item += sep;
+	}
+	return (module: { resource?: any }) => module.resource && module.resource.startsWith(item as string);
+}
+
+function createChunkGroupTest(list: (string | Function | RegExp)[]) {
+	list = list.map((item) => {
+		if (typeof item === "string") {
+			if (item.startsWith("./")) {
+				return createStartsWith(item);
+			}
+			if (sep !== "/") {
+				return item.replace(/\//g, sep);
+			}
+		}
+		return item;
+	});
+	return function (this: any, ...args: any[]) {
+		return list.some((item) => {
+			if (typeof item === "function") {
+				return item.apply(this, args);
+			}
+			const resource = args[0]?.resource;
+			if (typeof resource === "string" && resource.length > 0) {
+				return item instanceof RegExp ? item.test(resource) : resource.includes(item);
+			}
+			return false;
+		});
+	};
+}
 
 export default async function base(config: BuildConfigure): Promise<Configuration> {
 	const {
@@ -20,9 +58,8 @@ export default async function base(config: BuildConfigure): Promise<Configuratio
 		isClient,
 		bundlePath,
 		cwd,
-		factory: { options },
+		factory: { render },
 		cluster,
-		progressLine,
 	} = config;
 
 	if (isServer && !isServerPage) {
@@ -53,14 +90,32 @@ export default async function base(config: BuildConfigure): Promise<Configuratio
 	}
 
 	let extensions = [".ts", ".js"];
-	if (options.renderDriver?.extensions?.all) {
-		extensions = mergeExtensions(extensions, options.renderDriver.extensions.all);
+	if (render?.extensions?.all) {
+		extensions = mergeExtensions(extensions, render.extensions.all);
 	}
 
 	let allowlist: string[] = [];
-	if (isServer && options.renderDriver?.clientDependencies) {
-		allowlist = options.renderDriver.clientDependencies;
+	if (isServer && render?.clientDependencies) {
+		allowlist = render.clientDependencies;
 	}
+
+	const ruleList: RuleSetRule[] = [
+		await rules.javascriptRule(config),
+		await rules.typescriptRule(config),
+		await rules.replaceRule(config),
+		await rules.imagesRule(config),
+		await rules.fontsRule(config),
+		await rules.cssRule(config),
+		...(await rules.sassRules(config)),
+		await rules.svgRule(config),
+	];
+
+	const pluginList: (((this: Compiler, compiler: Compiler) => void) | WebpackPluginInstance)[] = [
+		plugins.providePlugin(config),
+		await plugins.definePlugin(config),
+		plugins.webpackManifestPlugin(config),
+		new IgnoreConfigRequire(),
+	];
 
 	const configure: Configuration = <Configuration>{
 		context: cwd,
@@ -69,22 +124,9 @@ export default async function base(config: BuildConfigure): Promise<Configuratio
 		entry,
 		output,
 		module: {
-			rules: [
-				await rules.javascriptRule(config),
-				await rules.typescriptRule(config),
-				await rules.imagesRule(config),
-				await rules.fontsRule(config),
-				await rules.cssRule(config),
-				...(await rules.sassRules(config)),
-				await rules.svgRule(config),
-			],
+			rules: ruleList,
 		},
-		plugins: [
-			plugins.providePlugin(config),
-			await plugins.definePlugin(config),
-			plugins.webpackManifestPlugin(config),
-			new IgnoreConfigRequire(),
-		],
+		plugins: pluginList,
 		resolve: {
 			alias: await alias(config),
 			extensions,
@@ -97,8 +139,36 @@ export default async function base(config: BuildConfigure): Promise<Configuratio
 		externals: isServer ? [nodeExternals({ allowlist }), { "any-promise": "Promise" }] : externals(config),
 	};
 
-	if (progressLine) {
-		configure.plugins?.push(plugins.webpackProgressPlugin(config));
+	// load webpack options from builder store
+	const store = webpackStore(config.factory.builder.getStore());
+	if (store.rule.length) {
+		ruleList.push(...store.rule);
+	}
+
+	if (store.plugin.length) {
+		pluginList.push(...store.plugin);
+	}
+
+	if (store.vendor.length) {
+		const splitChunks = configure.optimization?.splitChunks;
+		if (splitChunks) {
+			const commons = splitChunks.cacheGroups?.commons;
+			if (commons && typeof commons === "object" && !(commons instanceof RegExp) && commons.name === "vendor") {
+				const test = commons.test;
+				commons.test = createChunkGroupTest((test ? [test] : []).concat(store.vendor));
+			}
+		}
+	}
+
+	if (store.config.length) {
+		for (const callback of store.config) {
+			await asyncResult(callback(configure, config));
+		}
+	}
+
+	// add progress line
+	if (debug.isTTY) {
+		pluginList.push(plugins.webpackProgressPlugin(config));
 	}
 
 	return configure;

@@ -15,14 +15,23 @@ export interface NormalizeRoute {
 	name: string;
 	responder?: string | [string, any];
 	path?: RouteConfig.Path;
-	controller: RouteConfig.Controller;
+	controller?: RouteConfig.Controller;
+	_originName: string;
 }
 
-export interface NRPCDecode<CProps = any, RProps = any, Details = any> {
+export interface NRCPDecodeType {
 	method?: RouteConfig.Method;
-	details?: Details;
 	name: string;
-	responder: string | [string, RProps];
-	path: string;
-	controller: string | [string, CProps];
+	responder?: string;
+	controller?: string;
+	path?: string;
+}
+
+export interface NRCPDecode<CProps = any, RProps = any, Details = any> {
+	method?: RouteConfig.Method;
+	name: string;
+	responder?: string | [string, RProps];
+	controller?: string | [string, CProps];
+	path?: string;
+	details?: Details;
 }

@@ -129,6 +129,7 @@ export async function loadPackages(): Promise<WorkspacePackageDetail[]> {
 			nextVersion: null,
 			latestVersion: null,
 			release: {},
+			ignoreChannel: [],
 			...ver,
 			name: pg.name,
 			dependencies: [],

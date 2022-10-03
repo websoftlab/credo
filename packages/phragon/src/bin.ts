@@ -4,10 +4,10 @@ import { createCommander } from "@phragon/cli-commander";
 import { join } from "path";
 import build from "./build";
 import watch from "./watch";
-import { installPhragonJS, installPlugin } from "./plugins/installer";
-import { debugBuild, debugWatch } from "./debug";
-import type { Watch } from "./types";
+import { installPhragonJS } from "./plugins/installer";
+import { debug } from "./debug";
 import compiler from "./compiler";
+import type { Watch, InstallPhragonJSOptions } from "./types";
 
 const pg = require(join(__dirname, "package.json"));
 const cmd = createCommander({
@@ -18,10 +18,11 @@ const cmd = createCommander({
 
 cmd("make")
 	.description("Compiles the project files")
+	.strict(true)
 	.action(async () => {
-		debugBuild(`Trying to make ./phragon compiled files...`);
+		debug(`Trying to make ./phragon compiled files...`);
 		await compiler();
-		debugBuild(`Compilation completed`);
+		debug(`Compilation completed`);
 		return 0;
 	});
 
@@ -33,9 +34,9 @@ cmd("dev")
 	.option("--dev-port", { type: "value", description: "Dev Server port", format: "port", name: "number" })
 	.option("--cluster", { type: "value", description: "Cluster ID" })
 	.option("--ssr", "Enable SSR")
-	.option("--no-board", "Disable terminal board")
+	.strict(true)
 	.action<never, Watch.CMDOptions>(async (_, options) => {
-		debugWatch(`Start {cyan development} mode`, options);
+		debug(`Start {cyan development} mode`, options);
 		await watch(options);
 		return -1;
 	});
@@ -43,25 +44,20 @@ cmd("dev")
 cmd("build")
 	.description("Make build")
 	.option("--dev", "Build development mode")
+	.strict(true)
 	.action<never, { dev: boolean }>(async (_, options) => {
 		const mode = options.dev ? "development" : "production";
-		debugBuild(`Make {cyan ${mode}} build`);
+		debug(`Make {cyan ${mode}} build`);
 		await build(mode);
 		return 0;
 	});
 
 cmd("install")
 	.description("Install plugin")
-	.argument({
-		name: "plugin-name",
-		description: "Package plugin name or relative directory local path",
-	})
-	.action<string | null>(async (name) => {
-		if (name) {
-			await installPlugin(name);
-		} else {
-			await installPhragonJS();
-		}
+	.option("--render", { alt: "-R", type: "value", description: "Render driver name" })
+	.strict(true)
+	.action<string | null, InstallPhragonJSOptions>(async (_, parameters) => {
+		await installPhragonJS(parameters);
 		return 0;
 	});
 

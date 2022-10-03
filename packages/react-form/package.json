@@ -1,0 +1,34 @@
+{
+	"name": "@phragon/react-form",
+	"version": "1.0.0",
+	"author": "phragon@websoftlab.com",
+	"license": "MIT",
+	"scripts": {
+		"build": "node ../../scripts/lib/build.js",
+		"prettier": "node ../../scripts/lib/build-prettier.js"
+	},
+	"dependencies": {
+		"@phragon/utils": "*",
+		"@phragon/validator": "*",
+		"validator": "^13.7.0",
+		"mobx": "^6.4.0",
+		"react": "^18.1.0"
+	},
+	"devDependencies": {
+		"@types/validator": "^13.7.6",
+		"@types/react": "^18.0.12"
+	},
+	"exports": {
+		"./": "./build/",
+		".": {
+			"require": "./build/index.js"
+		}
+	},
+	"types": "build/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"build/index.d.ts": ["src/index.ts"],
+			"*": ["src/*"]
+		}
+	}
+}

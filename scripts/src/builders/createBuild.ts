@@ -5,6 +5,7 @@ import { mkdir } from "fs/promises";
 import debug from "../debug";
 import types from "./types";
 import babel from "./babel";
+import prettier from "./prettier";
 import { basename } from "path";
 import deepmerge from "deepmerge";
 
@@ -113,6 +114,10 @@ export default async function createBuild(pg: WorkspacePackageDetail, deps: Reco
 	}
 
 	debug("{cyan $} >> {darkGray %s}", localPathName(bundleFile));
+
+	// prettier files format
+	debug(`{cyan %s} package build: {yellow %s}`, pg.name, "prettier");
+	await prettier(pg.cwd);
 
 	const bundle = await readJsonFile<BundleJson>(stat.file);
 	const entities: BundleEntity[] = [];

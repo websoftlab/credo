@@ -1,9 +1,11 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "./route";
 import { observer } from "mobx-react-lite";
 import { component, defined } from "../component";
+import { __isWeb__ } from "@phragon/utils";
 import type { Page } from "@phragon/app";
-import type { CSSProperties, ElementType, ReactNode } from "react";
+import type { CSSProperties, ElementType } from "react";
+import type { ComponentLayout, ComponentPageSpin, ComponentPageError } from "./types";
 
 const errorStyle: CSSProperties = {
 	padding: 15,
@@ -13,9 +15,9 @@ const errorStyle: CSSProperties = {
 	borderRadius: 4,
 };
 
-const PageLayout = (props: { children: ReactNode }) => props.children as JSX.Element;
-const PageSpinner = () => null;
-const PageError = (props: { message: string }) => <div style={errorStyle}>{props.message}</div>;
+const PageLayout: ComponentLayout = ({ children }) => React.createElement(React.Fragment, { children });
+const PageSpinner: ComponentPageSpin = () => null;
+const PageError: ComponentPageError = ({ message }) => <div style={errorStyle}>{message}</div>;
 
 function Loader(props: { page: Page.StoreInterface<ElementType>; onMount: () => void }) {
 	const { page, onMount } = props;
@@ -24,7 +26,7 @@ function Loader(props: { page: Page.StoreInterface<ElementType>; onMount: () => 
 	const url = pathname + search;
 	const { response: Rs } = page;
 
-	if (__WEB__) {
+	if (__isWeb__()) {
 		React.useEffect(() => {
 			if (page.url !== url || page.key !== key) {
 				page.load(url, key);
@@ -34,16 +36,18 @@ function Loader(props: { page: Page.StoreInterface<ElementType>; onMount: () => 
 		React.useEffect(onMount);
 	}
 
-	const Layout: ElementType = defined("layout") ? component("layout") : PageLayout;
-	const Spinner: ElementType = defined("spinner") ? component("spinner") : PageSpinner;
-	const Error: ElementType = defined("error") ? component("error") : PageError;
+	const Layout = defined("layout") ? component("layout") : PageLayout;
+	const Spinner = defined("spinner") ? component("spinner") : PageSpinner;
+	const Error = defined("error") ? component("error") : PageError;
 
 	return (
-		<Layout page={page}>
+		<>
 			<Spinner spin={page.loading} />
-			{!page.loading && page.error && <Error message={page.errorMessage} />}
-			{Rs && <Rs.Component {...Rs.props} pageData={Rs.data} />}
-		</Layout>
+			<Layout page={page}>
+				{!page.loading && page.error && <Error code={page.code} message={page.errorMessage} />}
+				{Rs && <Rs.Component {...Rs.props} pageData={Rs.data} />}
+			</Layout>
+		</>
 	);
 }
 

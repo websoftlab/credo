@@ -1,20 +1,23 @@
-import loadRootOptions from "./loadRootOptions";
-import { existsStat, readJsonFile, fireHook } from "../utils";
+import type { PhragonPlugin } from "../types";
+import type { Builder } from "../builder";
+import { existsStat, readJsonFile } from "../utils";
+import { phragon } from "../builder/configure";
 import { installDependencies } from "../dependencies";
 import docTypeReference from "./docTypeReference";
+import { extender } from "../builder/configure";
 import { asyncResult } from "@phragon/utils";
-import type { PhragonPlugin } from "../types";
 
 export default async function createPluginFactory(
-	plugins: PhragonPlugin.Plugin[],
+	builder: Builder,
 	installList?: string[]
 ): Promise<PhragonPlugin.Factory> {
+	const plugins = builder.pluginList;
 	const root = plugins.find((plugin) => plugin.root) || null;
 	if (!root) {
 		throw new Error("Root plugin is not loaded");
 	}
 
-	const options = await loadRootOptions(plugins);
+	const data = await phragon(builder.getStore());
 
 	// create links
 	const pluginLink: Record<string, PhragonPlugin.Plugin> = {};
@@ -32,26 +35,99 @@ export default async function createPluginFactory(
 		}
 	}
 
+	// add extenders
+	const extenderList = await extender(builder.getStore());
+	for (const callback of extenderList) {
+		await asyncResult(callback(builder));
+	}
+
 	// check page responder
-	if (options.renderDriver) {
+	if (data.render) {
 		await docTypeReference("@phragon/types/global-render");
-		if (!plugins.some((plugin) => plugin.responders.hasOwnProperty("page"))) {
+		if (!data.responder.some((config) => config.responder.hasOwnProperty("page"))) {
 			await installDependencies(["@phragon/responder-page"]);
+		}
+
+		// add render hooks
+		const hooks = data.render.hooks;
+		if (hooks) {
+			Object.keys(hooks).forEach((name) => {
+				builder.on(name, hooks[name as never]);
+			});
 		}
 	}
 
-	const listeners: Record<string, Function[]> = {};
-
 	return {
-		get root() {
-			return root;
-		},
-		get options() {
-			return options;
+		get builder() {
+			return builder;
 		},
 		get plugins() {
 			return plugins;
 		},
+
+		get root() {
+			return root;
+		},
+		get renderPlugin() {
+			return data.renderPlugin;
+		},
+		get lexicon() {
+			return data.lexicon;
+		},
+		get cluster() {
+			return data.cluster;
+		},
+		get render() {
+			return data.render;
+		},
+		get renderOptions() {
+			return data.renderOptions;
+		},
+		get ssr() {
+			return data.ssr;
+		},
+		get page() {
+			return data.page;
+		},
+		get components() {
+			return data.components;
+		},
+		get publicPath() {
+			return data.publicPath;
+		},
+		get cmd() {
+			return data.cmd;
+		},
+		get service() {
+			return data.service;
+		},
+		get configLoader() {
+			return data.configLoader;
+		},
+		get controller() {
+			return data.controller;
+		},
+		get responder() {
+			return data.responder;
+		},
+		get middleware() {
+			return data.middleware;
+		},
+		get extraMiddleware() {
+			return data.extraMiddleware;
+		},
+		get daemon() {
+			return data.daemon;
+		},
+		get bootstrap() {
+			return data.bootstrap;
+		},
+		get bootloader() {
+			return data.bootloader;
+		},
+
+		buildTimeout: data.buildTimeout,
+
 		plugin(name: string): PhragonPlugin.Plugin | null {
 			return pluginLink.hasOwnProperty(name) ? pluginLink[name] : null;
 		},
@@ -62,42 +138,14 @@ export default async function createPluginFactory(
 			return installList ? installList.includes(name) : false;
 		},
 		on(name: PhragonPlugin.HooksEvent, listener: Function) {
-			if (typeof listener !== "function") {
-				return;
-			}
-			if (!listeners.hasOwnProperty(name)) {
-				listeners[name] = [];
-			}
-			if (!listeners[name].includes(listener)) {
-				listeners[name].push(listener);
-			}
+			builder.on(name, listener);
 		},
-		off(name: PhragonPlugin.HooksEvent, listener?: Function) {
-			if (listeners.hasOwnProperty(name)) {
-				if (listener) {
-					const index = listeners[name].indexOf(listener);
-					if (index !== -1) {
-						listeners[name].splice(index, 1);
-					}
-				}
-			}
+		off(name: PhragonPlugin.HooksEvent, listener: Function) {
+			builder.off(name, listener);
 		},
-		async fireHook(name: PhragonPlugin.HooksEvent, ...args: any[]): Promise<void> {
-			for (const plugin of plugins) {
-				await fireHook(plugin.hooks, name, args);
-			}
 
-			const renderHooks = options.renderDriver?.hooks;
-			if (renderHooks) {
-				await fireHook(renderHooks, name, args);
-			}
-
-			const listen = listeners.hasOwnProperty(name) ? listeners[name] : [];
-			if (listen.length) {
-				for (const listener of listen) {
-					await asyncResult(listener(...args));
-				}
-			}
+		async fireHook<Event = unknown>(name: PhragonPlugin.HooksEvent, event?: Event): Promise<void> {
+			return builder.emit(name, event);
 		},
 	};
 }

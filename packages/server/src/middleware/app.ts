@@ -1,6 +1,6 @@
 import { AppStore } from "@phragon/app";
 import clonePlainObject from "@phragon/utils/clonePlainObject";
-import { observe } from "mobx";
+import { reaction } from "mobx";
 import { makeUrl } from "@phragon/make-url";
 import type Koa from "koa";
 import type { URL } from "@phragon/make-url";
@@ -31,7 +31,7 @@ export function middleware(
 				routeName = name;
 				url = <URL.Options>{
 					...rest,
-					path: await phragon.route.matchToPath(name, params),
+					path: await phragon.route.matchToPath(name, params, ctx),
 				};
 			}
 			const { details = {}, ...opts } = url;
@@ -75,7 +75,7 @@ export function middleware(
 				return true;
 			},
 			async redirectToRoute(name: string, params?: any) {
-				ctx.redirect(await phragon.route.matchToPath(name, params));
+				ctx.redirect(await phragon.route.matchToPath(name, params, ctx));
 			},
 		};
 
@@ -120,12 +120,14 @@ export function middleware(
 
 		await appStore.loadLanguage(ctxLanguage);
 
-		observe(appStore, "language", (prop) => {
-			const value = prop.newValue as string;
-			if (value && value !== val.language) {
-				val.language = value;
+		reaction(
+			() => appStore.language,
+			(value) => {
+				if (value && value !== ctxLanguage) {
+					ctxLanguage = value;
+				}
 			}
-		});
+		);
 
 		val.store = appStore;
 

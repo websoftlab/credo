@@ -1,4 +1,4 @@
-import type { PhragonJSGlobal, Route, EnvMode, Server, Ctor } from "./types";
+import type { PhragonJSGlobal, Route, EnvMode, Server, Ctor, Env } from "./types";
 import type { Context, Next } from "koa";
 import asyncResult from "@phragon/utils/asyncResult";
 import { debug, debugSubscribe } from "@phragon/cli-debug";
@@ -100,7 +100,8 @@ export async function createPhragonJS<T extends PhragonJSGlobal>(
 		return hooks.emit("onDebug", event);
 	});
 
-	const lexicon = config("lexicon");
+	const env = createEnv(loadOptions(optionsEnv));
+	const lexicon = config("lexicon", {}, env);
 	let { language, multilingual, languages = [] } = lexicon;
 
 	if (language) {
@@ -122,12 +123,12 @@ export async function createPhragonJS<T extends PhragonJSGlobal>(
 	}
 
 	let boot = false;
-	hooks.once("boot", () => {
+	hooks.once("onBoot", () => {
 		boot = true;
 	});
 
 	// local store
-	let { dataPath } = config("config");
+	let { dataPath } = config("config", {}, env);
 	if (typeof dataPath === "object" && dataPath != null) {
 		dataPath = dataPath[envMode as EnvMode];
 	}
@@ -187,14 +188,16 @@ export async function createPhragonJS<T extends PhragonJSGlobal>(
 		isCmd() {
 			return mode === "cmd";
 		},
-		config,
+		config<T extends object = any>(name: string, def?: Partial<T>, _env: Env = env) {
+			return config<T>(name, def, env);
+		},
 		hooks,
 		debug,
 		language,
 		languages,
 		multilingual,
-		services: {},
-		env: createEnv(loadOptions(optionsEnv)),
+		services: <any>{},
+		env,
 		...additional,
 	} as PhragonJSGlobal;
 
@@ -227,7 +230,7 @@ export async function createPhragonJS<T extends PhragonJSGlobal>(
 	);
 
 	// initial cache
-	const { enabled = false, ...redis } = config("redis");
+	const { enabled = false, ...redis } = config("redis", {}, env);
 	if (enabled) {
 		redisInit(redis);
 		phragon.cache = cache;

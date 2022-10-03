@@ -84,6 +84,8 @@ export namespace Render {
 		scripts: string[];
 		styles: string[];
 		loader: Page.Loader<Type>;
+		viewport: string | null;
+		autoMetaTags: string[];
 
 		injectHead(source: string | HtmlNode): void;
 		injectBody(source: string | HtmlNode): void;

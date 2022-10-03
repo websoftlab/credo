@@ -115,7 +115,7 @@ export default async function release(name: string, scope: string[] = []) {
 
 	const all = (await loadPackages()).filter((pg) => {
 		const ver = pg.release[name];
-		if (ver && ver === pg.version) {
+		if (ver && ver === pg.version || pg.ignoreChannel.includes(name)) {
 			return false;
 		}
 		if (scope.length > 0) {
@@ -139,6 +139,7 @@ export default async function release(name: string, scope: string[] = []) {
 		// update JsonFile
 		await writeJsonFile<BundleVersionJson>(pg.cwdPath("bundle-version.json"), {
 			version: pg.version,
+			ignoreChannel: pg.ignoreChannel,
 			release: {
 				...pg.release,
 				[name]: pg.version,

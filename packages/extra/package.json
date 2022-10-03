@@ -7,15 +7,15 @@
 		"build": "node ../../scripts/lib/build.js",
 		"prettier": "node ../../scripts/lib/build-prettier.js"
 	},
-	"dependencies": {},
-	"devDependencies": {
+	"dependencies": {
 		"@phragon/responder-page": "*"
 	},
+	"devDependencies": {},
 	"peerDependencies": {
 		"@phragon/server": "*"
 	},
 	"exports": {
-		"./": "./src/",
+		"./": "./build/",
 		".": {
 			"require": "./build/index.js"
 		}

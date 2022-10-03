@@ -1,6 +1,6 @@
 import type { ReactElement, ElementType } from "react";
 import type { Context } from "koa";
-import type { HeadTag } from "@phragon/html-head";
+import type { HeadTagWithKey } from "@phragon/html-head";
 import type { API } from "@phragon/app";
 import { createElement } from "react";
 import ReactDOMServer from "react-dom/server";
@@ -21,7 +21,17 @@ export default class HtmlDriverReact extends HtmlDriverPrototype<ElementType, Re
 		api: API.ApiInterface<ElementType> | null,
 		emit: <T extends { type: string } = any>(event: T) => Promise<T>
 	): Promise<string> {
-		const { doctype, getQueryId, language, charset, noscriptBanner, styles = [], scripts = [] } = this;
+		const {
+			doctype,
+			getQueryId,
+			language,
+			charset,
+			viewport,
+			noscriptBanner,
+			styles = [],
+			scripts = [],
+			autoMetaTags = [],
+		} = this;
 		const toHtml = ReactDOMServer.renderToStaticMarkup;
 		const append = (element: string | ReactElement) => {
 			if (typeof element === "string") {
@@ -41,7 +51,7 @@ export default class HtmlDriverReact extends HtmlDriverPrototype<ElementType, Re
 		// render app
 		if (this.ssr && api) {
 			const location: string = ctx.url || "/";
-			const headTags: HeadTag[] = [];
+			const headTags: HeadTagWithKey[] = [];
 			const context: any = {};
 
 			try {
@@ -141,21 +151,20 @@ export default class HtmlDriverReact extends HtmlDriverPrototype<ElementType, Re
 		html += "><head>";
 
 		// head data
-		if (!isHead("charset") && charset) {
+		if (autoMetaTags.includes("charset") && !isHead("charset") && charset) {
 			html += toHtml(createElement("meta", { charSet: charset }));
 		}
 
-		if (!isHead("viewport")) {
+		if (autoMetaTags.includes("viewport") && !isHead("viewport") && viewport) {
 			html += toHtml(
 				createElement("meta", {
 					name: "viewport",
-					content:
-						"width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0",
+					content: viewport,
 				})
 			);
 		}
 
-		if (!isHead("title")) {
+		if (autoMetaTags.includes("title") && !isHead("title")) {
 			const title = isPageFound(this.page) ? this.page.response?.data?.title : this.page.message;
 			html += toHtml(createElement("title", {}, typeof title === "string" ? title : this.title));
 		}

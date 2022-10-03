@@ -2,9 +2,9 @@ import type { PhragonJS, Route, RouteConfig } from "../types";
 import type { Context } from "koa";
 import type { PatternInterface } from "@phragon/path-to-pattern";
 import type { Nullable } from "../helpTypes";
-import type { RouteVariant, NRPCDecode, NormalizeRoute } from "./types";
+import type { RouteVariant, NRCPDecode, NRCPDecodeType, NormalizeRoute } from "./types";
 import { pathToPattern, matchPath } from "@phragon/path-to-pattern";
-import { asyncResult } from "@phragon/utils";
+import { asyncResult, isPlainObject } from "@phragon/utils";
 import { createMethods, nameGen, trimLeftSegment, trimRightSegment } from "./utils";
 import { default as RouteEntity } from "./RouteEntity";
 import { default as RoutePattern } from "./RoutePattern";
@@ -17,7 +17,6 @@ const regInvalid = /[^a-z0-9\-*.]/;
 const regHostPort = /^(.+?):([0-9x*]+)$/;
 const regHostCreate = /[.*]+/g;
 const regPortCreate = /x|[*]+/g;
-const regNRPC = /^(?:(.+?):)?(.+?)@(.+?)$/;
 
 function createMatchCallback<Params extends { [K in keyof Params]?: string } = {}>(
 	path: string
@@ -84,7 +83,7 @@ function createDynamicPathOptions(phragon: PhragonJS, path: RouteConfig.PathDyna
 			}
 			match = (ctx: Context) => handler.match.call(target, ctx);
 			if (typeof handler.matchToPath === "function") {
-				matchToPath = (params?: any) => handler.matchToPath.call(target, params);
+				matchToPath = (params: any, ctx) => handler.matchToPath.call(target, params, ctx);
 			}
 			const descriptor = Object.getOwnPropertyDescriptor(handler, "length");
 			if (descriptor) {
@@ -340,57 +339,126 @@ function createHostListRegExp(host: string | string[]): RegExp[] {
 	return hostList.map(createHostRegExp);
 }
 
-function getNRPC(nrpc: RouteConfig.NRPCType, parentResponder?: string): NRPCDecode {
+function verifyRouterName(name: string) {
+	if (/[^A-Za-z0-9_\-.$]/.test(name)) {
+		throw new Error(`Invalid router name ${name}`);
+	}
+}
+
+function decodeNRCP(name: string): NRCPDecodeType {
+	name = String(name || "");
+
+	let responder: null | false | string = null;
+	let controller: null | false | string = null;
+	let path: null | false | string = null;
+	let method: string[] = [];
+
+	// find method
+	let match = name.match(/^([a-z, ]+):/i);
+	if (match) {
+		method = match[1]
+			.toUpperCase()
+			.split(",")
+			.map((value) => value.trim())
+			.filter((item) => item.length > 0);
+		name = name.substring(match[0].length);
+	}
+
+	// find path
+	let index = name.indexOf("/");
+	if (index !== -1) {
+		path = name.substring(index);
+		name = name.substring(0, index);
+		if (path === "") {
+			path = false;
+		}
+	}
+
+	// find responder
+	index = name.indexOf("@");
+	if (index !== -1) {
+		const prev = name.indexOf("[", index);
+		if (prev === -1) {
+			responder = name.substring(index + 1);
+			name = name.substring(0, index);
+		} else {
+			responder = name.substring(index + 1, prev);
+			name = name.substring(0, index) + name.substring(prev);
+		}
+		responder = responder.trim();
+		if (responder === "") {
+			responder = false;
+		}
+	}
+
+	// controller
+	match = name.match(/\[(.*?)]$/);
+	if (match) {
+		controller = match[1].trim();
+		name = name.substring(0, name.length - match[0].length);
+		if (controller === "") {
+			controller = false;
+		}
+	}
+
+	name = name.trim();
+	if (name.length === 0) {
+		throw new Error("NRCP name option is required");
+	}
+
+	verifyRouterName(name);
+
+	if (path === null) path = name;
+	if (controller === null) controller = name;
+	if (responder === null) responder = name;
+
+	const options: NRCPDecodeType = { name };
+
+	if (method.length > 0) {
+		options.method = method;
+	}
+
+	if (path !== false) {
+		path = path.replace(/[.\/]+/g, "/");
+		if (!path.startsWith("/")) {
+			path = `/${path}`;
+		}
+		options.path = path;
+	}
+
+	if (responder !== false) options.responder = responder;
+	if (controller !== false) options.controller = controller;
+
+	return options;
+}
+
+function getNRCP(nrcp: RouteConfig.NRCPType, parentResponder?: string): NRCPDecode {
 	let rProps: any = null;
 	let cProps: any = null;
 	let details: any = null;
 
-	if (Array.isArray(nrpc)) {
-		if (nrpc[1] != null) rProps = nrpc[1];
-		if (nrpc[2] != null) cProps = nrpc[2];
-		if (nrpc[3] != null) details = nrpc[3];
-		nrpc = String(nrpc[0]);
+	if (Array.isArray(nrcp)) {
+		if (nrcp[1] != null) rProps = nrcp[1];
+		if (nrcp[2] != null) cProps = nrcp[2];
+		if (nrcp[3] != null) details = nrcp[3];
+		nrcp = String(nrcp[0]);
 	}
 
-	if (parentResponder && !nrpc.includes("@")) {
-		if (nrpc.includes("|")) {
-			nrpc = nrpc.replace("|", `@${parentResponder}|`);
-		} else {
-			nrpc += `@${parentResponder}`;
-		}
+	const decode = decodeNRCP(nrcp);
+	if (parentResponder && !decode.responder) {
+		decode.responder = parentResponder;
 	}
 
-	const found = nrpc.match(regNRPC);
-	if (!found) {
-		throw new Error(`Invalid "nrpc" argument ${nrpc}`);
+	const { controller, responder, ...rest } = decode;
+	const route: NRCPDecode = rest;
+
+	if (controller) {
+		route.controller = isPlainObject(cProps) ? [controller, cProps] : controller;
 	}
-
-	const segments = found[3]
-		.trim()
-		.split("|")
-		.map((line) => line.trim());
-	const name = found[2].trim();
-	const method: string[] = found[1]
-		? found[1]
-				.trim()
-				.split(",")
-				.map((line) => line.trim())
-		: [];
-	const responder = segments[0];
-	const controller = segments[2] || name;
-
-	const route: NRPCDecode = {
-		name,
-		responder: rProps != null ? [responder, rProps] : responder,
-		path: "/" + trimLeftSegment(segments[1] || name),
-		controller: cProps != null ? [controller, cProps] : controller,
-	};
-
-	if (method.length) {
-		route.method = method;
+	if (responder) {
+		route.responder = isPlainObject(rProps) ? [responder, rProps] : responder;
 	}
-
-	if (details != null) {
+	if (isPlainObject(details)) {
 		route.details = details;
 	}
 
@@ -400,13 +468,13 @@ function getNRPC(nrpc: RouteConfig.NRPCType, parentResponder?: string): NRPCDeco
 function normalizeRoute(route: RouteConfig.Route | RouteConfig.EmptyRoute, parent: any): NormalizeRoute {
 	if (typeof route === "string" || Array.isArray(route)) {
 		route = {
-			nrpc: route,
+			nrcp: route,
 		};
 	}
 
-	if ("nrpc" in route) {
-		const { nrpc, details, ...other } = route;
-		const decode = getNRPC(nrpc, parent.responder);
+	if ("nrcp" in route) {
+		const { nrcp, details, ...other } = route;
+		const decode = getNRCP(nrcp, parent.responder);
 		route = {
 			...decode,
 			...other,
@@ -420,12 +488,17 @@ function normalizeRoute(route: RouteConfig.Route | RouteConfig.EmptyRoute, paren
 	}
 
 	let { controller, method, responder, name, ...restRoute } = route;
+	let _originName = "";
 
 	if (!name) {
 		name = nameGen.gen();
+	} else {
+		verifyRouterName(name);
+		_originName = name;
 	}
 	if (parent.name) {
 		name = `${parent.name}.${name}`;
+		_originName = _originName ? name : parent.name;
 	}
 
 	if (parent.controller) {
@@ -453,6 +526,7 @@ function normalizeRoute(route: RouteConfig.Route | RouteConfig.EmptyRoute, paren
 		controller,
 		method,
 		responder,
+		_originName,
 	};
 }
 
@@ -484,10 +558,8 @@ function configRoute(
 	group?: RouteGroup
 ): void {
 	for (let route of configRoutes) {
-		let { name, path, controller, method, responder, details, cache, middleware, ...otherRoute } = normalizeRoute(
-			route,
-			parent
-		);
+		let { name, path, controller, method, responder, details, cache, middleware, _originName, ...otherRoute } =
+			normalizeRoute(route, parent);
 
 		if (parent.path) {
 			if (path) {
@@ -506,7 +578,7 @@ function configRoute(
 		}
 
 		const createParent = () => ({
-			name,
+			name: _originName,
 			path,
 			controller,
 			responder,
@@ -621,7 +693,7 @@ export default class RouteManager {
 
 		const { name } = route;
 		if (this.added(name)) {
-			this.phragon.error("Duplicate route name {cyan %s}", name);
+			this.phragon.debug.error("Duplicate route name {cyan %s}", name);
 		} else {
 			this._nameToRoute[name] = route;
 		}
@@ -692,12 +764,19 @@ export default class RouteManager {
 		return this._routeNotFound != null;
 	}
 
-	get names() {
+	get names(): string[] {
 		return Object.keys(this._nameToRoute);
 	}
 
-	get length() {
+	get routeLength(): number {
 		return this._routeList.length;
+	}
+
+	get nestedRouteLength(): number {
+		return this._routeList.reduce(
+			(calc, route) => calc + (RouteEntity.isRouteGroup(route) ? route.nestedRouteLength : 1),
+			0
+		);
 	}
 
 	get routeList() {
@@ -787,7 +866,7 @@ export default class RouteManager {
 		return null;
 	}
 
-	async matchToPath(name: string, match?: any): Promise<string> {
+	async matchToPath(name: string, match: any, ctx: Context): Promise<string> {
 		if (!this.added(name)) {
 			throw new Error(`The ${name} route not found`);
 		}
@@ -802,7 +881,7 @@ export default class RouteManager {
 		if (!route.matchToPath) {
 			throw new Error(`The ${name} matchToPath route not defined`);
 		}
-		return route.matchToPath(match);
+		return route.matchToPath(match, ctx);
 	}
 
 	sort(type: "native" | "pattern" | ((a: RouteVariant, b: RouteVariant) => number)) {

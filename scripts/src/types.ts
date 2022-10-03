@@ -17,6 +17,7 @@ export interface WorkspacePackageDetail {
 	version: string;
 	nextVersion: string | null;
 	latestVersion: string | null;
+	ignoreChannel: string[];
 	release: Record<string, string>;
 	dependencies: string[];
 }
@@ -65,6 +66,7 @@ export interface Config {
 export interface BundleVersionJson {
 	version: string;
 	release?: Record<string, string>;
+	ignoreChannel?: string[];
 }
 
 export type BundleTargetType = "commonjs" | "node" | "types" | "copy";

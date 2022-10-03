@@ -1,6 +1,6 @@
-import { join } from "path";
 import type { BuildConfigure, BuildConfigureOptions, BuilderType, BuildMode, PhragonPlugin } from "./types";
-import { debugBuild, debugError } from "./debug";
+import { join } from "path";
+import { debug } from "./debug";
 
 function getMode(value?: string) {
 	return getIsProdMode(value === "production");
@@ -22,7 +22,7 @@ export default async function configure(
 		isDevServer: isDevServerOption,
 		cwd: cwdPathOption,
 		factory,
-		debug,
+		debug: debugFunc,
 		...restOptions
 	} = options;
 
@@ -56,7 +56,7 @@ export default async function configure(
 	const bundle = mode === "development" ? "dev" : "build";
 	const {
 		lexicon: { language, languages, multilingual },
-	} = factory.options;
+	} = factory;
 
 	const config: BuildConfigure = {
 		...restOptions,
@@ -82,24 +82,24 @@ export default async function configure(
 			return join(cwdPath, bundle, ...args);
 		},
 		debug(message: string, error?: boolean) {
-			if (debug) {
-				debug(message, error);
+			if (debugFunc) {
+				debugFunc(message, error);
 			} else if (error) {
-				debugError(message);
+				debug.error(message);
 			} else {
-				debugBuild(message);
+				debug(message);
 			}
 		},
 		async fireHook(name: PhragonPlugin.HooksBundleEvent, arg1?: any) {
 			switch (name) {
 				case "onRollupConfigure":
-					return factory.fireHook(name, arg1, config);
+					return factory.fireHook(name, { rollup: arg1, config });
 				case "onWebpackConfigure":
-					return factory.fireHook(name, arg1, config);
+					return factory.fireHook(name, { webpack: arg1, config });
 			}
 		},
 		async fireOnOptionsHook<T>(name: string, option: T): Promise<T> {
-			await factory.fireHook("onOptions", { name, option }, config);
+			await factory.fireHook("onOptions", { name, option, config });
 			return option;
 		},
 	};

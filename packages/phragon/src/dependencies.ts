@@ -4,8 +4,9 @@ import { satisfies } from "semver";
 import { newError } from "@phragon/cli-color";
 import { cwdPath, existsStat, readJsonFile, writeJsonFile } from "./utils";
 import { readFile } from "fs/promises";
-import { debugError, debugInstall } from "./debug";
+import { debug } from "./debug";
 import spawn from "cross-spawn";
+import deepmerge from "deepmerge";
 
 const regVer = /^\d+(?:\.\d+)+(?:-(?:alpha|beta|rc)(?:\.\d+(?:-[a-z0-9\-]+)?)?)?$/;
 
@@ -62,7 +63,7 @@ export async function getLatestModuleVersion(name: string): Promise<string> {
 				ver = versionValid(ver);
 			}
 		} catch (err: any) {
-			debugError("{red yarn} failure. %s", err.message || err.command);
+			debug.error("{red yarn} failure. %s", err.message || err.command);
 		}
 	}
 
@@ -77,7 +78,7 @@ export async function getLatestModuleVersion(name: string): Promise<string> {
 			ver = versionValid(ver);
 		}
 	} catch (err: any) {
-		debugError("{red npm} failure. %s", err.message || err.command);
+		debug.error("{red npm} failure. %s", err.message || err.command);
 	}
 
 	if (ver) {
@@ -93,7 +94,7 @@ export async function getLatestModuleVersion(name: string): Promise<string> {
 			return json.latest;
 		}
 	} catch (err: any) {
-		debugError("{red http request} %s", err.message);
+		debug.error("{red http request} %s", err.message);
 	}
 
 	throw new Error(`The latest version of module ${originName} was not found`);
@@ -163,7 +164,7 @@ export async function getPackageModuleVersion(name: string): Promise<string | nu
 				}
 			}
 		} catch (err: any) {
-			debugError("{red yarn} failure. %s", err.message || err.command);
+			debug.error("{red yarn} failure. %s", err.message || err.command);
 		}
 	}
 
@@ -179,7 +180,7 @@ export async function getPackageModuleVersion(name: string): Promise<string | nu
 			ver = versionValid(json.dependencies[name].version);
 		}
 	} catch (err: any) {
-		debugError("{red npm} failure. %s", err.message || err.command);
+		debug.error("{red npm} failure. %s", err.message || err.command);
 	}
 
 	if (ver) {
@@ -221,7 +222,7 @@ export function installPackage() {
 		args.push("install");
 	}
 
-	debugInstall("Running {yellow %s} install, please wait...", command);
+	debug("Running {yellow %s} install, please wait...", command);
 
 	return new Promise<void>((resolve, reject) => {
 		const child = spawn(command, args, { stdio: "inherit" });
@@ -240,8 +241,8 @@ export function installPackage() {
 function createName() {
 	// try create
 	let name = basename(process.cwd())
-		.replace(/[^a-z0-9\-_]+/g, "")
-		.replace(/^[\-_0-9]+/g, "")
+		.replace(/[^a-z\d\-_]+/g, "")
+		.replace(/^[\-_\d]+/g, "")
 		.replace(/[\-_]+$/g, "");
 
 	if (!name) {
@@ -251,26 +252,40 @@ function createName() {
 	return name;
 }
 
-export async function installDependencies(
-	dependencies: string[] | Record<string, string>,
-	devDependencies: string[] | Record<string, string> = {}
-) {
-	// check package.json file
+export interface PackageJsonUtil {
+	filePath: string;
+	data: any;
+	write(data?: any): Promise<void>;
+}
+
+export async function packageJson(createIfNotExists = true): Promise<PackageJsonUtil> {
 	const cwdPackageJsonFile = cwdPath("package.json");
 	const stat = await existsStat(cwdPackageJsonFile);
-	let data: any;
 
-	dependencies = arrayToObject(dependencies);
-	devDependencies = arrayToObject(devDependencies);
-
-	const updatePackageJson = (data: any, create = false) => {
-		debugInstall(`${create ? "Create" : "Update"} {yellow %s}`, "./package.json");
-		return writeJsonFile(cwdPackageJsonFile, data);
+	let create = false;
+	const pg: PackageJsonUtil = {
+		filePath: cwdPackageJsonFile,
+		data: {},
+		async write(data?: any) {
+			if (data) {
+				pg.data = deepmerge(pg.data, data);
+			}
+			debug(`${create ? "Create" : "Update"} {yellow %s}`, "./package.json");
+			create = false;
+			return writeJsonFile(cwdPackageJsonFile, pg.data);
+		},
 	};
 
 	if (!stat) {
+		if (!createIfNotExists) {
+			throw newError("The {yellow %s} file not found", "./package.json");
+		}
+
+		create = true;
 		const name = createName();
-		data = {
+		debug(`Set package name {yellow %s}`, name);
+
+		await pg.write({
 			name,
 			version: "1.0.0",
 			private: true,
@@ -278,17 +293,74 @@ export async function installDependencies(
 			keywords: ["phragon-js", "phragon"],
 			dependencies: {},
 			devDependencies: {},
-		};
-
-		debugInstall(`Set package name {yellow %s}`, name);
-
-		await updatePackageJson(data, true);
+		});
 	} else if (!stat.isFile) {
 		throw newError("{yellow %s} path must be a file", "./package.json");
 	} else {
-		data = await readJsonFile(cwdPackageJsonFile);
+		pg.data = await readJsonFile(cwdPackageJsonFile);
 	}
 
+	// check name
+	if (!pg.data.name) {
+		if (!createIfNotExists) {
+			throw newError("Project name is not defined in the {yellow %s} file", "./package.json");
+		}
+		const name = createName();
+		debug(`Set package name {yellow %s}`, name);
+		await pg.write({ name });
+	}
+
+	return pg;
+}
+
+export async function uninstallDependencies(dependencies: string | string[]) {
+	if (!Array.isArray(dependencies)) {
+		dependencies = dependencies ? [dependencies] : [];
+	}
+
+	if (!dependencies.length) {
+		return;
+	}
+
+	const pg = await packageJson();
+	const { data } = pg;
+	if (!data.dependencies) {
+		data.dependencies = {};
+	}
+	if (!data.devDependencies) {
+		data.devDependencies = {};
+	}
+
+	let update = false;
+	for (let name of dependencies) {
+		if (data.dependencies.hasOwnProperty(name)) {
+			delete data.dependencies[name];
+			update = true;
+		}
+		if (data.devDependencies.hasOwnProperty(name)) {
+			delete data.devDependencies[name];
+			update = true;
+		}
+	}
+	if (!update) {
+		return;
+	}
+
+	await pg.write();
+	await installPackage();
+}
+
+export async function installDependencies(
+	dependencies: string[] | Record<string, string>,
+	devDependencies: string[] | Record<string, string> = {}
+) {
+	// check package.json file
+	const pg = await packageJson();
+
+	dependencies = arrayToObject(dependencies);
+	devDependencies = arrayToObject(devDependencies);
+
+	const { data } = pg;
 	if (!data.dependencies) {
 		data.dependencies = {};
 	}
@@ -299,11 +371,6 @@ export async function installDependencies(
 
 	let updateFile = false;
 	let updateDependencies = false;
-
-	if (!data.name) {
-		data.name = createName();
-		updateFile = true;
-	}
 
 	function isAny(ver: string) {
 		return ver === "*" || ver === "latest";
@@ -339,7 +406,7 @@ export async function installDependencies(
 				}
 				data[key][module] = ver;
 				updateDependencies = true;
-				debugInstall(`Added new dependency {yellow %s}`, `${module}@${data[key][module]}`);
+				debug(`Added new dependency {yellow %s}`, `${module}@${data[key][module]}`);
 			} else if (!isAny(dVer)) {
 				ver = await getPackageModuleVersion(module);
 				if (!ver) {
@@ -360,9 +427,9 @@ export async function installDependencies(
 	await checkDependencies(devDependencies, "devDependencies");
 
 	if (updateDependencies) {
-		await updatePackageJson(data);
+		await pg.write();
 		await installPackage();
 	} else if (updateFile) {
-		await updatePackageJson(data);
+		await pg.write();
 	}
 }

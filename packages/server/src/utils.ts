@@ -42,7 +42,7 @@ function envName(key: string) {
 	if (key.startsWith("PHRAGON_")) {
 		key = key.substring(6);
 	}
-	return key.toLowerCase().replace(/_([a-z0-9])/g, (_, alpha: string) => alpha.toUpperCase());
+	return key.toLowerCase().replace(/_([a-z\d])/g, (_, alpha: string) => alpha.toUpperCase());
 }
 
 function prepare(parsed: any) {

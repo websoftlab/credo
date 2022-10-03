@@ -14,12 +14,15 @@ export default abstract class HtmlDriverPrototype<Type, RenderType = HtmlNode>
 	public title: string = "Document";
 	public language: string | null = null;
 	public charset: string | null = "utf-8";
-	public htmlAttributes: any = {};
+	public htmlAttributes: Record<string, string> = {};
 	public noscriptBanner: string | null = null;
 	public getQueryId: string = "query";
 	public baseUrl: string = "/";
 	public scripts: string[] = [];
 	public styles: string[] = [];
+	public viewport: string | null =
+		"width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0";
+	public autoMetaTags: string[] = ["title", "charset", "viewport"];
 
 	abstract name: Render.HTMLDriver;
 	abstract loader: Page.Loader<Type>;

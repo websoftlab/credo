@@ -80,7 +80,10 @@ const recursive = (
 		}
 
 		const [a, b] = all.split(regSpace, 2);
-		const value = parseInt(replacement[a] as string);
+		let value: number | string | undefined = replacement[a.substring(1)];
+		if (typeof value !== "number") {
+			value = value ? parseInt(value) : 0;
+		}
 		const variant = store.translate(b);
 		if (variant == null) {
 			return String(value);

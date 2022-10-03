@@ -1,0 +1,33 @@
+{
+	"name": "@phragon/plugin-validator",
+	"version": "1.0.0",
+	"author": "phragon@websoftlab.com",
+	"license": "MIT",
+	"scripts": {
+		"build": "node ../../scripts/lib/build.js",
+		"prettier": "node ../../scripts/lib/build-prettier.js"
+	},
+	"dependencies": {
+		"@phragon/utils": "*",
+		"@phragon/validator": "*"
+	},
+	"devDependencies": {
+		"@phragon/lexicon": "*"
+	},
+	"peerDependencies": {
+		"phragon": "*"
+	},
+	"exports": {
+		"./": "./build/",
+		".": {
+			"require": "./build/index.js"
+		}
+	},
+	"types": "build/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"build/index.d.ts": ["src/index.ts"],
+			"*": ["src/*"]
+		}
+	}
+}

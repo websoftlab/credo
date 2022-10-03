@@ -2,7 +2,7 @@ import rimraf from "rimraf";
 import normalizeFilePath from "./normalizeFilePath";
 import existsStat from "./existsStat";
 import localPathName from "./localPathName";
-import { debugBuild } from "../debug";
+import { debug } from "../debug";
 
 export default async function clear(path: string) {
 	path = normalizeFilePath(path);
@@ -11,10 +11,10 @@ export default async function clear(path: string) {
 		return;
 	}
 	if (!stat.isDirectory) {
-		return debugBuild("Warning! The {yellow %s} path is not directory", localPathName(path));
+		return debug("Warning! The {yellow %s} path is not directory", localPathName(path));
 	}
 
-	debugBuild(`Clearing {yellow %s} ...`, localPathName(path));
+	debug(`Clearing {yellow %s} ...`, localPathName(path));
 
 	return new Promise<void>((resolve, reject) => {
 		rimraf(path, (error) => {

@@ -11,7 +11,7 @@
 	"devDependencies": {},
 	"peerDependencies": {},
 	"exports": {
-		"./": "./src/",
+		"./": "./build/",
 		".": {
 			"require": "./build/index.js"
 		}

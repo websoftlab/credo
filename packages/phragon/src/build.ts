@@ -5,7 +5,7 @@ import { clear, copy, cwdPath } from "./utils";
 import spawn from "cross-spawn";
 import type { BuildMode, BuildOptions } from "./types";
 
-async function emitOnBuild(onBuildTimeout?: string | number) {
+async function emitOnBuild(onBuildTimeout?: string | number | null) {
 	const args = [cwdPath("build/server/cmd.js"), "build"];
 	if (onBuildTimeout != null) {
 		args.push("--timeout", String(onBuildTimeout));
@@ -26,15 +26,15 @@ async function emitOnBuild(onBuildTimeout?: string | number) {
 
 export default async function build(mode: BuildMode = "production") {
 	const factory = await compiler(mode);
-	const { ssr, renderDriver, clusters } = factory.options;
-	const conf: BuildOptions = { mode, factory, progressLine: false };
+	const { ssr, render, cluster: clusterList } = factory;
+	const conf: BuildOptions = { mode, factory };
 	const isProd = mode === "production";
 
 	await clear(`./${isProd ? "build" : "dev"}`);
 
-	if (renderDriver) {
-		if (clusters && clusters.length) {
-			for (let cluster of clusters) {
+	if (render) {
+		if (clusterList.length) {
+			for (let cluster of clusterList) {
 				if (cluster.mode !== "cron") {
 					await webpackBuilder({ cluster, type: "client", isDevServer: false, ...conf });
 					if (cluster.ssr) {
@@ -56,6 +56,6 @@ export default async function build(mode: BuildMode = "production") {
 	if (isProd) {
 		await copy(`./.phragon/cmd.js`, "./build/server/cmd.js");
 		await copy(`./.phragon/phragon-daemon.json`, "./build/server/phragon-daemon.json");
-		await emitOnBuild(factory.options.onBuildTimeout);
+		await emitOnBuild(factory.buildTimeout);
 	}
 }

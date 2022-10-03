@@ -3,18 +3,16 @@ import configure from "./configure";
 import type { BuildConfigure } from "../types";
 import type { PhragonPlugin } from "../types";
 
-function onDefineOptionNoSSR(event: { name: string; option: any }, conf: BuildConfigure) {
-	if (event.name === "config.define" && conf.type === "server") {
+function onDefineOptionNoSSR(event: { name: string; option: any; config: BuildConfigure }) {
+	if (event.name === "config.define" && event.config.type === "server") {
 		event.option.__SSR__ = false;
 	}
 }
 
 export default async function createWatch(opts: {
 	ssr: boolean;
-	progressLine: boolean;
-	debug?: (text: string, error?: boolean) => void;
 	factory: PhragonPlugin.Factory;
-	cluster?: PhragonPlugin.RootClusterOptions;
+	cluster?: PhragonPlugin.ClusterOptions;
 }) {
 	const { ssr, factory, ...rest } = opts;
 	if (!ssr) {

@@ -25,3 +25,5 @@ report.*.json
 /packages/*/bundle-version.json
 /scripts/lib
 /phragon-build.conf.json
+todo.md
+test-*

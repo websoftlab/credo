@@ -11,8 +11,19 @@ export default class RouteGroup extends RouteEntity implements Route.RouteGroup 
 	segments: string[];
 	routes: RouteVariant[] = [];
 
-	get length() {
+	get length(): number {
 		return this.segments.length;
+	}
+
+	get routeLength(): number {
+		return this.routes.length;
+	}
+
+	get nestedRouteLength(): number {
+		return this.routes.reduce(
+			(calc, route) => calc + (RouteEntity.isRouteGroup(route) ? route.nestedRouteLength : 1),
+			0
+		);
 	}
 
 	constructor(path: string, methods?: string | string[]) {

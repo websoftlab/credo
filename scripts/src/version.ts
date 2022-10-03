@@ -184,6 +184,7 @@ export async function increment(pg: WorkspacePackageDetail): Promise<Version> {
 	await writeJsonFile(pg.cwdPath("bundle-version.json"), {
 		version: pg.version,
 		nextVersion: newVer.version,
+		ignoreChannel: pg.ignoreChannel,
 		release: pg.release,
 	});
 

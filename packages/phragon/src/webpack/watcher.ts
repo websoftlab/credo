@@ -2,6 +2,7 @@ import type { Watch } from "../types";
 import type { Watching } from "webpack";
 import configure from "./configure";
 import webpack from "webpack";
+import { debug } from "../debug";
 
 export default async function watcher(serve: Watch.Serve) {
 	let watch: Watching | null = null;
@@ -24,14 +25,6 @@ export default async function watcher(serve: Watch.Serve) {
 		serve.emit("error", error);
 	}
 
-	function debug(message: string) {
-		serve.emit("debug", { message, context: "server-page" });
-	}
-
-	function disable(text: string = "") {
-		debug(`[status disabled] ${text}`);
-	}
-
 	serve.on("onBeforeBuild", abort);
 	serve.on("build", () => {
 		abort();
@@ -41,15 +34,14 @@ export default async function watcher(serve: Watch.Serve) {
 			return;
 		}
 
-		const { options } = factory;
-		if (!options.renderDriver) {
-			return disable("Render driver not registered");
+		if (!factory.render) {
+			return debug("Render driver not registered");
 		}
 
 		const { cluster } = serve;
-		const ssr = cluster ? (cluster.mode === "app" ? cluster.ssr : false) : options.ssr;
+		const ssr = cluster ? (cluster.mode === "app" ? cluster.ssr : false) : factory.ssr;
 		if (!ssr || !serve.ssr) {
-			return disable("SSR set false");
+			return debug("SSR set false");
 		}
 
 		if (restart) {
@@ -68,11 +60,6 @@ export default async function watcher(serve: Watch.Serve) {
 				mode: "development",
 				type: "server-page",
 				isDevServer: false,
-				debug: serve.progress
-					? (text: string, error?: boolean) =>
-							serve.emit("debug", { message: text, context: "server-page", error })
-					: undefined,
-				progressLine: serve.progress,
 				factory,
 				cluster,
 			})

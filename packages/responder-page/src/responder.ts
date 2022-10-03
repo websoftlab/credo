@@ -54,6 +54,8 @@ export default (function responder(phragon: PhragonJS, name: string) {
 		manifestOptions.mid = phragon.process.mid;
 	}
 
+	const PAGE_KEY = Symbol("page-key");
+	const IS_PAGE_KEY = Symbol("is-page-key");
 	const { ssr = true, getQueryId = "query", baseUrl = "/" } = options;
 
 	phragon.hooks.subscribe("onResponse", (evn) => {
@@ -67,7 +69,8 @@ export default (function responder(phragon: PhragonJS, name: string) {
 					},
 				});
 			} else {
-				return redirectNative.call(ctx, url, alt);
+				redirectNative.call(ctx, url, alt);
+				ctx.bodyEnd();
 			}
 		};
 	});
@@ -82,20 +85,23 @@ export default (function responder(phragon: PhragonJS, name: string) {
 
 		if (!route || notFound) {
 			ctx.route = createRoute(
-				createHttpError(ctx.store.translate("system.page.notFound", "Page not found"), 404),
+				createHttpError(404, ctx.store.translate("system.page.notFound", "Page not found")),
 				"404"
 			);
 		} else {
 			// redirect
 			let location = ctx.path;
-			let { t, ...query } = ctx.query;
-			if (query) {
+			let query = Object.assign({}, ctx.query);
+			Reflect.deleteProperty(query, ctx[PAGE_KEY as never]);
+
+			if (Object.keys(query).length > 0) {
 				const search = buildQuery(query);
 				if (search) {
 					location += `?${search}`;
 				}
 			}
-			ctx.route = createRoute(new HttpRedirect(location), `redirect:${location}`);
+
+			ctx.route = createRoute(new HttpRedirect(location, true), `redirect:${location}`);
 		}
 	});
 
@@ -103,12 +109,13 @@ export default (function responder(phragon: PhragonJS, name: string) {
 		return [200, 201, 202, 203, 205, 206, 207, 208, 226].includes(data.code);
 	}
 
-	const IS_PAGE_KEY = Symbol("is-page");
-
-	function isPageQueryId(query: any = {}) {
-		return Object.keys(query).some((key) => {
-			return !query[key] && key.startsWith(getQueryId) ? /^-\d+$/.test(key.substring(getQueryId.length)) : false;
-		});
+	function isPageQueryId(query: any = {}): null | string {
+		for (const key of Object.keys(query)) {
+			if (!query[key] && key.startsWith(getQueryId) && /^-\d+$/.test(key.substring(getQueryId.length))) {
+				return key;
+			}
+		}
+		return null;
 	}
 
 	function isPageJSON(ctx: Context): boolean {
@@ -116,19 +123,23 @@ export default (function responder(phragon: PhragonJS, name: string) {
 		if (typeof test === "boolean") {
 			return test;
 		}
-		test = false;
+		let found: null | string = null;
 		if (ctx.accepts("html", "json") === "json") {
 			if (ctx.method === "GET") {
-				test = isPageQueryId(ctx.query);
+				found = isPageQueryId(ctx.query);
 			} else if (ctx.method === "POST") {
-				test = isPageQueryId(ctx.request.body);
+				found = isPageQueryId(ctx.request.body);
 			}
 		}
+		test = found !== null;
 		Object.defineProperty(ctx, IS_PAGE_KEY, { value: test });
+		if (test) {
+			Object.defineProperty(ctx, PAGE_KEY, { value: found });
+		}
 		return test;
 	}
 
-	function sendRedirect(ctx: Context, location: string, code?: number) {
+	function sendRedirect(ctx: Context, location: string, code?: number, back: boolean = false) {
 		location = String(location).trim();
 		if (!location) {
 			location = "/";
@@ -137,6 +148,7 @@ export default (function responder(phragon: PhragonJS, name: string) {
 			ctx.bodyEnd({
 				redirect: {
 					location,
+					back,
 				},
 			});
 		} else {
@@ -189,7 +201,7 @@ export default (function responder(phragon: PhragonJS, name: string) {
 		await phragon.hooks.emit<OnPageJSONBeforeRenderHook>("onPageJSONBeforeRender", {
 			ctx,
 			body,
-			isError: "message" in body,
+			isError: !body.ok,
 		});
 
 		ctx.bodyEnd(body, body.code);
@@ -200,7 +212,7 @@ export default (function responder(phragon: PhragonJS, name: string) {
 			message = ctx.store.translate("system.page.unknownServerError", "Unknown server error");
 		}
 		if (isPageJSON(ctx)) {
-			return sendJSON(ctx, code, { message });
+			return sendJSON(ctx, code, { ok: false, message });
 		} else {
 			return sendHtml(
 				ctx,
@@ -216,7 +228,7 @@ export default (function responder(phragon: PhragonJS, name: string) {
 
 	function sendPage(ctx: Context, response: { page: string; data: any; props: any }, code: number, ssr?: boolean) {
 		if (isPageJSON(ctx)) {
-			return sendJSON(ctx, code, { response });
+			return sendJSON(ctx, code, { ok: true, response });
 		} else {
 			return sendHtml(
 				ctx,
@@ -230,7 +242,21 @@ export default (function responder(phragon: PhragonJS, name: string) {
 		}
 	}
 
-	async function responder(ctx: Context, result: ResponderPageResult, props: ResponderPageHandlerProps = {}) {
+	function parseError(ctx: Context, error: Error) {
+		let code = 500;
+		let message = "";
+		if (createHttpError.isHttpError(error)) {
+			code = error.status;
+			if (error.expose) {
+				message = error.message;
+			}
+		} else {
+			message = ctx.store.translate("system.page.invalidError", "Invalid error");
+		}
+		return { code, message };
+	}
+
+	async function responder(ctx: Context, result: ResponderPageResult | Error, props: ResponderPageHandlerProps = {}) {
 		if (renderHTMLDriver == null) {
 			throw new Error("renderHTMLDriver is not defined");
 		}
@@ -246,7 +272,7 @@ export default (function responder(phragon: PhragonJS, name: string) {
 		}
 
 		if (HttpRedirect.isHttpRedirect(result)) {
-			return sendRedirect(ctx, result.location);
+			return sendRedirect(ctx, result.location, undefined, result.back);
 		}
 
 		if (HttpPage.isHttpPage(result)) {
@@ -265,8 +291,9 @@ export default (function responder(phragon: PhragonJS, name: string) {
 			);
 		}
 
-		if (createHttpError.isHttpError(result)) {
-			return sendError(ctx, result.message, result.status, ssr);
+		if (result instanceof Error) {
+			const { code, message } = parseError(ctx, result);
+			return sendError(ctx, message, code, ssr);
 		}
 
 		// redirect page
@@ -323,22 +350,8 @@ export default (function responder(phragon: PhragonJS, name: string) {
 		name,
 		responder,
 		error(ctx: Context, error: Error) {
-			if (isPageJSON(ctx)) {
-				let code = 500;
-				let message = "";
-				if (createHttpError.isHttpError(error)) {
-					code = error.status;
-					if (error.expose) {
-						message = error.message;
-					}
-				}
-				if (!message) {
-					message = ctx.store.translate("system.page.queryError", "Query error");
-				}
-				ctx.bodyEnd({ code, message }, code < 600 ? code : 500);
-			} else {
-				throw error;
-			}
+			const { code, message } = parseError(ctx, error);
+			return sendError(ctx, message || ctx.store.translate("system.page.queryError", "Query error"), code, ssr);
 		},
 	};
 } as Ctor.Responder);

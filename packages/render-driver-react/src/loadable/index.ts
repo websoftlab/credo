@@ -1,5 +1,6 @@
 import { createLoadable, TimeoutError } from "@phragon/loadable";
 import { createContext, useContext, createElement, useState, useRef, useCallback, useEffect } from "react";
+import { __isDev__, __isWeb__ } from "@phragon/utils";
 import type { ObserverOptions } from "@phragon/loadable";
 
 function resolve<Type>(obj: any): Type {
@@ -50,7 +51,7 @@ function observer(options: ObserverOptions<JSX.Element, ReactFallbackProps>) {
 			}
 		}, []);
 
-		if (__WEB__) {
+		if (__isWeb__()) {
 			useEffect(() => {
 				if (isDone() || typeof window === "undefined") {
 					return;
@@ -124,7 +125,7 @@ function observer(options: ObserverOptions<JSX.Element, ReactFallbackProps>) {
 		}));
 	};
 
-	if (name && __DEV__) {
+	if (name && __isDev__()) {
 		Component.displayName = name;
 	}
 
