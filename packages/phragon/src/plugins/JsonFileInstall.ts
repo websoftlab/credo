@@ -24,6 +24,10 @@ export default class JsonFileInstall {
 		plugins: {},
 	};
 
+	get hash() {
+		return this[FI_KEY].hash || "";
+	}
+
 	get lock() {
 		return this[FI_KEY].lock;
 	}
@@ -34,6 +38,10 @@ export default class JsonFileInstall {
 
 	get plugins() {
 		return this[FI_KEY].plugins;
+	}
+
+	set hash(value: string) {
+		this[FI_KEY].hash = value;
 	}
 
 	set installed(value: boolean) {

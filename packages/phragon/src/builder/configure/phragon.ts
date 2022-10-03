@@ -4,7 +4,7 @@ import { readdir, stat } from "fs/promises";
 import { newError } from "@phragon/cli-color";
 import { asyncResult, isPlainObject } from "@phragon/utils";
 import { dirname, join, extname } from "path";
-import { cwdSearchFile, existsStat } from "../../utils";
+import { copyTemplateIfEmpty, cwdSearchFile, existsStat } from "../../utils";
 import { debug } from "../../debug";
 import { installDependencies, splitModule } from "../../dependencies";
 import { cpus } from "os";
@@ -682,6 +682,9 @@ async function _phragonRenderPage(
 	ssr: boolean,
 	cid?: string
 ): Promise<PhragonPlugin.ConfigType<"render", PhragonPlugin.RenderPage>> {
+	// copy default template
+	await copyTemplateIfEmpty(render);
+
 	const extList = getExtList(render, plugin);
 	let found: EStat | null = null;
 	if (cid) {

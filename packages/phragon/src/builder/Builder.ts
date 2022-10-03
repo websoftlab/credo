@@ -72,7 +72,7 @@ function _on(builder: Builder, eventName: string, listener: Function, once: bool
 	const e = _events(builder);
 	if (!e[eventName]) {
 		e[eventName] = [{ listener, once }];
-	} else if (e[eventName].findIndex((evn) => evn.listener === listener) !== -1) {
+	} else if (e[eventName].findIndex((evn) => evn.listener === listener) === -1) {
 		e[eventName].push({ listener, once });
 	}
 }

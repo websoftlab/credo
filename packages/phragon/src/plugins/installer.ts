@@ -20,6 +20,7 @@ import semver from "semver/preload";
 import { asyncResult, isPlainObject } from "@phragon/utils";
 import { phragonLexicon, phragonRender } from "../builder/configure";
 import cwdSearchFile from "../utils/cwdSearchFile";
+import createPluginFactory from "./createPluginFactory";
 
 async function createJsonFileInstall() {
 	const fi = new JsonFileInstall();
@@ -194,7 +195,7 @@ export async function installPhragonJS(parameters: InstallPhragonJSOptions) {
 export default function config(builder: BuilderI) { 
 	builder
 		.phragon${render ? `\n\t\t.render(${toJSON(render)}, true)` : ""}
-		.service("hello", "./src-server/hello-controller")
+		.controller("hello", "./src-server/hello-controller")
 		.publicPath("./public"); 
 }\n`
 		);
@@ -362,4 +363,7 @@ export default function() {
 
 	await done();
 	await installPluginProcess(builder.pluginList, fi);
+
+	const factory = await createPluginFactory(builder);
+	await factory.fireHook("onInstall", factory);
 }

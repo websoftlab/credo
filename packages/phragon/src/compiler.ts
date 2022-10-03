@@ -1,14 +1,7 @@
 import type { BuildMode, PhragonPlugin } from "./types";
 import { lstat, readdir } from "fs/promises";
 import { join, extname } from "path";
-import {
-	createCwdDirectoryIfNotExists,
-	copyTemplateIfEmpty,
-	cwdPath,
-	exists,
-	readJsonFile,
-	writeJsonFile,
-} from "./utils";
+import { createCwdDirectoryIfNotExists, cwdPath, exists, readJsonFile, writeJsonFile } from "./utils";
 import { installPluginProcess } from "./plugins/installer";
 import { buildClient, buildLexicon, buildServer, buildPages, buildServerDaemon } from "./generator";
 import { installDependencies, packageJson } from "./dependencies";
@@ -151,7 +144,6 @@ export default async function compiler(mode: BuildMode = "development"): Promise
 			if (render) {
 				await installDependencies(render.dependencies || {}, render.devDependencies || {});
 				await installDependencies({ "@phragon/responder-page": "latest" });
-				await copyTemplateIfEmpty(render);
 			}
 
 			await buildLexicon(factory);

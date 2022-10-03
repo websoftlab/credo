@@ -265,10 +265,7 @@ export declare namespace PhragonPlugin {
 		exists(name: string): boolean;
 
 		on(name: "onBuild", listener: (options: Factory) => void | Promise<void>): void;
-		on(
-			name: "onInstall",
-			listener: (options: { name: string; factory: Factory; department: Department }) => void | Promise<void>
-		): void;
+		on(name: "onInstall", listener: (options: Factory) => void | Promise<void>): void;
 		on(
 			name: "onWebpackConfigure",
 			listener: (event: { rollup: RollupConfigure; config: BuildConfigure }) => void | Promise<void>
@@ -289,7 +286,7 @@ export declare namespace PhragonPlugin {
 		off(name: "onOptions", listener: Function): void;
 
 		fireHook(name: "onBuild", options: Factory): Promise<void>;
-		fireHook(name: "onInstall", options: { name: string; factory: Factory; department: Department }): Promise<void>;
+		fireHook(name: "onInstall", options: Factory): Promise<void>;
 		fireHook(
 			name: "onWebpackConfigure",
 			event: { webpack: WebpackConfigure; config: BuildConfigure }
@@ -298,18 +295,9 @@ export declare namespace PhragonPlugin {
 		fireHook<T = any>(name: "onOptions", event: { name: string; option: T; config: BuildConfigure }): Promise<void>;
 	}
 
-	export interface Department {
-		readonly name: string;
-		readonly plugin: Plugin;
-
-		get<T = any>(key: string, defaultValue?: T): T;
-		set<T = any>(key: string, value: T): void;
-		del(key: string): void;
-	}
-
 	export interface Hooks {
 		onBuild?(options: Factory): void | Promise<void>;
-		onInstall?(options: { name: string; factory: Factory; department: Department }): void | Promise<void>;
+		onInstall?(options: Factory): void | Promise<void>;
 		onWebpackConfigure?(config: WebpackConfigure, options: BuildConfigure): void | Promise<void>;
 		onRollupConfigure?(config: RollupConfigure, options: BuildConfigure): void | Promise<void>;
 		onOptions?<T = any>(event: { name: string; option: T; config: BuildConfigure }): void | Promise<void>;
