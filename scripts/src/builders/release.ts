@@ -13,6 +13,9 @@ function createNpmArgs(args: string | string[], channel: ConfigChannel) {
 	if (typeof args === "string") {
 		args = [args];
 	}
+	if (args[0] === "publish" && !channel.registry) {
+		args.push("--access", "public");
+	}
 	if (channel.registry) {
 		args.push("--registry", channel.registry);
 	}
@@ -115,7 +118,7 @@ export default async function release(name: string, scope: string[] = []) {
 
 	const all = (await loadPackages()).filter((pg) => {
 		const ver = pg.release[name];
-		if (ver && ver === pg.version || pg.ignoreChannel.includes(name)) {
+		if ((ver && ver === pg.version) || pg.ignoreChannel.includes(name)) {
 			return false;
 		}
 		if (scope.length > 0) {

@@ -413,11 +413,20 @@ export async function installDependencies(
 					throw newError(`The {cyan %s} module is not installed`, module);
 				}
 				if (!satisfies(ver, dVer)) {
-					throw newError(
-						`Installed version of module {cyan %s} does not match new dependencies {cyan %s}`,
-						`${module}@${ver}`,
-						dVer
-					);
+					// ignore types
+					if (module.startsWith("@types/")) {
+						debug.error(
+							`Installed version of module {cyan %s} does not match new dependencies {cyan %s}`,
+							`${module}@${ver}`,
+							dVer
+						);
+					} else {
+						throw newError(
+							`Installed version of module {cyan %s} does not match new dependencies {cyan %s}`,
+							`${module}@${ver}`,
+							dVer
+						);
+					}
 				}
 			}
 		}
