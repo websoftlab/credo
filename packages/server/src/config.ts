@@ -176,7 +176,7 @@ function isEnv(data: any): data is { __env: EnvType } {
 	}
 }
 
-const ENV_REG = /^env:([\w.])+$/i;
+const ENV_REG = /^env:([\w.]+)$/;
 
 function getEnv(env: Env, name: string, config?: EnvConfig) {
 	if (typeof config !== "object") {
@@ -247,7 +247,7 @@ function loadEnv(data: any, config: EnvConfigType, env: Env) {
 		if (tof === "string") {
 			const match = (value as string).match(ENV_REG);
 			if (match) {
-				data[key] = getEnv(env, match[1], config[key]);
+				data[key] = getEnv(env, match[1], config[match[1]]);
 			}
 		} else if (tof === "object" && value != null) {
 			loadEnv(value, config, env);
