@@ -1,11 +1,11 @@
 import plurals from "./plurals";
 import type { Lexicon } from "./types";
 
-const regVars = /{(.+?)}/g;
+const regVars = /\{(.+?)}/g;
 const regSpace = /\s+/;
 const regLambda = /^%(.+?) *=> *(.+?)$/;
 const regPlural = /^%(.+?) +(["'`])(.+?)\2/;
-const regNumber = /(?<=^| )%number(?= |$)/;
+const regNumber = /(?:^|\B)%number(?:\b|$)/;
 
 function replaceText(key: string, replacement: any) {
 	if (replacement[key] == null) {

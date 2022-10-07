@@ -34,12 +34,71 @@ function formatterUpper(value: string) {
 	return value == null ? "" : String(value).toUpperCase();
 }
 
+const fn1 = (n: number) => n > 47 && n < 58; // number only
+const fn2 = (n: number) => (n > 47 && n < 58) || (n > 96 && n < 103) || (n > 64 && n < 71); // number A-Z a-z
+const fn3 = (n: number) => (n > 47 && n < 58) || (n > 96 && n < 123) || (n > 64 && n < 91) || n === 95; // number a-z A-Z _
+
+function escapeAmp(text: string) {
+	text = String(text);
+
+	let pos = 0;
+	while (pos < text.length) {
+		let index = text.indexOf("&", pos);
+		if (index === -1) {
+			break;
+		}
+
+		let ignore = false;
+		let ix = index + 1;
+		let lm = 50;
+		let cn = 0;
+		let fn = fn3;
+
+		if (text.charAt(ix) === "#") {
+			ix++;
+			lm = 10;
+			fn = fn1;
+			if (text.charAt(ix) === "x") {
+				ix++;
+				fn = fn2;
+			}
+		}
+
+		while (ix < text.length) {
+			const n = text.charCodeAt(ix++);
+			if (n === 59) {
+				if (cn > 0) {
+					ignore = true;
+				}
+				break;
+			} else if (fn(n)) {
+				if (++cn === lm) {
+					break;
+				}
+			} else {
+				break;
+			}
+		}
+
+		if (ignore) {
+			pos = ix - 1 > index ? ix - 1 : ix;
+		} else {
+			text =
+				(index > 0 ? text.substring(0, index) : "") +
+				"&amp;" +
+				(index + 1 < text.length ? text.substring(index + 1) : "");
+			pos = index + 5;
+		}
+	}
+
+	return text;
+}
+
 function formatterEscape(value: string) {
 	if (value == null) {
 		return "";
 	}
-	return String(value)
-		.replace(/&(?!#?\w+;)/g, "&amp;")
+	return escapeAmp(value)
 		.replace(/"/g, "&quot;")
 		.replace(/'/g, "&#x27;")
 		.replace(/</g, "&lt;")
