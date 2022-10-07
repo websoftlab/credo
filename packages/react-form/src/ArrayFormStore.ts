@@ -99,6 +99,7 @@ export default class ArrayFormStore<D = any> extends FStore<D[]> implements Arra
 			form: observable,
 			errors: observable,
 			submitError: observable,
+			expectant: observable,
 			wait: computed,
 			fill: action,
 			empty: action,

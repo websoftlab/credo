@@ -22,7 +22,7 @@ export default async function babel(config: BuildConfigure) {
 			: {
 					bugfixes: true,
 					targets: {
-						node: "12",
+						node: "14",
 					},
 			  },
 	]);

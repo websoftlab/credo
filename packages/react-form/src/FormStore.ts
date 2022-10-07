@@ -81,6 +81,7 @@ export default class FormStore<D = any> extends FStore<D> implements FormStoreIn
 			touchList: observable,
 			errors: observable,
 			submitError: observable,
+			expectant: observable,
 			wait: computed,
 			touch: computed,
 			fill: action,

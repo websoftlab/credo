@@ -5,13 +5,11 @@ import ArrayFormStore from "./ArrayFormStore";
 import { clonePlainObject, isPlainObject, __isDev__, asyncResult } from "@phragon/utils";
 
 const FROM_CHILD_ID = Symbol();
-const WAIT_ID = Symbol();
 const SUBMIT_ID = Symbol();
 const STORE_ID = Symbol();
 
 export default abstract class FStore<R> {
 	[FROM_CHILD_ID]: boolean = false;
-	[WAIT_ID]: boolean = false;
 	[SUBMIT_ID]: Function | undefined = undefined;
 	[STORE_ID]: string;
 
@@ -23,6 +21,7 @@ export default abstract class FStore<R> {
 
 	errors: Record<string, string | string[]> = {};
 	submitError: string | null = null;
+	expectant: boolean = false;
 
 	abstract form: R;
 
@@ -123,14 +122,14 @@ export default abstract class FStore<R> {
 		if (this.parent) {
 			return this.parent.wait;
 		}
-		return this[WAIT_ID];
+		return this.expectant;
 	}
 
 	*submit(): Generator {
 		if (this.parent) {
 			return this.parent.submit();
 		}
-		if (this[WAIT_ID]) {
+		if (this.expectant) {
 			throw new Error("The process is already running");
 		}
 
@@ -138,7 +137,7 @@ export default abstract class FStore<R> {
 			return;
 		}
 
-		this[WAIT_ID] = true;
+		this.expectant = true;
 
 		const submit = this[SUBMIT_ID];
 		if (typeof submit !== "function") {
@@ -147,7 +146,7 @@ export default abstract class FStore<R> {
 
 		return asyncResult(submit(this.toJSON()))
 			.finally(() => {
-				this[WAIT_ID] = false;
+				this.expectant = false;
 			})
 			.catch((err) => {
 				this.submitError = (err as Error).message || "Unknown error";

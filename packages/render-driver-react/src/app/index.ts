@@ -1,4 +1,4 @@
-export { useAppStore, usePageStore, useApiContext, useTranslator, useServices, ApiContext } from "./context";
+export { useAppStore, usePageStore, useApiContext, useService, ApiContext } from "./context";
 export {
 	Router,
 	Link,

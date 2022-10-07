@@ -170,8 +170,10 @@ export default class HtmlDocument {
 		});
 
 		const page = new PageStore({ http, loader: driver.loader });
+		await emit({ type: "server:page", page });
 
 		const api = new Api<any>("server", ctx.store, page);
+		await emit({ type: "server:api", api });
 
 		const html = await driver.toHTML(ctx, api, emit);
 
