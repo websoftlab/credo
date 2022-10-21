@@ -136,22 +136,17 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 	const err1 = () => app.translate("system.errors.pageResponseIsEmpty", "Page response is empty");
 	const err2 = () => app.translate("system.errors.unknown", "Unknown error");
 
-	if (api.ssr && found) {
-		try {
-			await load(loadable);
-		} catch (err) {
-			return error(err as Error);
+	if (found) {
+		if (loadable.length > 0) {
+			try {
+				await load(loadable);
+			} catch (err) {
+				return error(err as Error);
+			}
 		}
-		if (response) {
-			page.setResponse(response, url, key);
-			render(true);
-		} else {
-			error(err1());
-		}
-	} else if (found) {
 		if (response) {
 			page.loadDocument(response, url, key);
-			render();
+			render(api.ssr);
 		} else {
 			error(err1());
 		}
