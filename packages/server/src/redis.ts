@@ -1,4 +1,4 @@
-import redis from "redis";
+import { createClient } from "redis";
 import { debug } from "@phragon/cli-debug";
 import type { RedisClientType, RedisClientOptions } from "redis";
 
@@ -16,9 +16,9 @@ const DEFAULT_TTL: number = 3600 * 2;
 const REDIS_OPTIONS = Symbol("redis.options");
 const connections: Record<string | symbol, RedisClientType> = {};
 
-function createClient(options: RedisClientOptions) {
+function createRedisClient(options: RedisClientOptions) {
 	try {
-		return redis.createClient(options);
+		return createClient(options) as RedisClientType;
 	} catch (err) {
 		error(err as Error);
 		throw new Error("Redis client connection error");
@@ -27,7 +27,7 @@ function createClient(options: RedisClientOptions) {
 
 function getClient(): RedisClientType {
 	if (!redisClient) {
-		redisClient = createClient(clientOptions);
+		redisClient = createRedisClient(clientOptions);
 	}
 	return redisClient;
 }
@@ -39,12 +39,20 @@ function getClientFromConnection(obj: RedisConnection): RedisClientType {
 	}
 	const { name, clientOptions } = opt;
 	if (!connections[name]) {
-		connections[name] = createClient({
+		connections[name] = createRedisClient({
 			...defaultClientOptions,
 			...clientOptions,
 		});
 	}
 	return connections[name];
+}
+
+async function getClientFromConnectionAndConnect(obj: RedisConnection): Promise<RedisClientType> {
+	const connection = getClientFromConnection(obj);
+	if (!connection.isOpen) {
+		await connection.connect();
+	}
+	return connection;
 }
 
 function error(err: Error) {
@@ -61,22 +69,29 @@ export interface RedisCacheOptions<T> {
 
 export interface RedisCacheInterface {
 	data<T = any>(name: string): Promise<T>;
+
 	save<T = any>(name: string, data: T, options?: Omit<RedisCacheOptions<T>, "cacheable">): void;
+
 	read<T = any>(name: string, builder: RedisCacheReadBuilder<T>, options?: RedisCacheOptions<T>): Promise<T>;
+
 	clear(...args: string[]): void;
+
 	clear(keys: string[]): void;
 }
 
 export interface RedisStoreInterface {
 	get<T = any>(name: string): Promise<T | null>;
+
 	set(name: string, data: any, ttl?: number): Promise<void>;
+
 	destroy(name: string): Promise<number>;
 }
 
 async function redisGet<T = any>(obj: RedisConnection, name: string, throwable: boolean = false): Promise<T> {
 	let data: any = null;
 	try {
-		const value = await getClientFromConnection(obj).get(name);
+		const connection = await getClientFromConnectionAndConnect(obj);
+		const value = await connection.get(name);
 		if (typeof value === "string") {
 			data = JSON.parse(value);
 		}
@@ -91,7 +106,8 @@ async function redisGet<T = any>(obj: RedisConnection, name: string, throwable: 
 
 async function redisSet(obj: RedisConnection, name: string, data: any, ttl?: number) {
 	if (data != null) {
-		await getClientFromConnection(obj).set(name, JSON.stringify(data), {
+		const connection = await getClientFromConnectionAndConnect(obj);
+		await connection.set(name, JSON.stringify(data), {
 			EX: ttl || DEFAULT_TTL,
 		});
 	}
@@ -206,7 +222,9 @@ class RedisCache extends RedisConnection implements RedisCacheInterface {
 	clear(...args: string[] | [string[]]): void {
 		if (!args.length) {
 			// clear all
-			getClientFromConnection(this).flushDb().catch(error);
+			getClientFromConnectionAndConnect(this)
+				.then((conn) => conn.flushDb())
+				.catch(error);
 		} else {
 			if (args.length === 1 && Array.isArray(args[0])) {
 				args = args[0];
@@ -215,10 +233,10 @@ class RedisCache extends RedisConnection implements RedisCacheInterface {
 			const remove = async (keys: string | string[]) => {
 				if (Array.isArray(keys)) {
 					if (keys.length) {
-						return getClientFromConnection(this).del(keys);
+						return getClientFromConnectionAndConnect(this).then((conn) => conn.del(keys));
 					}
 				} else {
-					return getClientFromConnection(this).del(keys);
+					return getClientFromConnectionAndConnect(this).then((conn) => conn.del(keys));
 				}
 			};
 
@@ -229,7 +247,10 @@ class RedisCache extends RedisConnection implements RedisCacheInterface {
 							clear(item);
 						} else if (item.includes("*")) {
 							// remove by pattern
-							getClientFromConnection(this).keys(item).then(remove).catch(error);
+							getClientFromConnectionAndConnect(this)
+								.then((conn) => conn.keys(item))
+								.then(remove)
+								.catch(error);
 						} else {
 							remove(item).catch(error);
 						}
@@ -249,14 +270,18 @@ class RedisStore extends RedisConnection implements RedisStoreInterface {
 	constructor(options: RedisOptions = {}) {
 		super(options);
 	}
+
 	async get(name: string) {
 		return redisGet(this, name);
 	}
+
 	async set(name: string, data: any, ttl?: number) {
 		return redisSet(this, name, data, ttl);
 	}
+
 	async destroy(name: string) {
-		return getClientFromConnection(this).del(name);
+		const connection = await getClientFromConnectionAndConnect(this);
+		return connection.del(name);
 	}
 }
 
