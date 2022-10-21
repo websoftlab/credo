@@ -154,6 +154,18 @@ export default abstract class FStore<R> {
 	}
 
 	setError(name: IdType, value?: string | string[] | undefined | null): void {
+		// set child error
+		if (typeof name === "string") {
+			const index = name.indexOf("."); // name.error
+			if (index !== -1) {
+				const child = this.getChild(name.substring(0, index));
+				if (child) {
+					return child.setError(name.substring(index + 1), value);
+				}
+			}
+		}
+
+		// current error
 		if (value == null || (Array.isArray(value) && value.length === 0)) {
 			delete this.errors[name];
 		} else {
@@ -177,7 +189,7 @@ export default abstract class FStore<R> {
 
 	setChild(name: IdType, store: ArrayFormStore | FormStore): void {
 		if (this._children[name] !== store) {
-			if (FStore.isStore(store)) {
+			if (!FStore.isStore(store)) {
 				throw new Error("Store must be ArrayFormStore or FormStore");
 			}
 			if (!this.has(name)) {
