@@ -12,7 +12,8 @@
 		"@phragon/validator": "*"
 	},
 	"devDependencies": {
-		"@phragon/lexicon": "*"
+		"@phragon/lexicon": "*",
+		"@phragon/server": "*"
 	},
 	"peerDependencies": {
 		"phragon": "*"

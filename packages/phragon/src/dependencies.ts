@@ -1,12 +1,10 @@
 import https from "https";
-import { basename } from "path";
 import { satisfies } from "semver";
 import { newError } from "@phragon/cli-color";
-import { cwdPath, existsStat, readJsonFile, writeJsonFile } from "./utils";
+import { PackageJsonUtil } from "./utils";
 import { readFile } from "fs/promises";
 import { debug } from "./debug";
 import spawn from "cross-spawn";
-import deepmerge from "deepmerge";
 
 const regVer = /^\d+(?:\.\d+)+(?:-(?:alpha|beta|rc)(?:\.\d+(?:-[a-z0-9\-]+)?)?)?$/;
 
@@ -238,81 +236,6 @@ export function installPackage() {
 	});
 }
 
-function createName() {
-	// try create
-	let name = basename(process.cwd())
-		.replace(/[^a-z\d\-_]+/g, "")
-		.replace(/^[\-_\d]+/g, "")
-		.replace(/[\-_]+$/g, "");
-
-	if (!name) {
-		name = "phragon-project";
-	}
-
-	return name;
-}
-
-export interface PackageJsonUtil {
-	filePath: string;
-	data: any;
-	write(data?: any): Promise<void>;
-}
-
-export async function packageJson(createIfNotExists = true): Promise<PackageJsonUtil> {
-	const cwdPackageJsonFile = cwdPath("package.json");
-	const stat = await existsStat(cwdPackageJsonFile);
-
-	let create = false;
-	const pg: PackageJsonUtil = {
-		filePath: cwdPackageJsonFile,
-		data: {},
-		async write(data?: any) {
-			if (data) {
-				pg.data = deepmerge(pg.data, data);
-			}
-			debug(`${create ? "Create" : "Update"} {yellow %s}`, "./package.json");
-			create = false;
-			return writeJsonFile(cwdPackageJsonFile, pg.data);
-		},
-	};
-
-	if (!stat) {
-		if (!createIfNotExists) {
-			throw newError("The {yellow %s} file not found", "./package.json");
-		}
-
-		create = true;
-		const name = createName();
-		debug(`Set package name {yellow %s}`, name);
-
-		await pg.write({
-			name,
-			version: "1.0.0",
-			private: true,
-			description: "The PhragonJS project",
-			keywords: ["phragon-js", "phragon"],
-			dependencies: {},
-			devDependencies: {},
-		});
-	} else if (!stat.isFile) {
-		throw newError("{yellow %s} path must be a file", "./package.json");
-	} else {
-		pg.data = await readJsonFile(cwdPackageJsonFile);
-	}
-
-	// check name
-	if (!pg.data.name) {
-		if (!createIfNotExists) {
-			throw newError("Project name is not defined in the {yellow %s} file", "./package.json");
-		}
-		const name = createName();
-		debug(`Set package name {yellow %s}`, name);
-		await pg.write({ name });
-	}
-
-	return pg;
-}
-
 export async function uninstallDependencies(dependencies: string | string[]) {
 	if (!Array.isArray(dependencies)) {
 		dependencies = dependencies ? [dependencies] : [];
@@ -322,31 +245,24 @@ export async function uninstallDependencies(dependencies: string | string[]) {
 		return;
 	}
 
-	const pg = await packageJson();
-	const { data } = pg;
-	if (!data.dependencies) {
-		data.dependencies = {};
-	}
-	if (!data.devDependencies) {
-		data.devDependencies = {};
-	}
+	const pj = new PackageJsonUtil();
 
 	let update = false;
 	for (let name of dependencies) {
-		if (data.dependencies.hasOwnProperty(name)) {
-			delete data.dependencies[name];
+		if (await pj.hasIn("dependencies", name)) {
+			await pj.removeIn("dependencies", name);
 			update = true;
 		}
-		if (data.devDependencies.hasOwnProperty(name)) {
-			delete data.devDependencies[name];
+		if (await pj.hasIn("devDependencies", name)) {
+			await pj.removeIn("devDependencies", name);
 			update = true;
 		}
 	}
+
 	if (!update) {
 		return;
 	}
 
-	await pg.write();
 	await installPackage();
 }
 
@@ -355,21 +271,11 @@ export async function installDependencies(
 	devDependencies: string[] | Record<string, string> = {}
 ) {
 	// check package.json file
-	const pg = await packageJson();
+	const pj = new PackageJsonUtil();
 
 	dependencies = arrayToObject(dependencies);
 	devDependencies = arrayToObject(devDependencies);
 
-	const { data } = pg;
-	if (!data.dependencies) {
-		data.dependencies = {};
-	}
-
-	if (!data.devDependencies) {
-		data.devDependencies = {};
-	}
-
-	let updateFile = false;
 	let updateDependencies = false;
 
 	function isAny(ver: string) {
@@ -386,14 +292,12 @@ export async function installDependencies(
 			const dVer = list[module];
 			let ver: string | null = null;
 
-			if (data.dependencies[module]) {
-				ver = data.dependencies[module];
-			} else if (data.devDependencies[module]) {
-				ver = data.devDependencies[module];
-				if (key === "dependencies") {
-					delete data.devDependencies[module];
-					data.dependencies[module] = ver;
-					updateFile = true;
+			ver = await pj.getIn("dependencies", module);
+			if (ver == null) {
+				ver = await pj.getIn("devDependencies", module);
+				if (ver != null && key === "dependencies") {
+					await pj.removeIn("devDependencies", module);
+					await pj.setIn("dependencies", module, ver);
 				}
 			}
 
@@ -404,9 +308,9 @@ export async function installDependencies(
 				} else {
 					ver = dVer;
 				}
-				data[key][module] = ver;
+				await pj.setIn(key, module, ver);
+				debug(`Added new dependency {yellow %s}`, `${module}@${ver}`);
 				updateDependencies = true;
-				debug(`Added new dependency {yellow %s}`, `${module}@${data[key][module]}`);
 			} else if (!isAny(dVer)) {
 				ver = await getPackageModuleVersion(module);
 				if (!ver) {
@@ -436,9 +340,6 @@ export async function installDependencies(
 	await checkDependencies(devDependencies, "devDependencies");
 
 	if (updateDependencies) {
-		await pg.write();
 		await installPackage();
-	} else if (updateFile) {
-		await pg.write();
 	}
 }

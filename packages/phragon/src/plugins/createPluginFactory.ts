@@ -35,6 +35,22 @@ export default async function createPluginFactory(
 		}
 	}
 
+	// add docTypes
+	const docTypes: { reference: string; __plugin: PhragonPlugin.Plugin }[] = builder.getStore().store.docTypeReference;
+	if (Array.isArray(docTypes) && docTypes.length > 0) {
+		await docTypeReference(
+			docTypes.map((type) => {
+				let reference = type.reference;
+				if (reference.startsWith("./")) {
+					reference = reference.substring(2);
+				} else if (reference.startsWith("/")) {
+					reference = reference.substring(1);
+				}
+				return `${type.__plugin.name}/${reference}`;
+			})
+		);
+	}
+
 	// add extenders
 	const extenderList = await extender(builder.getStore());
 	for (const callback of extenderList) {

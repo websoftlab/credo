@@ -2,5 +2,8 @@
  * @param builder {BuilderI}
  */
 module.exports = function config(builder) {
-	builder.phragon.service("validator", "./service");
+	builder
+		.docTypeReference()
+		.phragon
+		.service("validator", "./service");
 }

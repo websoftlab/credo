@@ -11,6 +11,14 @@ export default <Omit<PhragonPlugin.RenderDriver, "modulePath">>{
 		javascript: [".jsx"],
 		typescript: [".tsx"],
 	},
+	dependencies: {
+		"@phragon/loadable": "*",
+		"@phragon/app": "*",
+		mobx: "^6.4.0",
+		"mobx-react-lite": "^3.4.0",
+		react: "^18.1.0",
+		"react-dom": "^18.1.0",
+	},
 	devDependencies: {
 		"@types/react": "^18.0.12",
 		"@types/react-dom": "^18.0.5",

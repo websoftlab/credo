@@ -1,0 +1,35 @@
+{
+	"name": "@phragon/extender-prettier",
+	"version": "1.0.0",
+	"author": "phragon@websoftlab.com",
+	"license": "MIT",
+	"scripts": {
+		"build": "node ../../scripts/lib/build.js",
+		"prettier": "node ../../scripts/lib/build-prettier.js"
+	},
+	"dependencies": {
+		"@phragon/cli-color": "*",
+		"@phragon/cli-commander": "*",
+		"cross-spawn": "^7.0.3"
+	},
+	"devDependencies": {
+		"@types/cross-spawn": "^6.0.2",
+		"@types/prettier": "^2.7.1"
+	},
+	"peerDependencies": {
+		"phragon": "*"
+	},
+	"exports": {
+		"./": "./build/",
+		".": {
+			"require": "./build/index.js"
+		}
+	},
+	"types": "build/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"build/index.d.ts": ["src/index.ts"],
+			"*": ["src/*"]
+		}
+	}
+}

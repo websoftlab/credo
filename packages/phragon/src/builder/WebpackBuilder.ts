@@ -4,7 +4,7 @@ import type { BuilderStoreI } from "./BuilderStore";
 
 const SET_ID = Symbol();
 
-function set<T>(builder: WebpackBuilder, name: string, value: T) {
+function set<T extends {}>(builder: WebpackBuilder, name: string, value: T) {
 	builder[SET_ID].webpack(name, value);
 }
 

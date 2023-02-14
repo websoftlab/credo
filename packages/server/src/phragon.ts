@@ -243,6 +243,16 @@ export async function createPhragonJS<T extends PhragonJSGlobal>(
 	return phragon as T;
 }
 
+export class BootGetter<GetType = any> {
+	get: () => GetType;
+	constructor(getter: () => GetType) {
+		this.get = getter;
+	}
+	static isGetter(object: any): object is BootGetter {
+		return typeof object === "object" && object instanceof BootGetter;
+	}
+}
+
 export class BootManager {
 	[REG_KEY]: CJSReg = {
 		prepend: false,
@@ -362,6 +372,11 @@ export class BootManager {
 			}
 		};
 
+		const registerPropertyDescriptor: PropertyDescriptor & ThisType<any> = {
+			enumerable: true,
+			configurable: false,
+		};
+
 		const register = async (key: CJSDefType, name: string, handler: any, props?: any) => {
 			if (phragon[key].hasOwnProperty(name)) {
 				throw new Error(`The "${name}" ${rename[key]} already exists`);
@@ -377,13 +392,21 @@ export class BootManager {
 				}
 				handler = await asyncResult(handler(...args));
 			}
-			Object.defineProperty(phragon[key], name, {
-				get() {
-					return handler;
-				},
-				enumerable: true,
-				configurable: false,
-			});
+			if (BootGetter.isGetter(handler)) {
+				Object.defineProperty(phragon[key], name, {
+					...registerPropertyDescriptor,
+					get() {
+						return handler.get();
+					},
+				});
+			} else {
+				Object.defineProperty(phragon[key], name, {
+					...registerPropertyDescriptor,
+					get() {
+						return handler;
+					},
+				});
+			}
 		};
 
 		const defs = [services];

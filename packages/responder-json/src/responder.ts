@@ -85,6 +85,9 @@ export default (function responder(phragon: PhragonJS, name: string): Route.Resp
 		await phragon.hooks.emit<OnJSONResponseErrorHook>("onJSONResponseError", {
 			ctx,
 			error,
+			get overwritten() {
+				return httpJson != null;
+			},
 			json<Plain extends {} = {}>(json: Plain | HttpJSON, status?: number) {
 				if (json instanceof HttpJSON) {
 					httpJson = json;

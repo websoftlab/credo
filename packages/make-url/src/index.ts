@@ -1,7 +1,11 @@
-import { pathToPattern } from "@phragon/path-to-pattern";
 import type { URL, OnMakeURLHook } from "./types";
+import { pathToPattern } from "@phragon/path-to-pattern";
+import UrlPattern from "./UrlPattern";
 
+export { UrlPattern };
 export type { URL, OnMakeURLHook };
+
+export const pattern = new UrlPattern();
 
 function builder(object: any, prefix: string, depth: number, options: URL.QueryOptions) {
 	if (object == null) {
@@ -48,15 +52,44 @@ export function buildQuery(object: any, options: URL.QueryOptions = {}) {
 const regHttp = /^https?:/;
 
 export function makeUrl(options: URL.Options): string {
-	let { path, hash, search, params, cacheable = true, host, port, protocol = "http", ...rest } = options;
+	let {
+		name,
+		path,
+		hash,
+		search,
+		params,
+		cacheable = true,
+		host,
+		port,
+		protocol = "http",
+		pattern: p = pattern,
+		...rest
+	} = options;
 
-	if (Array.isArray(path)) {
-		path = path.join("/");
+	if (name) {
+		const pt = p.get(name);
+		if (pt) {
+			path = pt.matchToPath({ data: params || {} });
+		} else {
+			path = "/";
+		}
+		params = null;
+	} else {
+		if (Array.isArray(path)) {
+			path = path.join("/");
+		}
+
+		if (typeof path === "string") {
+			path = path.trim();
+		} else if (path === 0) {
+			path = "0";
+		} else {
+			path = String(path || "/");
+		}
 	}
 
-	path = String(path || "").trim();
 	if (!regHttp.test(path)) {
-		if (path.charAt(0) !== "/") {
+		if (!path.startsWith("/")) {
 			path = `/${path}`;
 		}
 		if (host) {

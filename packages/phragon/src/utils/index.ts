@@ -18,3 +18,5 @@ export { default as clear } from "./clear";
 export { default as isEmptyDir } from "./isEmptyDir";
 export { default as copyTemplateIfEmpty } from "./copyTemplateIfEmpty";
 export { default as fileHash } from "./fileHash";
+export { default as PackageJsonUtil } from "./PackageJsonUtil";
+export { default as internalIp } from "./internalIp";

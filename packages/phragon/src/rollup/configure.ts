@@ -1,8 +1,8 @@
 import type { RollupTypescriptOptions } from "@rollup/plugin-typescript";
-import type { InputOptions, OutputOptions } from "rollup";
+import type { InputOptions, OutputOptions, InputPluginOption } from "rollup";
 import type { BuildConfigureOptions, BuildConfigure } from "../types";
 import typescript from "@rollup/plugin-typescript";
-import externals from "rollup-plugin-node-externals";
+//import externals from "rollup-plugin-node-externals";
 import resolvePlugin from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import json from "@rollup/plugin-json";
@@ -11,7 +11,7 @@ import aliasPlugin from "@rollup/plugin-alias";
 import baseConfigure from "../configure";
 import { alias, define } from "../config";
 import { cwdPath, buildPath, exists, readJsonFile } from "../utils";
-import progressRollupPlugin from "./plugins/progressRollupPlugin";
+import { nodeExternals, progressRollupPlugin } from "./plugins";
 import { debug } from "../debug";
 
 async function getTsConfig() {
@@ -32,6 +32,15 @@ async function getTsConfig() {
 	}
 	if (Array.isArray(tsOptions.exclude)) {
 		tsOptions.exclude.push("./src-client/**");
+	}
+	if (Array.isArray(tsOptions.include)) {
+		const include: string[] = [];
+		tsOptions.include.forEach((item) => {
+			if (typeof item === "string" && !item.includes("src-client")) {
+				include.push(item);
+			}
+		});
+		tsOptions.include = include;
 	}
 
 	return tsOptions;
@@ -70,48 +79,51 @@ export default async function configure(
 		}
 	}
 
+	const plugins: InputPluginOption[] = [
+		replace({
+			preventAssignment: false,
+			values: await define(conf),
+		}),
+		nodeExternals(await conf.fireOnOptionsHook("plugin.externals", {})),
+		commonjs(
+			await conf.fireOnOptionsHook("plugin.commonjs", {
+				extensions,
+			})
+		),
+		json(
+			await conf.fireOnOptionsHook("plugin.json", {
+				namedExports: false,
+			})
+		),
+		aliasPlugin({
+			entries: await alias(conf),
+		}),
+		resolvePlugin(
+			await conf.fireOnOptionsHook("plugin.resolve", {
+				extensions,
+			})
+		),
+		typescript(await conf.fireOnOptionsHook("plugin.typescript", await getTsConfig())),
+	];
+
 	const config: InputOptions & { output: OutputOptions } = {
 		input,
 		output: {
 			dir: cwdPath(`${bundle}/server`),
 			format: "cjs",
 			inlineDynamicImports: false,
+			esModule: "if-default-prop",
+			generatedCode: {
+				reservedNamesAsProps: false,
+			},
+			interop: "compat",
+			systemNullSetters: false,
 		},
-		plugins: [
-			replace({
-				preventAssignment: false,
-				values: await define(conf),
-			}),
-			externals(
-				await conf.fireOnOptionsHook("plugin.externals", {
-					deps: true,
-					include: [/^@phragon\/\w+/],
-				})
-			),
-			commonjs(
-				await conf.fireOnOptionsHook("plugin.commonjs", {
-					extensions,
-				})
-			),
-			json(
-				await conf.fireOnOptionsHook("plugin.json", {
-					namedExports: false,
-				})
-			),
-			aliasPlugin({
-				entries: await alias(conf),
-			}),
-			resolvePlugin(
-				await conf.fireOnOptionsHook("plugin.resolve", {
-					extensions,
-				})
-			),
-			typescript(await conf.fireOnOptionsHook("plugin.typescript", await getTsConfig())),
-		],
+		plugins,
 	};
 
 	if (debug.isTTY) {
-		config.plugins?.push(progressRollupPlugin(conf));
+		plugins.push(progressRollupPlugin(conf));
 	}
 
 	await conf.fireHook("onRollupConfigure", config);

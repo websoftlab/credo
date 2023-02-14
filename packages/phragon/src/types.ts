@@ -32,7 +32,8 @@ interface Configure {
 	// optional
 	devServerHost?: string;
 	devServerPort?: string | number;
-	devPort?: string | number;
+	proxyHost?: string;
+	proxyPort?: string | number;
 }
 
 // prettier-ignore

@@ -36,6 +36,10 @@ cmd("dev")
 	.option("--ssr", "Enable SSR")
 	.strict(true)
 	.action<never, Watch.CMDOptions>(async (_, options) => {
+		const { host } = options;
+		if (host && !options.devHost) {
+			options.devHost = host;
+		}
 		debug(`Start {cyan development} mode`, options);
 		await watch(options);
 		return -1;

@@ -57,7 +57,7 @@ export namespace App {
 	export interface StoreInterface<State = any> extends Lexicon.LanguageStoreInterface {
 		readonly state: State;
 		update(state: any): void;
-		reload(state: any): void;
+		reload(state: any, init?: boolean): void;
 	}
 }
 

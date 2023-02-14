@@ -2,6 +2,16 @@ module.exports = function getBabelConfig(api) {
 	const useESModules = api.env(['legacy', 'modern', 'stable']);
 	const presets = [];
 
+	presets.push(
+		[
+			"@babel/preset-typescript",
+			{
+				allowDeclareFields: true,
+			},
+		],
+		'@babel/preset-react',
+	);
+
 	if(api.env(["node", "commonjs"])) {
 		presets.push([
 			'@babel/preset-env', {
@@ -12,25 +22,24 @@ module.exports = function getBabelConfig(api) {
 				modules: useESModules ? false : 'commonjs',
 				shippedProposals: api.env('modern'),
 				targets: {
-					node: "12",
+					node: "14",
 					esmodules: true,
 				}
 			},
 		]);
 	}
 
-	presets.push(
-		'@babel/preset-react',
-		'@babel/preset-typescript',
-	);
-
 	const plugins = [
+		['@babel/plugin-transform-typescript', {
+			allowDeclareFields: true,
+		}],
 		'babel-plugin-optimize-clsx',
 		// Need the following 3 proposals for all targets in .browserslistrc.
 		// With our usage the transpiled loose mode is equivalent to spec mode.
 		['@babel/plugin-proposal-class-properties', { loose: true }],
 		['@babel/plugin-proposal-private-methods', { loose: true }],
 		['@babel/plugin-proposal-object-rest-spread', { loose: true }],
+		['@babel/plugin-proposal-decorators', { loose: true, decoratorsBeforeExport: true }],
 		[
 			'@babel/plugin-transform-runtime', {
 				useESModules,

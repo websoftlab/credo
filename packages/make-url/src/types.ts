@@ -1,3 +1,5 @@
+import type UrlPattern from "./UrlPattern";
+
 // URL
 export namespace URL {
 	export type QueryOptions = {
@@ -11,8 +13,10 @@ export namespace URL {
 		protocol?: "http" | "https";
 		search?: any;
 		hash?: string;
+		name?: string;
 		params?: any;
 		cacheable?: boolean;
+		pattern?: UrlPattern;
 	}
 
 	export type Handler<D = any> = (url: string | string[] | (Options & { details?: D })) => string;

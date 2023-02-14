@@ -1,11 +1,12 @@
 import type { TypeOfFormatHandler, TypeOfValidateHandler, ValidatorType, FormatterType } from "@phragon/validator";
 
-export type ValidateOptions<Dt = {}> = Dt & {
-	name: string;
+type ValidateBase<Dt extends {} = {}> = Dt & {
 	strict?: boolean;
 	required?: boolean;
 	nullable?: boolean;
 };
+
+export type ValidateOptions<Dt extends {} = {}> = ValidateBase<Dt & { name: string; }>;
 
 export type ValidateEntryType<E extends string = string> =
 	| "string"
@@ -25,7 +26,7 @@ export type ValidateEntryType<E extends string = string> =
 	| "uuid"
 	| E;
 
-export interface ValidateEntry<Val = any> extends Omit<ValidateOptions, "name"> {
+export interface ValidateEntry<Val = any> extends ValidateBase {
 	type?: ValidateEntryType;
 	defaultValue?: Val;
 	arrayEntryType?: ValidateEntryType;

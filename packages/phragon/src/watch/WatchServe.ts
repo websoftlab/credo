@@ -32,15 +32,15 @@ function getConfigCluster(id: string | undefined, factory: PhragonPlugin.Factory
 	return undefined;
 }
 
-function abortWatcher(serve: WatchServe) {
+async function abortWatcher(serve: WatchServe) {
 	const watcher = serve.watcher;
 	if (!watcher) {
 		return;
 	}
 	serve.watcher = null;
 	try {
-		watcher.removeAllListeners("event");
-		watcher.close();
+		watcher.removeAllListeners();
+		await watcher.close();
 	} catch (err: any) {
 		serve.emit("error", err);
 	}
@@ -118,8 +118,8 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 
 		const {
 			port = 1278,
-			devPort = 1277,
 			host = isWindows() ? "127.0.0.1" : "0.0.0.0",
+			devPort = 1277,
 			devHost = isWindows() ? "127.0.0.1" : "0.0.0.0",
 			ssr = false,
 			cluster = "",
@@ -302,13 +302,13 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 		return waiter;
 	}
 
-	private _tryStop() {
+	private async _tryStop() {
 		if (abortChildProcess(this)) {
 			this.emit("stop");
 		}
 
 		// kill last watcher
-		abortWatcher(this);
+		await abortWatcher(this);
 
 		this.factory = null;
 		this._waiter.end();
@@ -350,7 +350,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 			this._restartRepeat = false;
 
 			try {
-				this._tryStop();
+				await this._tryStop();
 			} catch (err: any) {
 				return done(false, err);
 			}
@@ -382,7 +382,7 @@ export default class WatchServe extends EventEmitter implements Watch.Serve {
 		}
 
 		try {
-			this._tryStop();
+			await this._tryStop();
 		} catch (err: any) {
 			this.emit("error", err);
 			return false;

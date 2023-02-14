@@ -9,11 +9,12 @@ import {
 	createCwdFileIfNotExists,
 	cwdSearchExists,
 	resolveFile,
+	PackageJsonUtil,
 } from "../utils";
 import JsonFileInstall from "./JsonFileInstall";
 import { randomBytes } from "crypto";
 import { debug } from "../debug";
-import { installDependencies, packageJson, uninstallDependencies } from "../dependencies";
+import { installDependencies, uninstallDependencies } from "../dependencies";
 import docTypeReference from "./docTypeReference";
 import { Builder, prebuild } from "../builder";
 import semver from "semver/preload";
@@ -183,7 +184,7 @@ export async function installPhragonJS(parameters: InstallPhragonJSOptions) {
 
 	let makeDefault = false;
 
-	const file = await cwdSearchFile("phragon.config.ts");
+	const file = await cwdSearchFile("phragon.config");
 	if (!file) {
 		makeDefault = true;
 		await createCwdDirectoryIfNotExists("public");
@@ -222,15 +223,16 @@ export default function() {
 		);
 	}
 
-	const pg = await packageJson();
-	const builder = new Builder(pg.data.name, pg.data.version);
+	const pj = new PackageJsonUtil();
+	const { name, version } = await pj.load();
+	const builder = new Builder(name, version);
 
 	// load config file
 	await builder.defineConfig(await prebuild());
 
 	const renderConfig = await phragonRender(builder.getStore());
 
-	// check render
+	// check, render
 	if (render) {
 		const userRender = renderConfig?.name;
 		if (render !== userRender) {
@@ -348,15 +350,17 @@ export default function() {
 
 	await installDependencies({}, (await readJsonFile(phragonPackageJson)).devDependencies || {});
 
-	//const packageJson = await readJsonFile("./package.json");
-	if (!pg.data.scripts || Object.keys(pg.data.scripts).length === 0) {
-		await pg.write({
-			scripts: {
-				dev: "phragon dev",
-				build: "phragon build",
-				start: "phragon-serv start",
-			},
-		});
+	// scripts
+	const defaultScripts: Record<string, string> = {
+		dev: "phragon dev",
+		build: "phragon build",
+		start: "phragon-serv start",
+	};
+
+	for (const key in defaultScripts) {
+		if (!(await pj.hasIn("scripts", key))) {
+			await pj.setIn("scripts", key, defaultScripts[key]);
+		}
 	}
 
 	fi.installed = true;

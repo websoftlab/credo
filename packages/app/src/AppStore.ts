@@ -20,8 +20,8 @@ function merge(main: any, state: any) {
 
 export default class AppStore<State = any> extends LanguageStore implements App.StoreInterface<State> {
 	public state: any;
-	public _initialState: any;
-	public _additionalState: any;
+	private readonly _initialState: any;
+	private readonly _additionalState: any;
 
 	constructor(state?: any) {
 		super();
@@ -57,10 +57,15 @@ export default class AppStore<State = any> extends LanguageStore implements App.
 		}
 	}
 
-	reload(state: any) {
+	reload(state: any, init: boolean = false) {
 		if (isPlainObject(state)) {
+			if (init) {
+				merge(this._initialState, state);
+			}
 			this.state = { ...this._initialState };
-			merge(this.state, state);
+			if (!init) {
+				merge(this.state, state);
+			}
 			merge(this.state, this._additionalState);
 		} else {
 			throw new Error("Application state should be a plain object");

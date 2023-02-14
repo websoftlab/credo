@@ -24,6 +24,7 @@ export interface ResponderJsonConfigOptions {
 
 export interface OnJSONResponseErrorHook extends CtxHook {
 	error: Error;
+	readonly overwritten: boolean;
 	json<Plain extends {} = {}>(json: Plain | HttpJSON, status?: number): void;
 }
 

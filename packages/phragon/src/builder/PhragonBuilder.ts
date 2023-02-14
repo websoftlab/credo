@@ -5,7 +5,7 @@ import { isPlainObject } from "@phragon/utils";
 
 const SET_ID = Symbol();
 
-function set<T>(builder: PhragonBuilder, name: string, value: T) {
+function set<T extends {}>(builder: PhragonBuilder, name: string, value: T) {
 	builder[SET_ID].phragon(name, value);
 }
 

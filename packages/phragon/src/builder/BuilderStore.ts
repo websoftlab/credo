@@ -13,6 +13,7 @@ export interface BuilderStoreI {
 	alias(name: string, directory: string): void;
 	define(name: string, value: DefType): void;
 	extender(name: string, config?: any): void;
+	docTypeReference(name?: string | string[]): void;
 	env(name: string, value: any): void;
 }
 
@@ -47,7 +48,8 @@ export default class BuilderStore implements BuilderStoreI {
 	[PLUGIN_ID]: PhragonPlugin.Plugin;
 
 	pluginList: PhragonPlugin.Plugin[] = [];
-	store: Record<StoreType, Record<string, any>> & Record<"alias" | "define" | "env" | "extender", any[]> = {
+	store: Record<StoreType, Record<string, any>> &
+		Record<"alias" | "define" | "env" | "extender" | "docTypeReference", any[]> = {
 		phragon: {},
 		rollup: {},
 		webpack: {},
@@ -55,6 +57,7 @@ export default class BuilderStore implements BuilderStoreI {
 		extender: [],
 		define: [],
 		env: [],
+		docTypeReference: [],
 	};
 
 	get pluginNameList(): string[] {
@@ -73,10 +76,11 @@ export default class BuilderStore implements BuilderStoreI {
 	}
 
 	constructor(plugin: PhragonPlugin.Plugin) {
-		this.plugin = plugin;
+		this[PLUGIN_ID] = plugin;
+		this.pluginList = [plugin];
 	}
 
-	add<T>(type: StoreType, name: string, value: T) {
+	add<T extends {}>(type: StoreType, name: string, value: T) {
 		if (!this.store.hasOwnProperty(type)) {
 			return;
 		}
@@ -101,7 +105,21 @@ export default class BuilderStore implements BuilderStoreI {
 	}
 
 	extender(name: string, config?: any) {
-		this.store.alias.push({ name, config: isPlainObject(config) ? config : null, __plugin: this.plugin });
+		this.store.extender.push({ name, config: isPlainObject(config) ? config : null, __plugin: this.plugin });
+	}
+
+	docTypeReference(name?: string | string[]) {
+		if (this.plugin.root) {
+			return;
+		}
+		if (!name) {
+			name = ["global"];
+		} else if (!Array.isArray(name)) {
+			name = [name];
+		}
+		name.forEach((reference) => {
+			this.store.docTypeReference.push({ reference, __plugin: this.plugin });
+		});
 	}
 
 	define(name: string, value: DefType) {

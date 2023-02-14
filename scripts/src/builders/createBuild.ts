@@ -56,7 +56,7 @@ async function buildPackageJson(
 
 	const brKey = "@babel/runtime";
 	if (babelRuntime && !data.devDependencies[brKey] && !data.dependencies[brKey]) {
-		data.dependencies[brKey] = "^7.17.0";
+		data.dependencies[brKey] = "^7.20.1";
 	}
 
 	const depNames = ["dependencies", "devDependencies", "peerDependencies"];

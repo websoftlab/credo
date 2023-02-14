@@ -1,10 +1,10 @@
 import type { BuildMode, PhragonPlugin } from "./types";
 import { lstat, readdir } from "fs/promises";
 import { join, extname } from "path";
-import { createCwdDirectoryIfNotExists, cwdPath, exists, readJsonFile, writeJsonFile } from "./utils";
+import { createCwdDirectoryIfNotExists, cwdPath, exists, PackageJsonUtil, readJsonFile, writeJsonFile } from "./utils";
 import { installPluginProcess } from "./plugins/installer";
 import { buildClient, buildLexicon, buildServer, buildPages, buildServerDaemon } from "./generator";
-import { installDependencies, packageJson } from "./dependencies";
+import { installDependencies } from "./dependencies";
 import createPluginFactory from "./plugins/createPluginFactory";
 import { Builder, prebuild } from "./builder";
 import fileHash from "./utils/fileHash";
@@ -113,8 +113,8 @@ async function needUpdate(develop: boolean) {
 }
 
 export default async function compiler(mode: BuildMode = "development"): Promise<PhragonPlugin.Factory> {
-	const pg = await packageJson(false);
-	const builder = new Builder(pg.data.name, pg.data.version);
+	const { name, version } = await new PackageJsonUtil().load();
+	const builder = new Builder(name, version);
 
 	// load config file
 	await builder.defineConfig(await prebuild());

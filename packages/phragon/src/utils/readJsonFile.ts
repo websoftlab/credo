@@ -3,5 +3,9 @@ import normalizeFilePath from "./normalizeFilePath";
 
 export default async function readJsonFile(file: string) {
 	file = normalizeFilePath(file);
-	return JSON.parse((await readFile(file)).toString());
+	const data = (await readFile(file)).toString();
+	if (!data) {
+		return {};
+	}
+	return JSON.parse(data);
 }

@@ -6,7 +6,16 @@ export type ValidatorType = Validator | string | { name: string; args?: any[]; m
 
 export type Formatter<Val = any> = (value: Val, name: IdType) => Val | undefined;
 
-export type FormatterType = Formatter | "trim" | "ltrim" | "rtrim" | "escape" | "unescape" | "lower" | "upper";
+export type FormatterType<Type extends string = string> =
+	| Formatter
+	| "trim"
+	| "ltrim"
+	| "rtrim"
+	| "escape"
+	| "unescape"
+	| "lower"
+	| "upper"
+	| Type;
 
 export type TypeOfFormatHandler<T = any, Dt = {}> = (value: any, options: TypeOfValidatorOptions<Dt>) => T | Promise<T>;
 

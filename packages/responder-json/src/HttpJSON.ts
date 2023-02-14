@@ -1,5 +1,5 @@
-export default class HttpJSON {
-	constructor(public body: any, public status: number = 200) {}
+export default class HttpJSON<Body extends {} = any> {
+	constructor(public body: Body, public status: number = 200) {}
 	toJSON() {
 		return this.body;
 	}

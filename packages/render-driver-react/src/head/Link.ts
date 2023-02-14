@@ -11,8 +11,9 @@ export type LinkProps = HeadTagProps<{
 	rel?: string | undefined;
 	sizes?: string | undefined;
 	type?: string | undefined;
+	color?: string | undefined;
 }>;
 
 export default createHeadComponent<LinkProps>("link", {
-	attributes: ["href", "hrefLang", "crossOrigin", "media", "referrerPolicy", "rel", "sizes", "type"],
+	attributes: ["href", "hrefLang", "crossOrigin", "media", "referrerPolicy", "rel", "sizes", "type", "color"],
 });

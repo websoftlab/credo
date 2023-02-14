@@ -21,7 +21,7 @@ function updateParent(self: FormStore) {
 	}
 }
 
-export default class FormStore<D = any> extends FStore<D> implements FormStoreInterface<D> {
+export default class FormStore<D extends {} = any> extends FStore<D> implements FormStoreInterface<D> {
 	private readonly _sanitizerGlobal: Formatter | undefined = undefined;
 	private readonly _sanitizers: Record<IdType, Formatter> = {};
 	private readonly _formatterGlobal: Formatter | undefined = undefined;

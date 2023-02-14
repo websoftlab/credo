@@ -5,7 +5,7 @@ import { clear, copy, cwdPath } from "./utils";
 import spawn from "cross-spawn";
 import type { BuildMode, BuildOptions } from "./types";
 
-async function emitOnBuild(onBuildTimeout?: string | number | null) {
+export async function emitOnBuild(onBuildTimeout?: string | number | null) {
 	const args = [cwdPath("build/server/cmd.js"), "build"];
 	if (onBuildTimeout != null) {
 		args.push("--timeout", String(onBuildTimeout));
@@ -56,6 +56,6 @@ export default async function build(mode: BuildMode = "production") {
 	if (isProd) {
 		await copy(`./.phragon/cmd.js`, "./build/server/cmd.js");
 		await copy(`./.phragon/phragon-daemon.json`, "./build/server/phragon-daemon.json");
-		await emitOnBuild(factory.buildTimeout);
+		// todo move to @phragon/server start command await emitOnBuild(factory.buildTimeout);
 	}
 }

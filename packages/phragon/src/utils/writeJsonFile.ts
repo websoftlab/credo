@@ -1,5 +1,5 @@
 import { WriteFileOptions } from "fs";
-import { writeFile } from "fs/promises";
+import writeFile from "./writeFile";
 import normalizeFilePath from "./normalizeFilePath";
 
 export default async function writeJsonFile(file: string, data: any, options?: WriteFileOptions | null) {

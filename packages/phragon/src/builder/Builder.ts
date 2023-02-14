@@ -32,6 +32,7 @@ export interface BuilderI {
 	once(eventName: string, callback: Function): this;
 	off(eventName: string, callback: Function): this;
 	extender(name: string, config?: any): this; // css | scss | less | etc. ...
+	docTypeReference(name?: string | string[]): this;
 }
 
 const eventNames: string[] = ["onOptions", "onBuild", "onInstall", "onRollupConfigure", "onWebpackConfigure"];
@@ -188,6 +189,11 @@ export default class Builder implements BuilderI {
 
 	extender(name: string, config?: any): this {
 		_store(this, ["load", "init"]).extender(name, config);
+		return this;
+	}
+
+	docTypeReference(name?: string | string[]): this {
+		_store(this, ["load", "init"]).docTypeReference(name);
 		return this;
 	}
 

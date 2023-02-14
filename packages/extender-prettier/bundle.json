@@ -1,0 +1,20 @@
+{
+	"src": [
+		{
+			"target": "node",
+			"output": ".",
+			"package.json": {
+				"bin": {
+					"phragon-prettier": "./bin.js"
+				}
+			}
+		},
+		{
+			"target": "types",
+			"output": ".",
+			"package.json": {
+				"types": "./index.d.ts"
+			}
+		}
+	]
+}

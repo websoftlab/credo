@@ -4,7 +4,7 @@ import type { BuilderStoreI } from "./BuilderStore";
 
 const SET_ID = Symbol();
 
-function set<T>(builder: RollupBuilder, name: string, value: T) {
+function set<T extends {}>(builder: RollupBuilder, name: string, value: T) {
 	builder[SET_ID].rollup(name, value);
 }
 

@@ -6,14 +6,6 @@ declare global {
 	export var phragon: PhragonJS;
 }
 
-declare module "@phragon/make-url" {
-	namespace URL {
-		interface Options {
-			name?: string;
-		}
-	}
-}
-
 declare module "cluster" {
 	interface Worker {
 		workerData?: WorkerCJS.Data;

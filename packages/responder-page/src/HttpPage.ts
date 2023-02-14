@@ -1,10 +1,10 @@
 import { isHttpStatus } from "./utils/status";
 
-export default class HttpPage {
-	data: any;
+export default class HttpPage<Data = any, Page extends string = string, Props extends {} = any> {
+	data: Data;
 	status: number = 200;
-	page: string | null | undefined = null;
-	props: any;
+	page: Page | null | undefined = null;
+	props: Props = <Props>{};
 	ssr: boolean | null = false;
 
 	constructor(data: any, status: number = 200) {
@@ -19,12 +19,12 @@ export default class HttpPage {
 		return this;
 	}
 
-	setPage(page: string) {
+	setPage(page: Page) {
 		this.page = page;
 		return this;
 	}
 
-	setProps(props: any) {
+	setProps(props: Props) {
 		this.props = props;
 		return this;
 	}

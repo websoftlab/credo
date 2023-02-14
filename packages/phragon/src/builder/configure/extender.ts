@@ -9,10 +9,10 @@ import { isList } from "./util";
 type ExtenderCallback = (builder: Builder) => void | Promise<void>;
 
 const extenderAlias: Record<string, string> = { sass: "scss" };
-const extenderLink: string[] = ["css", "scss", "react-svg"];
+const extenderLink: string[] = ["css", "scss", "react-svg", "prettier"];
 
 export default async function extender(store: BuilderStore) {
-	const list: PhragonPlugin.ConfigType<"name", string, { config: any }>[] | undefined = store.store.webpack.extender;
+	const list: PhragonPlugin.ConfigType<"name", string, { config: any }>[] | undefined = store.store.extender;
 	if (!isList(list)) {
 		return [];
 	}
@@ -26,7 +26,7 @@ export default async function extender(store: BuilderStore) {
 		if (extenderAlias.hasOwnProperty(lower)) {
 			lower = extenderAlias[lower];
 		}
-		const moduleName = extenderLink.includes(lower) ? `@phragon/webpack-extender-${lower}` : name;
+		const moduleName = extenderLink.includes(lower) ? `@phragon/extender-${lower}` : name;
 		if (!moduleName.startsWith("./")) {
 			let ver = version;
 			if (/^\d/.test(ver)) {
@@ -36,9 +36,7 @@ export default async function extender(store: BuilderStore) {
 		}
 		let closure: any;
 		try {
-			closure = require(moduleName.startsWith("./")
-				? join(__plugin.cwd, moduleName)
-				: `${moduleName}/phragon.extender`);
+			closure = require(moduleName.startsWith("./") ? join(__plugin.cwd, moduleName) : moduleName);
 		} catch (err) {
 			if ((err as any).code === "MODULE_NOT_FOUND") {
 				throw newError("Extender module {yellow %s} not found", name);

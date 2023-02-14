@@ -65,6 +65,8 @@ export default async function devWatcher(serve: Watch.Serve) {
 						isDevServer: true,
 						devServerHost: serve.devHost,
 						devServerPort: String(serve.devPort),
+						proxyHost: serve.host,
+						proxyPort: String(serve.port),
 						factory,
 						cluster,
 					})
