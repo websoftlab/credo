@@ -1,7 +1,7 @@
 import type { API } from "@phragon/app";
 import type { ElementType } from "react";
 import { createContext, useContext } from "react";
-import { invariant } from "@phragon/utils";
+import { invariant } from "@phragon-util/proof";
 
 export const ApiContext = createContext<API.ApiInterface<ElementType> | null>(null);
 

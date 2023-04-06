@@ -1,7 +1,7 @@
 import type BuilderStore from "../BuilderStore";
 import type { RuleSetRule, Compiler, WebpackPluginInstance } from "webpack";
 import type { PhragonPlugin, WebpackConfigure, BuildConfigure } from "../../types";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 import { isList } from "./util";
 
 type WebpackVendorType = string | RegExp | Function;

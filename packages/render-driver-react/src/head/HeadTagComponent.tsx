@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { useHeadContext } from "./context";
-import { __isWeb__ } from "@phragon/utils";
+import { __isWeb__ } from "@phragon-util/global-var";
 import type { HeadTagName } from "@phragon/html-head";
 
 export default function HeadTagComponent(props: {

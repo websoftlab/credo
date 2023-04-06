@@ -1,10 +1,8 @@
 import { makeUrl } from "@phragon/make-url";
-import { createPlainEvent, subscribe, has } from "@phragon/utils/events";
+import { createPlainEvent, subscribe, has } from "@phragon-util/event-map";
 import type { API, App, Page } from "./types";
 import type { URL, OnMakeURLHook } from "@phragon/make-url";
-import type { Evn } from "@phragon/utils/events";
-
-type ListenersData = Record<API.HookName, Evn[]>;
+import type { Evn, ListenersData } from "@phragon-util/event-map";
 
 function observe(evn: Evn) {
 	evn.emit = (self: any, event: any) => {
@@ -52,7 +50,7 @@ export default class Api<ComponentType, Store = any> implements API.ApiInterface
 	services: API.Services;
 	[key: string]: any;
 
-	private _listeners: ListenersData = {};
+	private _listeners: ListenersData = new Map<API.HookName, Set<Evn>>();
 
 	constructor(
 		public mode: "client" | "server",
@@ -89,11 +87,12 @@ export default class Api<ComponentType, Store = any> implements API.ApiInterface
 	}
 
 	emit<T = any>(action: API.HookName, event?: T) {
-		if (this._listeners.hasOwnProperty(action)) {
+		const map = this._listeners.get(action);
+		if (map && map.size > 0) {
 			event = createPlainEvent(action, event);
-			this._listeners[action].slice().forEach((evn: Evn) => {
+			for (const evn of map.values()) {
 				evn.emit(this, event);
-			});
+			}
 		}
 	}
 }

@@ -4,27 +4,28 @@
 	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
-		"build": "node ../../scripts/lib/build.js",
-		"prettier": "node ../../scripts/lib/build-prettier.js"
+		"build": "phragon-script build --cwd \"../../\" -P @phragon/plugin-dashboard",
+		"prettier": "phragon-script prettier --cwd \"../../\" -P @phragon/plugin-dashboard"
 	},
 	"dependencies": {
 		"@phragon/server": "*",
 		"@phragon/responder-page": "*",
 		"@phragon/responder-json": "*",
-		"@phragon/utils": "*",
+		"@phragon/path-to-pattern": "*",
+		"@phragon-util/plain-object": "^0.0.3",
+		"@phragon-util/global-var": "^0.0.2",
+		"@phragon-util/async": "^0.0.2",
 		"http-errors": "^1.7.3"
 	},
 	"devDependencies": {
 		"@types/koa": "^2.13.4",
 		"@types/http-errors": "^1.6.3",
-		"@phragon/path-to-pattern": "*",
 		"@phragon/lexicon": "*"
 	},
 	"peerDependencies": {
 		"@phragon/plugin-validator": "*"
 	},
 	"exports": {
-		"./": "./build/",
 		".": {
 			"require": "./build/index.js"
 		}

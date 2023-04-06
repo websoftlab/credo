@@ -9,8 +9,11 @@ import { compilePath } from "@phragon/path-to-pattern";
 import { apiGetState } from "./api";
 import { homePageController } from "./web";
 import createHttpError from "http-errors";
-import { __isDev__, asyncResult, isPlainObject } from "@phragon/utils";
+import { __isDev__ } from "@phragon-util/global-var";
+import { isPlainObject } from "@phragon-util/plain-object";
+import { toAsync } from "@phragon-util/async";
 import { HttpPage } from "@phragon/responder-page";
+import { DisplayError, ConfirmationError } from "./error";
 
 function createDashboardPath(path?: string) {
 	let pref = String(typeof path === "string" ? path : "/dashboard").trim();
@@ -53,7 +56,9 @@ export function createOnAppStateHook(phragon: PhragonJS) {
 export function createOnResponseHook() {
 	return async function onResponseHook(event: OnResponseHook) {
 		const { ctx } = event;
-		await ctx.store.loadLanguage(ctx.store.language, "dashboard");
+		if (!ctx.store.packages.includes("dashboard")) {
+			await ctx.store.loadLanguage(ctx.store.language, "dashboard");
+		}
 	};
 }
 
@@ -68,16 +73,56 @@ export function createOnLoadHook(phragon: PhragonJS) {
 			const { ctx, error } = event;
 			const prefix = ctx.dashboardPlugin ? "dashboard:" : "validate:";
 
+			function codeNameMessage(message: string, codeName: string | null, slug: string) {
+				if (codeName == null) {
+					codeName = `${prefix}message.${message}`;
+				} else if (!codeName.includes(":")) {
+					codeName = `${prefix}${slug}.${codeName}`;
+				}
+				return ctx.store.translate(codeName, message);
+			}
+
+			if (DisplayError.isError(error)) {
+				const { message, codeName } = error;
+				return event.json(
+					{
+						ok: false,
+						codeName: "displayError",
+						message: codeNameMessage(message, codeName, "display"),
+					} as Dashboard.APIResponse,
+					500
+				);
+			}
+
+			if (ConfirmationError.isError(error)) {
+				const { message, codeName, data } = error;
+				return event.json(
+					{
+						ok: false,
+						codeName: "confirmationError",
+						message:
+							error.message ||
+							ctx.store.translate(`${prefix}confirmationRequired`, "Confirmation required"),
+						payload: {
+							message: codeNameMessage(message, codeName, "confirmation"),
+							data,
+						},
+					} as Dashboard.APIResponse,
+					400
+				);
+			}
+
 			if (validator) {
 				if (validator.isValidateDataError(error)) {
 					return event.json(
 						{
 							ok: false,
+							codeName: "validateError",
 							message: error.message || ctx.store.translate(`${prefix}dataError`, "Data error"),
 							payload: {
 								errors: error.errors,
 							},
-						},
+						} as Dashboard.APIResponse,
 						400
 					);
 				}
@@ -85,13 +130,14 @@ export function createOnLoadHook(phragon: PhragonJS) {
 					return event.json(
 						{
 							ok: false,
+							codeName: "validateError",
 							message: ctx.store.translate(`${prefix}dataError`, "Data error"),
 							payload: {
 								errors: {
 									[error.field]: error.message,
 								},
 							},
-						},
+						} as Dashboard.APIResponse,
 						400
 					);
 				}
@@ -110,7 +156,7 @@ export function createOnLoadHook(phragon: PhragonJS) {
 				{
 					ok: false,
 					message: ctx.store.translate(`${prefix}message.${message}`, message),
-				},
+				} as Dashboard.APIResponse,
 				code
 			);
 		});
@@ -256,7 +302,7 @@ export function createDashboardPanel(phragon: PhragonJS) {
 		});
 		// request
 		if (requestList.hasOwnProperty(name)) {
-			await asyncResult(requestList[name](ctx));
+			await toAsync(requestList[name](ctx));
 		}
 	}
 
@@ -313,7 +359,7 @@ export function createDashboardPanel(phragon: PhragonJS) {
 		controller: (ctx: Context) => any | Promise<any>
 	) {
 		try {
-			const data = await asyncResult(controller(ctx));
+			const data = await toAsync(controller(ctx));
 			if (!isApi) {
 				return await _webFormat(ctx, data);
 			}
@@ -373,7 +419,7 @@ export function createDashboardPanel(phragon: PhragonJS) {
 								return;
 							}
 							try {
-								await asyncResult(controller(ctx));
+								await toAsync(controller(ctx));
 							} catch (err) {
 								phragon.debug.error(`Dashboard plugin controller "%s" failure`, routeName, err);
 								return err;

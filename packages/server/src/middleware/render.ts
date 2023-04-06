@@ -1,4 +1,5 @@
-import { asyncResult, callIn } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
+import { callIn } from "@phragon-util/call-in";
 import createError from "http-errors";
 import type { Context } from "koa";
 import type {
@@ -70,7 +71,7 @@ export async function throwError(ctx: Context, error: any, routeContext?: Route.
 		const res = phragon.responders[name];
 		if (res && typeof res.error === "function") {
 			try {
-				return await asyncResult(res.error(ctx, error));
+				return await toAsync(res.error(ctx, error));
 			} catch (err) {
 				error = err;
 			}
@@ -152,9 +153,9 @@ export function middleware(phragon: PhragonJS) {
 
 		if (cache && phragon.cache) {
 			try {
-				cacheable = await asyncResult(cache.cacheable(ctx));
+				cacheable = await toAsync(cache.cacheable(ctx));
 				if (cacheable) {
-					cacheKey = await asyncResult(cache.getKey(ctx));
+					cacheKey = await toAsync(cache.getKey(ctx));
 					cacheData = await phragon.cache.data(cacheKey);
 					if (cacheData && cacheData.mode === cache.mode) {
 						cached = true;

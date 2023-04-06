@@ -8,12 +8,26 @@ export default function createTranslator(store: Lexicon.LanguageStoreInterface):
 			key = { id: key };
 		}
 
-		const value = store.translate(key.id, key.alternative);
-		if (value === key.id) {
-			return value;
+		let value = store.line(key.id);
+		if (value == null) {
+			if (typeof key.alternative === "function") {
+				value = key.alternative(key.id);
+			} else if (key.alternative) {
+				value = key.alternative;
+			} else {
+				return key.id;
+			}
 		}
 
-		return translate(store, value, key.replacement);
+		return translate(store, String(value), key.replacement);
+	};
+
+	translator.language = () => {
+		return store.language;
+	};
+
+	translator.line = <Val = string>(key: string) => {
+		return store.line<Val>(key);
 	};
 
 	translator.replace = (text: string, replacement: any) => {
@@ -24,12 +38,12 @@ export default function createTranslator(store: Lexicon.LanguageStoreInterface):
 		return plural(store, value, variant);
 	};
 
-	translator.lambda = (name: string, value: any, replacement?: any) => {
-		const func = store.lambda[name];
+	translator.lambda = <Val = string>(name: string, value: any, replacement?: any): Val => {
+		const func = store.lambda[name] as Lexicon.LambdaTranslate<Val>;
 		if (typeof func === "function") {
 			return func(value, { name, translator, data: replacement });
 		}
-		return `() => [${name}]`;
+		return `() => [${name}]` as Val;
 	};
 
 	return translator;

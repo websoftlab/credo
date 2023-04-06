@@ -1,4 +1,5 @@
 import type { PhragonPlugin, InstallPhragonJSOptions } from "../types";
+import type { JsonFileInstall } from "./JsonFileInstall";
 import { readdir } from "fs/promises";
 import { format, newError } from "@phragon/cli-color";
 import {
@@ -11,20 +12,21 @@ import {
 	resolveFile,
 	PackageJsonUtil,
 } from "../utils";
-import JsonFileInstall from "./JsonFileInstall";
+import { installJson } from "./JsonFileInstall";
 import { randomBytes } from "crypto";
 import { debug } from "../debug";
 import { installDependencies, uninstallDependencies } from "../dependencies";
 import docTypeReference from "./docTypeReference";
 import { Builder, prebuild } from "../builder";
 import semver from "semver/preload";
-import { asyncResult, isPlainObject } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
+import { isPlainObject } from "@phragon-util/plain-object";
 import { phragonLexicon, phragonRender } from "../builder/configure";
 import cwdSearchFile from "../utils/cwdSearchFile";
 import createPluginFactory from "./createPluginFactory";
 
 async function createJsonFileInstall() {
-	const fi = new JsonFileInstall();
+	const fi = installJson();
 	await fi.load();
 
 	if (fi.lock) {
@@ -71,7 +73,7 @@ async function process(
 		let details = {};
 		if (typeof proc === "function") {
 			debug(message);
-			details = await asyncResult(proc(...args));
+			details = await toAsync(proc(...args));
 		}
 		if (action === "uninstall") {
 			delete fi.plugins[name];
@@ -247,7 +249,7 @@ export default function() {
 	const done = await fi.createTransaction();
 
 	await createCwdFileIfNotExists(".env", "DEBUG=phragon:*");
-	await docTypeReference(["@phragon/server", "@phragon/types"]);
+	await docTypeReference(["@phragon/server", "@phragon/types", "@phragon-util/global-var"]);
 	await createCwdFileIfNotExists("tsconfig.json", () =>
 		toJSON({
 			compilerOptions: {
@@ -301,31 +303,36 @@ export default function() {
 		);
 	}
 
-	// routes.js(on)?
-	if (!(await cwdSearchExists("config/routes", [".js", ".json"]))) {
-		const routes: Array<{ name: string; responder: string | [string, any]; path: string; controller: string }> = [];
-
-		// add hello controller
-		if (makeDefault) {
-			routes.push({
-				name: "hello-world",
-				responder: renderConfig ? ["page", { page: "page" }] : "text",
-				path: "/",
-				controller: renderConfig ? "hello.page" : "hello.text",
-			});
-		}
-
-		await createCwdFileIfNotExists("config/routes.json", () =>
-			toJSON({
-				routes,
-			})
-		);
+	// route.[tj]s?
+	if (!(await cwdSearchExists("src-server/route", [".js", ".ts"]))) {
+		await createCwdFileIfNotExists("src-server/route.ts", () => {
+			let route = `import { createRootRouter } from "@phragon/server";
+const router = createRootRouter();
+\n`;
+			// add hello controller
+			if (makeDefault) {
+				route +=
+					"router.get(" +
+					JSON.stringify({
+						name: "hello-world",
+						responder: renderConfig ? ["page", { page: "page" }] : "text",
+						path: "/",
+						controller: renderConfig ? "hello.page" : "hello.text",
+					}) +
+					");\n";
+			}
+			route += "export default router;\n";
+			return route;
+		});
 	}
 
 	// package.json dependencies
 
 	const dependencies: Record<string, string> = {
 		phragon: "latest",
+		"@phragon/cli-debug": "latest",
+		"@phragon-util/global-var": "latest",
+		"@phragon-util/async": "latest",
 		"@phragon/server": "latest",
 		"@phragon/responder-text": "latest",
 		"@phragon/responder-json": "latest",

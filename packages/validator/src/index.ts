@@ -29,6 +29,8 @@ export type {
 	TypeOfValidateHandler,
 	TypeOfFormatHandler,
 	TypeOfValidatorOptions,
+	ValidatorOptionType,
+	FormatterOptionType,
 } from "./types";
 
 export type {
@@ -43,4 +45,5 @@ export type {
 	ValidateTypeImeiDetail,
 	ValidateTypeCurrencyDetail,
 	ValidateTypeCreditCardDetail,
+	ValidateTypeBooleanDetail,
 } from "./typeOf";

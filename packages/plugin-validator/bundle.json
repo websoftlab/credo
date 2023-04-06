@@ -6,10 +6,7 @@
 		},
 		{
 			"target": "types",
-			"output": ".",
-			"package.json": {
-				"types": "./index.d.ts"
-			}
+			"output": "."
 		}
 	],
 	"phragon.config.js": {

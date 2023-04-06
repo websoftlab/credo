@@ -1,4 +1,4 @@
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 import deepmerge from "deepmerge";
 import cwdPath from "./cwdPath";
 import exists from "./exists";

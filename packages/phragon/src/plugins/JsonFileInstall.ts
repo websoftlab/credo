@@ -1,7 +1,8 @@
 import { cwdPath, exists, readJsonFile, writeJsonFile } from "../utils";
 import { debug } from "../debug";
+import { writeFileSync } from "node:fs";
 
-type JsonFileInstallData = {
+interface JsonFileInstallData {
 	installed: boolean;
 	lock: boolean;
 	time: number;
@@ -9,20 +10,30 @@ type JsonFileInstallData = {
 	lastDuration: number;
 	hash?: string;
 	plugins: Record<string, { version: string; details: any }>;
-};
+	dependencies: Record<string, string>;
+	devDependencies: Record<string, string>;
+}
 
 const jsonFileInstallPath = cwdPath("phragon.json.install");
 const FI_KEY = Symbol();
+const FI_TRANSACTION = Symbol();
 
-export default class JsonFileInstall {
-	[FI_KEY]: JsonFileInstallData = {
+function defaultData(): JsonFileInstallData {
+	return {
 		installed: false,
 		lock: false,
 		time: Date.now(),
 		lastError: null,
 		lastDuration: 0,
 		plugins: {},
+		dependencies: {},
+		devDependencies: {},
 	};
+}
+
+export class JsonFileInstall {
+	[FI_TRANSACTION] = false;
+	[FI_KEY]: JsonFileInstallData = defaultData();
 
 	get hash() {
 		return this[FI_KEY].hash || "";
@@ -62,6 +73,10 @@ export default class JsonFileInstall {
 		return this[FI_KEY].lastError;
 	}
 
+	get inTransaction() {
+		return this[FI_TRANSACTION];
+	}
+
 	plugin(name: string) {
 		return this[FI_KEY].plugins[name];
 	}
@@ -70,9 +85,46 @@ export default class JsonFileInstall {
 		return this[FI_KEY].plugins.hasOwnProperty(name);
 	}
 
+	setDependency(name: string, version?: string | null) {
+		if (!this.inTransaction) {
+			return;
+		}
+		if (version == null) {
+			delete this[FI_KEY].dependencies[name];
+		} else {
+			this[FI_KEY].dependencies[name] = version;
+		}
+	}
+
+	setDevDependency(name: string, version?: string | null) {
+		if (!this.inTransaction) {
+			return;
+		}
+		if (version == null) {
+			delete this[FI_KEY].devDependencies[name];
+		} else {
+			this[FI_KEY].devDependencies[name] = version;
+		}
+	}
+
+	getDependency(name: string) {
+		return this[FI_KEY].dependencies[name] || null;
+	}
+
+	getDevDependency(name: string) {
+		return this[FI_KEY].devDependencies[name] || null;
+	}
+
 	async load() {
+		// ignore command
+		if (this.inTransaction) {
+			return;
+		}
 		if (await exists(jsonFileInstallPath)) {
-			this[FI_KEY] = await readJsonFile(jsonFileInstallPath);
+			this[FI_KEY] = {
+				...defaultData(),
+				...(await readJsonFile(jsonFileInstallPath)),
+			};
 		}
 	}
 
@@ -93,6 +145,12 @@ export default class JsonFileInstall {
 		return done();
 	}
 
+	async save() {
+		if (this.inTransaction) {
+			await writeJsonFile(jsonFileInstallPath, this[FI_KEY]);
+		}
+	}
+
 	async createTransaction() {
 		if (this[FI_KEY].lock) {
 			throw new Error("Installation transaction already open");
@@ -106,10 +164,13 @@ export default class JsonFileInstall {
 			throw new Error("Installation transaction already open");
 		}
 
-		async function update(time: number) {
+		let fatal = false;
+		this[FI_TRANSACTION] = true;
+
+		const update = async (time: number) => {
 			gen.time = time;
-			await writeJsonFile(jsonFileInstallPath, gen);
-		}
+			await this.save();
+		};
 
 		const start = Date.now();
 
@@ -121,22 +182,43 @@ export default class JsonFileInstall {
 			const time = Date.now();
 			gen.lock = false;
 			gen.lastDuration = time - start;
-			gen.lastError = err ? err.message : null;
+			gen.lastError = err ? err.message || "Unknown error" : null;
 			process.off("exit", listener);
 
-			return update(time).catch((err) => {
-				debug.error("{yellow %s} write failure", "./phragon.json.install", err);
-			});
+			// write sync for fatal error
+			if (fatal) {
+				gen.time = time;
+				this[FI_TRANSACTION] = false;
+				writeFileSync(jsonFileInstallPath, JSON.stringify(gen, null, 2));
+			} else {
+				return update(time)
+					.finally(() => {
+						this[FI_TRANSACTION] = false;
+					})
+					.catch((err) => {
+						debug.error("{yellow %s} write failure", "./phragon.json.install", err);
+					});
+			}
 		};
 
 		const listener = (code: number) => {
 			if (gen.lock) {
+				fatal = true;
 				done(new Error("Process exit code " + code));
 			}
 		};
 
 		process.on("exit", listener);
 
-		return done;
+		return async (err?: Error) => done(err);
 	}
+}
+
+let jsonFile: JsonFileInstall | null = null;
+
+export function installJson() {
+	if (jsonFile == null) {
+		jsonFile = new JsonFileInstall();
+	}
+	return jsonFile;
 }

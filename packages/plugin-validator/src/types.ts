@@ -6,7 +6,7 @@ type ValidateBase<Dt extends {} = {}> = Dt & {
 	nullable?: boolean;
 };
 
-export type ValidateOptions<Dt extends {} = {}> = ValidateBase<Dt & { name: string; }>;
+export type ValidateOptions<Dt extends {} = {}> = ValidateBase<Dt & { name: string }>;
 
 export type ValidateEntryType<E extends string = string> =
 	| "string"

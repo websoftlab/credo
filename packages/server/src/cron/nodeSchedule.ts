@@ -68,7 +68,8 @@ const createJob = (phragon: PhragonJSCron, conf: Cron.Job | Cron.Service, part: 
 		work = async function (this: any, date: Date) {
 			const copy = args.slice();
 			copy.push(date);
-			return method ? phragon.services[name][method].apply(this, copy) : phragon.services[name].apply(this, copy);
+			const service = phragon.services[name];
+			return method ? service[method].apply(service, copy) : service.apply(this, copy);
 		};
 	}
 

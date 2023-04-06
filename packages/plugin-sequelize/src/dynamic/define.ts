@@ -1,4 +1,4 @@
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 
 const definers: Record<DefineType, { [key: string]: Function }> = {
 	type: {},

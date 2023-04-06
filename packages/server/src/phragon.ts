@@ -1,6 +1,6 @@
 import type { PhragonJSGlobal, Route, EnvMode, Server, Ctor, Env } from "./types";
 import type { Context, Next } from "koa";
-import asyncResult from "@phragon/utils/asyncResult";
+import { toAsync } from "@phragon-util/async";
 import { debug, debugSubscribe } from "@phragon/cli-debug";
 import { cmdBuild, preventBuildListener } from "./cmd/builder";
 import { config } from "./config";
@@ -390,7 +390,7 @@ export class BootManager {
 				if (props != null) {
 					args.push(props);
 				}
-				handler = await asyncResult(handler(...args));
+				handler = await toAsync(handler(...args));
 			}
 			if (BootGetter.isGetter(handler)) {
 				Object.defineProperty(phragon[key], name, {
@@ -500,7 +500,7 @@ export class BootManager {
 				mwares.sort((a, b) => a.depth - b.depth),
 				async (mw: MWare) => {
 					if (mw.observer) {
-						const handler = await asyncResult(
+						const handler = await toAsync(
 							mw.options
 								? (mw.handler as Function)(phragon, mw.options)
 								: (mw.handler as Function)(phragon)
@@ -522,7 +522,7 @@ export class BootManager {
 			await each(bootstrap, async ({ handler, options }: any) => {
 				if (typeof handler === "function") {
 					try {
-						const result = await asyncResult(options ? handler(phragon, options) : handler(phragon));
+						const result = await toAsync(options ? handler(phragon, options) : handler(phragon));
 						if (typeof result === "function") {
 							complete.push(result);
 						}
@@ -548,7 +548,7 @@ export class BootManager {
 			// emit boostrap complete
 			await each(complete, async (handler) => {
 				try {
-					await asyncResult(handler());
+					await toAsync(handler());
 				} catch (err) {
 					debug.error("bootstrap complete failure", err);
 				}

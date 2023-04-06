@@ -8,7 +8,7 @@ import * as plugins from "./plugins";
 import * as rules from "./rules";
 import { mergeExtensions, buildPath } from "../utils";
 import { webpack as webpackStore } from "../builder/configure";
-import { asyncResult } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
 import { debug } from "../debug";
 const nodeExternals = require("webpack-node-externals");
 const IgnoreConfigRequire = require("./utils/ignore-config-require");
@@ -162,7 +162,7 @@ export default async function base(config: BuildConfigure): Promise<Configuratio
 
 	if (store.config.length) {
 		for (const callback of store.config) {
-			await asyncResult(callback(configure, config));
+			await toAsync(callback(configure, config));
 		}
 	}
 

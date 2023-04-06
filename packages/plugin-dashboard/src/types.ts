@@ -93,6 +93,7 @@ export namespace Dashboard {
 
 	export interface APIResponse<Payload = any> {
 		ok: boolean;
+		codeName?: string;
 		message?: string;
 		payload?: Payload;
 		actions?: Action[];
@@ -142,15 +143,15 @@ export interface DashboardPanel {
 	defineErrorController(controller: Dashboard.PluginWebErrorController): void;
 }
 
-export interface DashboardStoreState {
-	dashboard?: {
+export interface DashboardStoreState<UserDetail = {}, Ext extends {} = {}> {
+	dashboard?: Ext & {
 		icon?: string;
 		title?: string;
 		path?: string;
 		patterns?: Record<string, string>;
 		menu?: Dashboard.MainMenuAction[];
 		shortcutMenu?: Dashboard.ShortcutAction[];
-		user?: DashboardUserProfile | null;
+		user?: DashboardUserProfile<UserDetail> | null;
 	};
 }
 

@@ -5,7 +5,7 @@ import type { API } from "@phragon/app";
 import { createElement } from "react";
 import ReactDOMServer from "react-dom/server";
 import createError from "http-errors";
-import htmlEscape from "@phragon/utils/htmlEscape";
+import { htmlEscape } from "@phragon-util/html-escape";
 import { debug } from "@phragon/cli-debug";
 import { isPageFound, HtmlNode, HtmlDriverPrototype } from "@phragon/responder-page";
 import App from "./App";

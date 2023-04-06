@@ -1,16 +1,18 @@
 import type { TypeOfValidatorOptions, TypeOfValidator } from "../types";
 import ValidateError from "../ValidateError";
+import { isNullValue } from "./util";
 
 export interface ValidateTypeNumberDetail {
 	min?: number;
 	max?: number;
 	clip?: boolean;
+	isNull?: (value: any) => boolean;
 }
 
 export class TypeOfNumber implements TypeOfValidator<number | null, ValidateTypeNumberDetail> {
 	format(value: any, options: TypeOfValidatorOptions<ValidateTypeNumberDetail>): number | null {
-		const { name, strict, nullable, min, max, clip } = options;
-		if (value == null && nullable) {
+		const { name, strict, nullable, min, max, clip, isNull } = options;
+		if (isNullValue(value, isNull) && nullable) {
 			return null;
 		}
 		if (typeof value !== "number") {

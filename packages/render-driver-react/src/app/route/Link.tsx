@@ -1,5 +1,5 @@
 import React from "react";
-import { __isDev__ } from "@phragon/utils";
+import { __isDev__ } from "@phragon-util/global-var";
 import { useLinkClickHandler, useHref } from "./hooks";
 import type { To } from "history";
 import type { MouseEvent as ReactMouseEvent, ElementType, ReactElement } from "react";

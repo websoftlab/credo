@@ -1,6 +1,6 @@
 import type { PhragonPlugin } from "../types";
 import { CmpJS } from "@phragon/cli-cmp";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 import createRelativePath from "./createRelativePath";
 import { buildPath, createCwdDirectoryIfNotExists, exists, writeBundleFile } from "../utils";
 import { writeFile } from "fs/promises";
@@ -77,11 +77,9 @@ export async function buildClient(factory: PhragonPlugin.Factory) {
 
 		bootloader.forEach(({ bootloader }) => addBoot(bootloader));
 
-		const func = cJs.imp(renderPageImport, "*");
+		const func = cJs.imp(renderPageImport, "renderPage");
 
-		cJs.append(
-			`const renderPage = typeof ${func}.renderPage === "function" ? ${func}.renderPage : (typeof ${func}.default === "function" ? ${func}.default : ${func});`
-		);
+		cJs.append(`const renderPage = ${func};`);
 
 		cJs.group('if( typeof renderPage === "function" )', "", (t) => {
 			const { bootloader, ...rest } = isPlainObject(renderOptions) ? renderOptions : <any>{};

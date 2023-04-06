@@ -113,7 +113,7 @@ export default async function server(options: Server.Options = {}) {
 	const boot = await registrar.load(phragon);
 
 	// add route after loading services
-	phragon.define("route", new RouteManager(phragon));
+	phragon.define("route", new RouteManager(phragon, options.router));
 
 	function cron<T>(serv: T): T {
 		if (isProd && !isCluster && !phragon.process && !phragon.isCron() && cronMode !== "disabled" && isMainThread) {

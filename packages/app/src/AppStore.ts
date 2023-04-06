@@ -1,9 +1,9 @@
 import { action, flow, makeObservable, observable } from "mobx";
 import { LanguageStore } from "@phragon/lexicon";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 import type { App } from "./types";
 
-function merge(main: any, state: any) {
+function merge(main: any, state: any, removeNotExists = false) {
 	const keys = Object.keys(state);
 	for (const key of keys) {
 		const value = state[key];
@@ -11,11 +11,25 @@ function merge(main: any, state: any) {
 			continue;
 		}
 		if (main.hasOwnProperty(key) && isPlainObject(main[key]) && isPlainObject(value)) {
-			merge(main[key], value);
+			merge(main[key], value, removeNotExists);
 		} else {
 			main[key] = value;
 		}
 	}
+
+	// remove not exists value
+	if (removeNotExists) {
+		for (const key of Object.keys(main)) {
+			if (!keys.includes(key)) {
+				delete main[key];
+			}
+		}
+	}
+}
+
+function lexicon(store: AppStore, key: string) {
+	const lx = store.state.lexion;
+	return lx && lx.hasOwnProperty(key) ? lx[key] : null;
 }
 
 export default class AppStore<State = any> extends LanguageStore implements App.StoreInterface<State> {
@@ -59,23 +73,31 @@ export default class AppStore<State = any> extends LanguageStore implements App.
 
 	reload(state: any, init: boolean = false) {
 		if (isPlainObject(state)) {
+			// update initial state
 			if (init) {
 				merge(this._initialState, state);
 			}
-			this.state = { ...this._initialState };
+
+			// fill initial state
+			merge(this.state, this._initialState, true);
 			if (!init) {
 				merge(this.state, state);
 			}
+
+			// add additional state
 			merge(this.state, this._additionalState);
 		} else {
 			throw new Error("Application state should be a plain object");
 		}
 	}
 
-	translate(key: string, alternative?: string | ((key: string) => string)) {
-		if (typeof this.state[key] === "string") {
-			return this.state[key];
-		}
-		return super.translate(key, alternative);
+	line<Val = string>(key: string): Val | null {
+		const value = lexicon(this, key);
+		return value == null ? super.line(key) : value;
+	}
+
+	translate<Val = string>(key: string, alternative?: Val | ((key: string) => Val)) {
+		const value = lexicon(this, key);
+		return value == null ? super.translate(key, alternative) : value;
 	}
 }

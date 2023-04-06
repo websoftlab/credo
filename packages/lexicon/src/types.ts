@@ -1,7 +1,7 @@
 export namespace Lexicon {
 	export interface TranslateOptions {
 		id: string;
-		alternative?: string;
+		alternative?: string | ((key: string) => string);
 		replacement?: any;
 	}
 
@@ -21,22 +21,25 @@ export namespace Lexicon {
 		readonly packages: string[];
 		readonly translator: Translator;
 
-		translate(key: string, alternative?: string | ((key: string) => string)): string;
+		line<Val = string>(key: string): Val | null;
+		translate<Val = string>(key: string, alternative?: Val | ((key: string) => Val)): Val;
 		reloadLanguage(id: string): Generator;
 		loadLanguage(id: string, packageName?: string): Generator;
 	}
 
 	export interface Translator {
 		(key: string | TranslateOptions): string;
+		language(): string;
+		line<Val = string>(key: string): Val | null;
 		replace(text: string, replacement: any): string;
 		plural(value: number, variant: string | string[]): string;
-		lambda(name: string, value: any, replacement?: any): string;
+		lambda<Val = string>(name: string, value: any, replacement?: any): Val;
 	}
 
-	export type LambdaTranslate = (
+	export type LambdaTranslate<Val = string> = (
 		value: any,
 		options: { name: string; translator: Translator; key?: string; data?: any }
-	) => string;
+	) => Val;
 
 	export interface Data {
 		id: string;

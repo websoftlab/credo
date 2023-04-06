@@ -10,7 +10,7 @@ import { ChildProcessByStdio, fork } from "child_process";
 import { cwdPath } from "../utils";
 import { EventEmitter } from "events";
 import { debug } from "../debug";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 
 function isEventResult(event: any): event is { result: RollupBuild } {
 	return event && event.result != null;

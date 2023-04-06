@@ -2,7 +2,7 @@ import type { ORM } from "../types";
 import type { Sequelize } from "sequelize";
 import type { GetColumn } from "./getColumn";
 import type { DefineTypeObjectType } from "./define";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 import { pluralize } from "inflection";
 import { getColumn } from "./getColumn";
 import { createValidateDynamicObjectTypes } from "./define";

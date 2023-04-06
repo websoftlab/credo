@@ -1,7 +1,7 @@
 import type { ORM } from "../types";
 import type { Sequelize } from "sequelize";
 import type { GetTable } from "./getTable";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 import { getTable } from "./getTable";
 import { getRelation } from "./getRelation";
 

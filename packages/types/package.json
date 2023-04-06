@@ -4,8 +4,8 @@
 	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
-		"build": "node ../../scripts/lib/build.js",
-		"prettier": "node ../../scripts/lib/build-prettier.js"
+		"build": "phragon-script build --cwd \"../../\" -P @phragon/types",
+		"prettier": "phragon-script prettier --cwd \"../../\" -P @phragon/types"
 	},
 	"types": "index.d.ts"
 }

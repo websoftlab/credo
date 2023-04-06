@@ -178,7 +178,7 @@ export async function buildServer(factory: PhragonPlugin.Factory) {
 		`const IS_SSR = __SSR__${isClusterMode ? "" : ' && !process.argv.includes("--cron")'};`,
 		`const data = ${srv}.env();`,
 		"Object.keys(data).forEach(key => { process.env[key] = data[key]; });",
-		`${srv}.defineGlobal(__ENV__, IS_SSR);`,
+		`${cJs.imp("@phragon-util/global-var", "defineGlobal")}(__ENV__, IS_SSR);`,
 		`${cJs.imp("@phragon/cli-debug", "debugEnable")}(data.DEBUG);`,
 	]);
 
@@ -263,11 +263,13 @@ export async function buildServer(factory: PhragonPlugin.Factory) {
 		});
 	}
 
-	function create(
-		bootstrap: PhragonPlugin.ConfigType<"bootstrap", PhragonPlugin.Handler>[],
-		isPage: boolean = false,
-		renderHTMLDriver: string | null = null
-	) {
+	function create(options: {
+		bootstrap: PhragonPlugin.ConfigType<"bootstrap", PhragonPlugin.Handler>[];
+		isPage?: boolean;
+		renderHTMLDriver?: string | null;
+		router?: PhragonPlugin.Handler | null;
+	}) {
+		const { bootstrap, isPage = false, router, renderHTMLDriver = null } = options;
 		cJs.append(`const registrar = new ${srv}.BootManager();`);
 
 		// load ./server-page
@@ -322,6 +324,11 @@ export async function buildServer(factory: PhragonPlugin.Factory) {
 			]);
 			if (!isClusterMode) {
 				cJs.append(`ssr: ${ssr ? "IS_SSR" : "false"},`);
+			}
+			if (router) {
+				const { path, importer } = router;
+				const func = cJs.imp(createRelativePath(path, ".phragon"), importer);
+				cJs.append(`router: ${func},`);
 			}
 		});
 
@@ -379,13 +386,18 @@ export async function buildServer(factory: PhragonPlugin.Factory) {
 			}));
 			cJs.append(`${srv}.masterProcess(${tool.esc(conf)});`);
 		}).group("else", "", () => {
-			create(bootstrap);
+			create({ bootstrap });
 		});
 	} else {
 		if (ssr) {
 			await writeLoadable();
 		}
-		create(factory.bootstrap, ssr, render && page != null ? render.modulePath : null);
+		create({
+			bootstrap: factory.bootstrap,
+			isPage: ssr,
+			renderHTMLDriver: render && page != null ? render.modulePath : null,
+			router: factory.route,
+		});
 	}
 
 	// write main server
@@ -417,7 +429,7 @@ ${cJs.toJS("import")}`
 	if (clusterList.length > 0) {
 		await createCwdDirectoryIfNotExists(".phragon/srv");
 		for (let cl of clusterList) {
-			const { ssr, mid, mode, publicPath, bootstrap, render: isRender, page } = cl;
+			const { ssr, mid, mode, publicPath, bootstrap, route, render: isRender, page } = cl;
 			const cJs = new CmpJS();
 
 			if (mode === "app" && ssr) {
@@ -461,6 +473,13 @@ ${cJs.toJS("import")}`
 				} else if (mode === "cron") {
 					cJs.append('options.cronMode = "service";');
 				}
+
+				if (route) {
+					const { path, importer } = route;
+					const func = cJs.imp(createRelativePath(path, ".phragon/srv"), importer);
+					cJs.append(`options.router = ${func};`);
+				}
+
 				cJs.append(`options.ssr = ${isSSR ? "__SSR__" : "false"};`);
 				cJs.append("return options;");
 			});

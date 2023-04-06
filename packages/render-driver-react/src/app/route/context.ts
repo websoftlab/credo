@@ -1,7 +1,7 @@
 import type { History, Location, To } from "history";
 import { createContext } from "react";
 import { Action as NavigationType } from "history";
-import { __isDev__ } from "@phragon/utils";
+import { __isDev__ } from "@phragon-util/global-var";
 
 /**
  * A Navigator is a "location changer"; it's how you get to different locations.

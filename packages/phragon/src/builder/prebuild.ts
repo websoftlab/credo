@@ -2,7 +2,7 @@ import { newError } from "@phragon/cli-color";
 import { transformFileAsync } from "@babel/core";
 import { basename, dirname } from "path";
 import { cwdSearchFile, exists, writeBundleFile, cwdPath, createCwdDirectoryIfNotExists, fileHash } from "../utils";
-import JsonFileInstall from "../plugins/JsonFileInstall";
+import { installJson } from "../plugins/JsonFileInstall";
 
 export function requireConfig(file: string) {
 	file = require.resolve(file);
@@ -35,7 +35,7 @@ export async function prebuild(): Promise<() => void> {
 	}
 
 	const hash = await fileHash(file);
-	const fi = new JsonFileInstall();
+	const fi = installJson();
 	await fi.load();
 
 	if (fi.lock) {

@@ -4,20 +4,20 @@
 	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
-		"build": "node ../../scripts/lib/build.js",
-		"prettier": "node ../../scripts/lib/build-prettier.js"
+		"build": "phragon-script build --cwd \"../../\" -P @phragon/render-driver-react",
+		"prettier": "phragon-script prettier --cwd \"../../\" -P @phragon/render-driver-react"
 	},
 	"dependencies": {
 		"@phragon/html-head": "*",
 		"@phragon/loadable": "*",
 		"@phragon/responder-page": "*",
-		"@phragon/utils": "*",
 		"@phragon/cli-debug": "*",
 		"@phragon/app": "*",
-		"mobx": "^6.4.0",
+		"@phragon-util/async": "^0.0.2",
+		"@phragon-util/global-var": "^0.0.2",
+		"@phragon-util/proof": "^0.0.3",
+		"@phragon-util/html-escape": "^0.0.2",
 		"mobx-react-lite": "^3.4.0",
-		"react": "^18.1.0",
-		"react-dom": "^18.1.0",
 		"history": "^5.3.0"
 	},
 	"devDependencies": {
@@ -27,13 +27,21 @@
 		"@types/koa": "^2.13.3",
 		"@babel/preset-react": "^7.16.7",
 		"@pmmmwh/react-refresh-webpack-plugin": "^0.5.4",
-		"react-refresh": "^0.10.0"
+		"react-refresh": "^0.10.0",
+		"mobx": "^6.4.0"
 	},
 	"peerDependencies": {
-		"phragon": "*"
+		"phragon": "*",
+		"react": "^16.8.0 || ^17 || ^18",
+		"react-dom": "^16.8.0 || ^17 || ^18",
+		"mobx": "^6.4.0"
+	},
+	"peerDependenciesMeta": {
+		"phragon": {
+			"optional": true
+		}
 	},
 	"exports": {
-		"./": "./build/",
 		".": {
 			"require": "./build/index.js"
 		}

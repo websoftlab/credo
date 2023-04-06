@@ -4,5 +4,6 @@
 		"outDir": "./build",
 		"rootDir": "./src"
 	},
-	"include": ["./src/**/*", "./global.d.ts"]
+	"include": ["./src/**/*", "./global.d.ts"],
+	"exclude": ["./template/**/*"]
 }

@@ -212,7 +212,7 @@ export interface LoadSchemaBuilder {
 export interface LoadSchemaBuilderOptions {
 	action: "load" | "reload" | "remove";
 	name?: string;
-	builder?: Builder
+	builder?: Builder;
 }
 
 export class BuildError extends Error {
@@ -230,11 +230,11 @@ export async function loadSchemaBuilder(options: LoadSchemaBuilderOptions): Prom
 
 	const { action, name, builder } = options;
 	if (action === "load") {
-		if(typeof name !== "string" || name.length === 0 || !builder) {
+		if (typeof name !== "string" || name.length === 0 || !builder) {
 			throw new Error(`The "load" action requires a "name" and a "builder" option`);
 		}
 	} else if (action === "remove") {
-		if(typeof name !== "string" || name.length === 0) {
+		if (typeof name !== "string" || name.length === 0) {
 			throw new Error(`The "remove" action requires a "name" option`);
 		}
 	} else if (action !== "reload") {
@@ -317,12 +317,11 @@ export async function loadSchemaBuilder(options: LoadSchemaBuilderOptions): Prom
 
 	try {
 		return await sequelize.transaction(async (transaction) => {
-
 			let modify = false;
 			let last: Builder | null = null;
 
 			if (action === "remove" && name != null) {
-				const item = await DynamicSequelize.findOne({ where: {name}, transaction });
+				const item = await DynamicSequelize.findOne({ where: { name }, transaction });
 				if (item != null) {
 					await item.destroy({ transaction });
 					log(`schema [${name}] removed`);
@@ -369,7 +368,6 @@ export async function loadSchemaBuilder(options: LoadSchemaBuilderOptions): Prom
 			}
 
 			if (action === "load" && name != null && builder != null) {
-
 				if (last != null) {
 					// remove tables
 					const left = table.filter((t) => t.creator).map((t) => t.model);

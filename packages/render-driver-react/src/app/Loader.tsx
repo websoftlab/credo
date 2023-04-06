@@ -2,7 +2,7 @@ import React from "react";
 import { useLocation } from "./route";
 import { observer } from "mobx-react-lite";
 import { component, defined } from "../component";
-import { __isWeb__ } from "@phragon/utils";
+import { __isWeb__ } from "@phragon-util/global-var";
 import type { Page } from "@phragon/app";
 import type { CSSProperties, ElementType } from "react";
 import type { ComponentLayout, ComponentPageSpin, ComponentPageError } from "./types";

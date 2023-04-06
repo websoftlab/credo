@@ -4,22 +4,22 @@
 	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
-		"build": "node ../../scripts/lib/build.js",
-		"prettier": "node ../../scripts/lib/build-prettier.js"
+		"build": "phragon-script build --cwd \"../../\" -P @phragon/plugin-sequelize",
+		"prettier": "phragon-script prettier --cwd \"../../\" -P @phragon/plugin-sequelize"
 	},
 	"dependencies": {
 		"semver": "^7.3.5",
-		"sequelize": "^6.25.6",
+		"sequelize": "^6.29.3",
 		"inflection": "^1.13.2",
 		"@phragon/server": "*",
-		"@phragon/utils": "*"
+		"@phragon-util/plain-object": "^0.0.3",
+		"@phragon-util/async": "^0.0.2"
 	},
 	"devDependencies": {
 		"@types/semver": "^7.3.8",
 		"@types/inflection": "^1.13.0"
 	},
 	"exports": {
-		"./": "./build/",
 		".": {
 			"require": "./build/index.js"
 		}

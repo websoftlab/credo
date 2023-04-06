@@ -4,17 +4,16 @@
 	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
-		"build": "node ../../scripts/lib/build.js",
-		"prettier": "node ../../scripts/lib/build-prettier.js"
+		"build": "phragon-script build --cwd \"../../\" -P @phragon/validator",
+		"prettier": "phragon-script prettier --cwd \"../../\" -P @phragon/validator"
 	},
 	"dependencies": {
-		"validator": "^13.7.0"
+		"validator": "^13.9.0"
 	},
 	"devDependencies": {
-		"@types/validator": "^13.7.6"
+		"@types/validator": "^13.7.14"
 	},
 	"exports": {
-		"./": "./build/",
 		".": {
 			"require": "./build/index.js"
 		}

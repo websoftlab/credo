@@ -6,7 +6,7 @@ import BuilderStore from "./BuilderStore";
 import PhragonBuilder from "./PhragonBuilder";
 import RollupBuilder from "./RollupBuilder";
 import WebpackBuilder from "./WebpackBuilder";
-import { asyncResult } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
 import { getLatestModuleVersion, installDependencies } from "../dependencies";
 import { newError } from "@phragon/cli-color";
 import { requireConfig } from "./prebuild";
@@ -176,7 +176,7 @@ export default class Builder implements BuilderI {
 
 		prv.store.plugin = plugin;
 
-		await asyncResult(requireConfig(path)(this));
+		await toAsync(requireConfig(path)(this));
 
 		const index = prv.parentPluginName.indexOf(name);
 		if (index !== -1) {
@@ -260,7 +260,7 @@ export default class Builder implements BuilderI {
 		const prv = this[PID];
 
 		prv.def = "load";
-		await asyncResult(callback(this));
+		await toAsync(callback(this));
 		prv.def = "run";
 	}
 
@@ -276,7 +276,7 @@ export default class Builder implements BuilderI {
 				this.off(eventName, listener);
 			}
 			try {
-				await asyncResult(listener(event));
+				await toAsync(listener(event));
 			} catch (err) {
 				debug.error("The {cyan %s} event error", eventName);
 				throw err;

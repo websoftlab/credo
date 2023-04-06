@@ -4,3 +4,4 @@ export { default as RouteEntity } from "./RouteEntity";
 export { default as RouteGroup } from "./RouteGroup";
 export { default as RoutePattern } from "./RoutePattern";
 export { default as RouteManager } from "./RouteManager";
+export { RootRouter, EmptyRouter, Router, createRouter, create404Router, createRootRouter } from "./Router";

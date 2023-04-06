@@ -1,7 +1,7 @@
 import type { To } from "history";
 import { useContext, useEffect } from "react";
 import { NavigationContext } from "./context";
-import { warning } from "@phragon/utils";
+import { warning } from "@phragon-util/proof";
 import { useNavigate } from "./hooks";
 
 export interface NavigateProps {

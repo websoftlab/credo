@@ -1,7 +1,7 @@
 import type { LocalStore } from "./types";
 import { mkdir, access, lstat, readdir, unlink, rmdir, opendir, writeFile, readFile } from "fs/promises";
 import { dirname, sep, join as joinPath, resolve } from "path";
-import asyncResult from "@phragon/utils/asyncResult";
+import { toAsync } from "@phragon-util/async";
 
 const pathType = Symbol();
 
@@ -201,7 +201,7 @@ export class LocalStoreData {
 
 		const { builder } = options;
 		if (typeof builder === "function") {
-			let data: R | string = await asyncResult(builder());
+			let data: R | string = await toAsync(builder());
 			if (data == null) {
 				data = json ? "{}" : "";
 			}
@@ -229,7 +229,7 @@ export class LocalStoreData {
 
 		const rebuild = async () => {
 			if (typeof builder === "function") {
-				const data = await asyncResult(builder());
+				const data = await toAsync(builder());
 				await checkFileDirectory(file);
 				await writeFile(file, data);
 

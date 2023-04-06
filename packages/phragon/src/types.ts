@@ -256,6 +256,7 @@ export declare namespace PhragonPlugin {
 		readonly publicPath: ConfigType<"path", string, { relativePath: string }>[];
 		readonly daemon: DaemonOptions | null;
 		readonly ssr: boolean;
+		readonly route: Handler | null;
 		readonly bootstrap: ConfigType<"bootstrap", Handler>[];
 		readonly bootloader: ConfigType<"bootloader", Handler>[];
 
@@ -320,6 +321,7 @@ export declare namespace PhragonPlugin {
 		publicPath?: string;
 		bootstrap?: Handler;
 		bootloader?: Handler;
+		route?: Handler;
 		env?: Record<string, string>;
 	}
 

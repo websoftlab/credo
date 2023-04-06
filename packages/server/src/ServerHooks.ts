@@ -1,9 +1,7 @@
 import type { Server } from "./types";
-import type { Evn } from "@phragon/utils/events";
+import type { Evn, ListenersData } from "@phragon-util/event-map";
 import { debug } from "@phragon/cli-debug";
-import { createPlainEvent, subscribe, has } from "@phragon/utils/events";
-
-type ListenersData = Record<Server.HookName, Evn[]>;
+import { createPlainEvent, subscribe, has } from "@phragon-util/event-map";
 
 const LISTENER_KEY = Symbol();
 
@@ -23,7 +21,7 @@ function observe(evn: Evn) {
 }
 
 export default class ServerHooks implements Server.HooksInterface {
-	[LISTENER_KEY]: ListenersData = {};
+	[LISTENER_KEY]: ListenersData = new Map<Server.HookName, Set<Evn>>();
 
 	subscribe<T = any>(
 		action: Server.HookName | Server.HookName[],
@@ -44,11 +42,10 @@ export default class ServerHooks implements Server.HooksInterface {
 	}
 
 	async emit<T = any>(action: Server.HookName, event?: T): Promise<void> {
-		const all = this[LISTENER_KEY];
-		if (all.hasOwnProperty(action)) {
-			const listeners = all[action].slice();
+		const map = this[LISTENER_KEY].get(action);
+		if (map && map.size) {
 			event = createPlainEvent(action, event);
-			for (let evn of listeners) {
+			for (let evn of map.values()) {
 				await evn.emit(event);
 			}
 		}

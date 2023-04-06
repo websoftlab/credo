@@ -70,3 +70,4 @@ export type { ValidateTypeNumberDetail } from "./TypeOfNumber";
 export type { ValidateTypeStringDetail } from "./TypeOfString";
 export type { ValidateTypeUrlDetail } from "./TypeOfUrl";
 export type { ValidateTypeUuidDetail } from "./TypeOfUuid";
+export type { ValidateTypeBooleanDetail } from "./TypeOfBoolean";

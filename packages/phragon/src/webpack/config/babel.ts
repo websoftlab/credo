@@ -10,13 +10,14 @@ export default async function babel(config: BuildConfigure) {
 		"@babel/preset-env",
 		isClient
 			? {
-					modules: "commonjs",
+					modules: false,
 					targets: {
 						browsers: [">1%", "last 4 versions", "not ie < 9"],
 					},
 					useBuiltIns: "usage",
 					corejs: 3,
 					debug: false,
+					bugfixes: true,
 					exclude: ["proposal-dynamic-import"],
 			  }
 			: {

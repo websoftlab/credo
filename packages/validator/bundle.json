@@ -5,11 +5,12 @@
 			"output": "."
 		},
 		{
+			"target": "module",
+			"output": "./esm"
+		},
+		{
 			"target": "types",
-			"output": ".",
-			"package.json": {
-				"types": "./index.d.ts"
-			}
+			"output": "."
 		}
 	]
 }

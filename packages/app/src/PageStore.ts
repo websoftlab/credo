@@ -1,6 +1,7 @@
 import axios from "axios";
 import { computed, action, makeObservable, observable } from "mobx";
-import { isPlainObject, asyncResult } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
+import { toAsync } from "@phragon-util/async";
 import type { CancelTokenSource, AxiosInstance, AxiosRequestConfig } from "axios";
 import type { Page } from "./types";
 
@@ -14,7 +15,7 @@ async function preload<ComponentType>(loader: Page.Loader<ComponentType>, respon
 
 async function emit(events: Function[], page: Page.Response) {
 	for (const event of events) {
-		await asyncResult(event(page));
+		await toAsync(event(page));
 	}
 }
 

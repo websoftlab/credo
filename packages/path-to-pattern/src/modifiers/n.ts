@@ -1,5 +1,5 @@
 import { isNum } from "../utils";
-import { regExpEscapeInSet } from "@phragon/utils";
+import { regExpEscapeInSet } from "@phragon-util/reg-exp-escape";
 
 const notDReg = /[^0-9]+/g;
 const dgt = "0123456789";

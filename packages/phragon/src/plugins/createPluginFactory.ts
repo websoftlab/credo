@@ -5,7 +5,7 @@ import { phragon } from "../builder/configure";
 import { installDependencies } from "../dependencies";
 import docTypeReference from "./docTypeReference";
 import { extender } from "../builder/configure";
-import { asyncResult } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
 
 export default async function createPluginFactory(
 	builder: Builder,
@@ -54,7 +54,7 @@ export default async function createPluginFactory(
 	// add extenders
 	const extenderList = await extender(builder.getStore());
 	for (const callback of extenderList) {
-		await asyncResult(callback(builder));
+		await toAsync(callback(builder));
 	}
 
 	// check page responder
@@ -140,6 +140,9 @@ export default async function createPluginFactory(
 		},
 		get bootloader() {
 			return data.bootloader;
+		},
+		get route() {
+			return data.route;
 		},
 
 		buildTimeout: data.buildTimeout,

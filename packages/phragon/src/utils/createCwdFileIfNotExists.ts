@@ -1,4 +1,4 @@
-import { asyncResult } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
 import { writeFile } from "fs/promises";
 import { debug } from "../debug";
 import cwdPath from "./cwdPath";
@@ -16,7 +16,7 @@ export default async function createCwdFileIfNotExists(
 
 	let text = builder;
 	if (typeof text === "function") {
-		text = await asyncResult(text());
+		text = await toAsync(text());
 	}
 
 	await writeFile(full, text);

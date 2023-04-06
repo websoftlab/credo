@@ -1,5 +1,5 @@
 import type { PhragonPlugin } from "../types";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 
 export type StoreType = "phragon" | "rollup" | "webpack";
 

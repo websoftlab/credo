@@ -2,17 +2,11 @@
 	"src": [
 		{
 			"target": "commonjs",
-			"output": ".",
-			"package.json": {
-				"main": "./index.js"
-			}
+			"output": "."
 		},
 		{
 			"target": "types",
-			"output": ".",
-			"package.json": {
-				"types": "./index.d.ts"
-			}
+			"output": "."
 		}
 	],
 	"types": {

@@ -1,5 +1,5 @@
 import { AppStore } from "@phragon/app";
-import clonePlainObject from "@phragon/utils/clonePlainObject";
+import { clonePlainObject } from "@phragon-util/plain-object";
 import { reaction } from "mobx";
 import { makeUrl } from "@phragon/make-url";
 import type Koa from "koa";

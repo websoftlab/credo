@@ -3,7 +3,7 @@ import type { HeadTagWithKey } from "@phragon/html-head";
 import { useLayoutEffect, createElement, Fragment } from "react";
 import { Provider, useHeadContext } from "./context";
 import { HeadManager, clearHeadDOMTags } from "@phragon/html-head";
-import { __isWeb__ } from "@phragon/utils";
+import { __isWeb__ } from "@phragon-util/global-var";
 
 export interface HeadProps {
 	children: ReactNode | ReactNode[];

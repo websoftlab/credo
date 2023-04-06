@@ -1,4 +1,4 @@
-import type { ValidatorType, Validator, IdType } from "./types";
+import type { ValidatorType, ValidatorOptionType, Validator, IdType } from "./types";
 import validator from "validator";
 
 const validatorAlias: Record<string, string> = {
@@ -165,6 +165,7 @@ export const validatorErrors: Record<string, string> = {
 	isVAT: "Invalid VAT",
 };
 
+const validatorDefined: Record<string, boolean | undefined> = Object.create(null);
 const validators: Record<string, Function> = {
 	isNotEmpty: (value: string, options?: validator.IsEmptyOptions) => !validator.isEmpty(value, options),
 	isNotFullWidth: (value: string) => !validator.isFullWidth(value),
@@ -177,6 +178,20 @@ const validators: Record<string, Function> = {
 	notEquals: (value: string, comparison: any) => !validator.equals(value, comparison),
 };
 
+function isOptionType(valid: any): valid is ValidatorOptionType {
+	let name = valid ? valid.name : null;
+	if (!name) {
+		return false;
+	}
+	if (validatorAlias.hasOwnProperty(name)) {
+		name = validatorAlias[name];
+	}
+	if (!validatorDefined[name]) {
+		return false;
+	}
+	return valid.option != null && typeof valid.option === "object";
+}
+
 function createValidOnce<Val = any>(valid: ValidatorType): { valid: Validator<Val>; required?: boolean } {
 	if (typeof valid === "function") {
 		return { valid };
@@ -185,13 +200,17 @@ function createValidOnce<Val = any>(valid: ValidatorType): { valid: Validator<Va
 	// find name
 	let name: string,
 		args: any[] = [],
+		option: any = null,
+		defined = false,
 		message: string = "";
 
 	if (typeof valid === "string") {
 		name = valid;
 	} else if (valid && valid.name) {
 		name = valid.name;
-		if (Array.isArray(valid.args)) {
+		if (isOptionType(valid)) {
+			option = valid.option;
+		} else if (Array.isArray(valid.args)) {
 			args = valid.args;
 		} else if (valid.args != null) {
 			args.push(valid.args);
@@ -210,6 +229,7 @@ function createValidOnce<Val = any>(valid: ValidatorType): { valid: Validator<Va
 	let func: Function;
 	if (validators.hasOwnProperty(name)) {
 		func = validators[name];
+		defined = validatorDefined[name] === true;
 	} else {
 		func = validator[name as never];
 	}
@@ -244,9 +264,29 @@ function createValidOnce<Val = any>(valid: ValidatorType): { valid: Validator<Va
 			break;
 	}
 
+	if (option != null) {
+		args = [option];
+	} else if (defined && args.length > 0) {
+		const copy = args.slice();
+		args = [{}];
+		copy.forEach((value, index) => {
+			args[0][`arg${index}`] = value;
+		});
+	}
+
 	return {
 		required: name === "isNotEmpty",
-		valid(value: Val) {
+		valid(value: Val, name) {
+			if (defined) {
+				const result = func(value, name, ...args);
+				if (typeof result === "boolean") {
+					return result ? null : message;
+				}
+				if (Array.isArray(result)) {
+					return result.length === 0 ? null : result;
+				}
+				return typeof result === "string" ? result : null;
+			}
 			return func(value, ...args) ? null : message;
 		},
 	};
@@ -271,6 +311,7 @@ export const validInvalidArguments: Validator = function validInvalidArguments()
 export function defineValidator(name: string, callback: Function) {
 	if (typeof callback === "function") {
 		validators[name] = callback;
+		validatorDefined[name] = true;
 	}
 }
 

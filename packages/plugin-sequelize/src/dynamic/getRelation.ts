@@ -1,6 +1,6 @@
 import type { ORM } from "../types";
 import type { HasOneOptions, HasManyOptions, BelongsToOptions, BelongsToManyOptions } from "sequelize";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 
 function belongsTo(options: BelongsToOptions) {
 	return options;

@@ -1,5 +1,5 @@
 import React from "react";
-import { __isDev__ } from "@phragon/utils";
+import { __isDev__ } from "@phragon-util/global-var";
 import { useHtmlText } from "./hooks";
 import type { ElementType, ReactElement } from "react";
 import type { PolymorphicComponentPropWithRef, PolymorphicRef } from "./types";

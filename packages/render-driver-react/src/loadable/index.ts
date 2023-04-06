@@ -1,6 +1,6 @@
 import { createLoadable, TimeoutError } from "@phragon/loadable";
 import { createContext, useContext, createElement, useState, useRef, useCallback, useEffect } from "react";
-import { __isDev__, __isWeb__ } from "@phragon/utils";
+import { __isDev__, __isWeb__ } from "@phragon-util/global-var";
 import type { ObserverOptions } from "@phragon/loadable";
 
 function resolve<Type>(obj: any): Type {
@@ -132,15 +132,17 @@ function observer(options: ObserverOptions<JSX.Element, ReactFallbackProps>) {
 	return Component;
 }
 
+export const loader = createLoadable({
+	render(loaded: any, props: any) {
+		return createElement(resolve(loaded), props);
+	},
+	fallback() {
+		return createElement(() => null);
+	},
+	observer,
+});
+
 const { load, loadAll, defined, loaded, definedComponents, loadedComponents, component, loadable, reset, resetAll } =
-	createLoadable({
-		render(loaded: any, props: any) {
-			return createElement(resolve(loaded), props);
-		},
-		fallback() {
-			return createElement(() => null);
-		},
-		observer,
-	});
+	loader;
 
 export { load, loadAll, defined, loaded, definedComponents, loadedComponents, component, loadable, reset, resetAll };

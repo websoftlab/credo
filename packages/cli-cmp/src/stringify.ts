@@ -1,5 +1,5 @@
 import type { StringifyOptions } from "./types";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 import CmpValue from "./CmpValue";
 import isUnescapedName from "./isUnescapedName";
 

@@ -1,5 +1,6 @@
 import React from "react";
-import { __isDev__, invariant } from "@phragon/utils";
+import { invariant } from "@phragon-util/proof";
+import { __isDev__ } from "@phragon-util/global-var";
 import { Action as NavigationType, parsePath } from "history";
 import { NavigationContext, LocationContext } from "./context";
 import type { Navigator } from "./context";

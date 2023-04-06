@@ -1,4 +1,4 @@
-import { asyncResult } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
 import { throwError } from "./render";
 import createHttpError from "http-errors";
 import { RouteEntity } from "../route";
@@ -24,7 +24,7 @@ async function find(ctx: Context, ref: ContextRef, routes: RouteVariant[]): Prom
 		let match: any;
 
 		try {
-			match = await asyncResult(route.match(ctx));
+			match = await toAsync(route.match(ctx));
 		} catch (err) {
 			if (!route.method(ctx.method)) {
 				ref.context = route.context;

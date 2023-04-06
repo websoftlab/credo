@@ -5,6 +5,7 @@ import { PackageJsonUtil } from "./utils";
 import { readFile } from "fs/promises";
 import { debug } from "./debug";
 import spawn from "cross-spawn";
+import { installJson } from "./plugins/JsonFileInstall";
 
 const regVer = /^\d+(?:\.\d+)+(?:-(?:alpha|beta|rc)(?:\.\d+(?:-[a-z0-9\-]+)?)?)?$/;
 
@@ -268,10 +269,13 @@ export async function uninstallDependencies(dependencies: string | string[]) {
 
 export async function installDependencies(
 	dependencies: string[] | Record<string, string>,
-	devDependencies: string[] | Record<string, string> = {}
+	devDependencies: string[] | Record<string, string> = {},
+	beforeInstall?: () => void
 ) {
 	// check package.json file
 	const pj = new PackageJsonUtil();
+	const fi = installJson();
+	const done = fi.inTransaction ? () => {} : await fi.createTransaction();
 
 	dependencies = arrayToObject(dependencies);
 	devDependencies = arrayToObject(devDependencies);
@@ -290,15 +294,24 @@ export async function installDependencies(
 
 		for (let module of modules) {
 			const dVer = list[module];
+			const isMain = key === "dependencies";
+
 			let ver: string | null = null;
+			let updateInstallFile = false;
 
 			ver = await pj.getIn("dependencies", module);
 			if (ver == null) {
 				ver = await pj.getIn("devDependencies", module);
-				if (ver != null && key === "dependencies") {
+				if (ver != null && isMain) {
 					await pj.removeIn("devDependencies", module);
 					await pj.setIn("dependencies", module, ver);
 				}
+			}
+
+			// Skip verification?
+			const iVer = isMain ? fi.getDependency(module) : fi.getDevDependency(module);
+			if (ver && iVer === ver && (dVer === ver || isAny(dVer))) {
+				continue;
 			}
 
 			if (!ver) {
@@ -311,27 +324,38 @@ export async function installDependencies(
 				await pj.setIn(key, module, ver);
 				debug(`Added new dependency {yellow %s}`, `${module}@${ver}`);
 				updateDependencies = true;
-			} else if (!isAny(dVer)) {
-				ver = await getPackageModuleVersion(module);
-				if (!ver) {
-					throw newError(`The {cyan %s} module is not installed`, module);
-				}
-				if (!satisfies(ver, dVer)) {
-					// ignore types
-					if (module.startsWith("@types/")) {
-						debug.error(
-							`Installed version of module {cyan %s} does not match new dependencies {cyan %s}`,
-							`${module}@${ver}`,
-							dVer
-						);
-					} else {
-						throw newError(
-							`Installed version of module {cyan %s} does not match new dependencies {cyan %s}`,
-							`${module}@${ver}`,
-							dVer
-						);
+				updateInstallFile = true;
+			} else {
+				if (!isAny(dVer)) {
+					ver = await getPackageModuleVersion(module);
+					if (!ver) {
+						throw newError(`The {cyan %s} module is not installed`, module);
+					}
+					if (!satisfies(ver, dVer)) {
+						// ignore types
+						if (module.startsWith("@types/")) {
+							debug.error(
+								`Installed version of module {cyan %s} does not match new dependencies {cyan %s}`,
+								`${module}@${ver}`,
+								dVer
+							);
+						} else {
+							throw newError(
+								`Installed version of module {cyan %s} does not match new dependencies {cyan %s}`,
+								`${module}@${ver}`,
+								dVer
+							);
+						}
 					}
 				}
+				if (ver !== iVer) {
+					updateInstallFile = true;
+				}
+			}
+
+			if (updateInstallFile) {
+				fi.setDependency(module, isMain ? ver : null);
+				fi.setDevDependency(module, isMain ? null : ver);
 			}
 		}
 	}
@@ -340,6 +364,11 @@ export async function installDependencies(
 	await checkDependencies(devDependencies, "devDependencies");
 
 	if (updateDependencies) {
+		if (typeof beforeInstall === "function") {
+			beforeInstall();
+		}
 		await installPackage();
 	}
+
+	await done();
 }

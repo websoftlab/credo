@@ -1,5 +1,5 @@
 import type { PhragonPlugin } from "../types";
-import { asyncResult } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
 
 function isPluginDefine(obj: any): obj is PhragonPlugin.Handler {
 	return obj && typeof obj === "object" && typeof obj.path === "string" && typeof obj.importer === "string";
@@ -24,5 +24,5 @@ export default async function fireHook(
 		return;
 	}
 
-	await asyncResult((func as (...args: any[]) => void | Promise<void>)(...args.slice()));
+	await toAsync((func as (...args: any[]) => void | Promise<void>)(...args.slice()));
 }

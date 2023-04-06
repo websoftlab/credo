@@ -10,7 +10,7 @@ import type {
 import type { PhragonJS, Ctor, Route } from "@phragon/server";
 import type { Context } from "koa";
 import { isHttpStatus, isRedirectCode } from "./utils/status";
-import { htmlEscape } from "@phragon/utils";
+import { htmlEscape } from "@phragon-util/html-escape";
 import HtmlDocument from "./HtmlDocument";
 import { loadManifest } from "./utils/manifest";
 import HttpRedirect from "./HttpRedirect";

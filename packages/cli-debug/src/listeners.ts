@@ -1,12 +1,12 @@
 import type { DebugEvent } from "./types";
-import asyncResult from "@phragon/utils/asyncResult";
+import { toAsync } from "@phragon-util/async";
 import { DebugListener } from "./types";
 
 const listeners: DebugListener[] = [];
 
 async function emitAsync(event: DebugEvent) {
 	for (let listener of listeners) {
-		await asyncResult(listener(event));
+		await toAsync(listener(event));
 	}
 }
 

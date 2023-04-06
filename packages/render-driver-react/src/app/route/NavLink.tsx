@@ -1,5 +1,5 @@
 import React from "react";
-import { __isDev__ } from "@phragon/utils";
+import { __isDev__ } from "@phragon-util/global-var";
 import { useNavigateIsActive } from "./hooks";
 import { Link } from "./Link";
 import type { ReactNode, CSSProperties, ElementType, ReactElement } from "react";

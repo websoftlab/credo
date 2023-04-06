@@ -1,4 +1,4 @@
-import type { Formatter, FormatterType, IdType } from "./types";
+import type { Formatter, FormatterType, FormatterOptionType, IdType } from "./types";
 
 const formatters: Record<string, Formatter> = {
 	trim: formatterTrim,
@@ -127,10 +127,26 @@ export const formatterInvalidArguments: Formatter = function validInvalidArgumen
 	throw new Error("Invalid arguments for formatter entry");
 };
 
-function formatter(variant: string): Formatter {
-	variant = variant.toLowerCase();
-	if (formatters.hasOwnProperty(variant)) {
-		return formatters[variant];
+function formatter(variant: string | FormatterOptionType): Formatter {
+	let name: string = "",
+		option: any = null;
+	if (typeof variant === "string") {
+		name = variant;
+	} else if (variant && variant.name) {
+		name = String(variant.name);
+		if (variant.option && Object.keys(variant.option).length !== 0) {
+			option = { ...variant.option };
+		}
+	}
+	name = name.toLowerCase();
+	if (formatters.hasOwnProperty(name)) {
+		const formatter = formatters[name];
+		if (name != null) {
+			return (value, name) => {
+				return formatter(value, name, option);
+			};
+		}
+		return formatter;
 	}
 	return formatterInvalidArguments;
 }
@@ -145,16 +161,16 @@ export function defineFormatter(name: string, callback: Formatter) {
 	}
 }
 
-export function createFormatter(format: FormatterType | FormatterType[]): Formatter {
+export function createFormatter<Val = any>(format: FormatterType | FormatterType[]): Formatter<Val> {
 	if (Array.isArray(format)) {
 		const variant: Formatter[] = format.map((format) => createFormatterOne(format));
 		if (variant.length === 0) {
-			return (value: string) => value;
+			return (value: Val) => value;
 		}
 		if (variant.length === 1) {
 			return variant[0];
 		}
-		return (value: string, id: IdType) => {
+		return (value: Val, id: IdType) => {
 			return variant.reduce((prev, formatter) => formatter(prev, id), value);
 		};
 	} else {

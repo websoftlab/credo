@@ -16,6 +16,7 @@ import type { RouteManager } from "./route";
 import type { Command } from "@phragon/cli-commander";
 import type { Promisify } from "./helpTypes";
 import type { RedisCache } from "./redis";
+import type { RootRouter } from "./route";
 
 export type EnvMode = "development" | "production";
 
@@ -153,7 +154,7 @@ export namespace Config {
 		middleware?: RouteConfig.ExtraMiddlewareType[];
 		route404?: RouteConfig.EmptyRoute;
 		sort?: "native" | "pattern";
-		routes: RouteConfig.Route[];
+		routes?: RouteConfig.Route[];
 	}
 
 	export interface Middleware {
@@ -256,6 +257,7 @@ export namespace Server {
 		port?: string | number;
 		devServerPort?: string | number;
 		mode?: EnvMode;
+		router?: RootRouter;
 		cronMode?: Cron.Mode;
 		registrar?: BootManager;
 		workerData?: Worker.Data;
@@ -329,27 +331,29 @@ export namespace RouteConfig {
 		| PathDynamic<Params>
 		| PathPattern;
 
+	export interface RouteObject extends RouteBase {
+		method?: Method;
+		name?: string;
+		responder?: string | [string, any];
+		path?: Path;
+		controller?: Controller;
+	}
 	export type Route =
 		| NRCPType
-		| (RouteBase & {
-				method?: Method;
-				name?: string;
-				responder?: string | [string, any];
-				path?: Path;
-				controller?: Controller;
-		  })
+		| RouteObject
 		| (RouteBase & {
 				nrcp: string; // [method:]name@responder[|path|controller]
 		  });
 
+	export interface EmptyRouteObject extends Omit<RouteBase, "routes" | "group"> {
+		method?: Method;
+		name?: string;
+		responder?: string | [string, any];
+		controller?: Controller;
+	}
 	export type EmptyRoute =
 		| NRCPType
-		| (Omit<RouteBase, "routes" | "group"> & {
-				method?: Method;
-				name?: string;
-				responder?: string | [string, any];
-				controller?: Controller;
-		  })
+		| EmptyRouteObject
 		| (Omit<RouteBase, "routes" | "group"> & {
 				nrcp: NRCPType;
 		  });

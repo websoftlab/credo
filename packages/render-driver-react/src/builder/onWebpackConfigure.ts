@@ -1,5 +1,4 @@
 import type { BuildConfigure } from "phragon";
-import { babelLoader } from "phragon/webpack/rules/use-loader-rule-items";
 
 export default async function onWebpackConfigure(event: { webpack: any; config: BuildConfigure }): Promise<void> {
 	const {
@@ -19,30 +18,4 @@ export default async function onWebpackConfigure(event: { webpack: any; config: 
 			})
 		);
 	}
-
-	if (!webpack.module) {
-		webpack.module = {};
-	}
-	if (!webpack.module.rules) {
-		webpack.module.rules = [];
-	}
-
-	/**
-	 * Using @svgr/webpack for handling svg files in react components
-	 * @see https://react-svgr.com/docs/webpack/
-	 */
-	webpack.module.rules.push({
-		test: /\.component\.svg$/,
-		issuer: /\.[jt]sx$/,
-		use: [
-			await babelLoader(event.config),
-			{
-				loader: "@svgr/webpack",
-				options: {
-					babel: false,
-					icon: true,
-				},
-			},
-		],
-	});
 }

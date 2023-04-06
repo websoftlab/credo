@@ -7,7 +7,7 @@ import type {
 	RenderHandler,
 	FallbackHandler,
 } from "./types";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 
 function delFrom<T>(all: T[], item: T) {
 	const index = all.indexOf(item);

@@ -3,8 +3,10 @@ import type { Context } from "koa";
 import type { PatternInterface } from "@phragon/path-to-pattern";
 import type { Nullable } from "../helpTypes";
 import type { RouteVariant, NRCPDecode, NRCPDecodeType, NormalizeRoute } from "./types";
+import type { RootRouter } from "./Router";
 import { pathToPattern, matchPath } from "@phragon/path-to-pattern";
-import { asyncResult, isPlainObject } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
+import { isPlainObject } from "@phragon-util/plain-object";
 import { createMethods, nameGen, trimLeftSegment, trimRightSegment } from "./utils";
 import { default as RouteEntity } from "./RouteEntity";
 import { default as RoutePattern } from "./RoutePattern";
@@ -142,7 +144,7 @@ function createPatternPathOptions(
 				const match = find.match(ctx);
 				if (!match) {
 					return false;
-				} else if (await asyncResult(test(ctx, match))) {
+				} else if (await toAsync(test(ctx, match))) {
 					return match;
 				}
 			},
@@ -151,7 +153,7 @@ function createPatternPathOptions(
 
 	return {
 		async match(ctx: Context) {
-			const match = await asyncResult(test(ctx));
+			const match = await toAsync(test(ctx));
 			if (typeof match === "string") {
 				return matchPath(match, ctx.path);
 			} else if (typeof path === "object" && path != null) {
@@ -432,7 +434,7 @@ function decodeNRCP(name: string): NRCPDecodeType {
 	return options;
 }
 
-function getNRCP(nrcp: RouteConfig.NRCPType, parentResponder?: string): NRCPDecode {
+export function getNRCP(nrcp: RouteConfig.NRCPType, parentResponder?: string): NRCPDecode {
 	let rProps: any = null;
 	let cProps: any = null;
 	let details: any = null;
@@ -699,7 +701,7 @@ export default class RouteManager {
 		}
 	};
 
-	constructor(public phragon: PhragonJS) {
+	constructor(public phragon: PhragonJS, rootRouter?: RootRouter) {
 		const freezeRoutes = (routes: RouteVariant[]) => {
 			Object.freeze(routes);
 			for (const route of routes) {
@@ -725,7 +727,8 @@ export default class RouteManager {
 			return init();
 		}
 
-		const conf = phragon.config("routes");
+		// todo - deprecated phragon.config(...), use only rootRouter
+		const conf = rootRouter ? rootRouter.toConfigObject() : phragon.config("routes");
 		const { host = "*", routes = [], route404, sort = "native", middleware, ...otherConf } = conf;
 
 		this._hostList = createHostListRegExp(host);

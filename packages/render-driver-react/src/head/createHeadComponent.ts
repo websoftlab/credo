@@ -2,7 +2,7 @@ import type { FC } from "react";
 import type { HeadTagName } from "@phragon/html-head";
 import { createElement } from "react";
 import HeadTagComponent from "./HeadTagComponent";
-import { __isDev__ } from "@phragon/utils";
+import { __isDev__ } from "@phragon-util/global-var";
 
 const defaultAttributes: string[] = [
 	"id",

@@ -6,7 +6,7 @@ import type { API } from "@phragon/app";
 import type { Action as NavigationType } from "history";
 import type { Navigator } from "./context";
 import { createPath, parsePath } from "history";
-import { invariant, warning } from "@phragon/utils";
+import { invariant, warning } from "@phragon-util/proof";
 import { useMemo, useCallback, useEffect, useRef, useContext } from "react";
 import resolvePath from "./resolvePath";
 import { createEvent } from "../utils";
@@ -94,7 +94,10 @@ export function useNavigateIsActive(to: To, options: NavigateIsActiveOptions = {
 
 	return (
 		locationPathname === toPathname ||
-		(!end && locationPathname.startsWith(toPathname) && locationPathname.charAt(toPathname.length) === "/")
+		(!end &&
+			toPathname.length > 1 &&
+			locationPathname.startsWith(toPathname) &&
+			(toPathname.endsWith("/") || locationPathname.charAt(toPathname.length) === "/"))
 	);
 }
 

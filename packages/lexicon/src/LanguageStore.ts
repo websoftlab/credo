@@ -20,14 +20,18 @@ export default class LanguageStore implements Lexicon.LanguageStoreInterface {
 		});
 	}
 
-	translate(key: string, alternative?: string | ((key: string) => string)) {
+	line<Val = string>(key: string): Val | null {
+		return this.lexicon.hasOwnProperty(key) ? this.lexicon[key] : null;
+	}
+
+	translate<Val = string>(key: string, alternative?: Val | ((key: string) => Val)): Val {
 		if (this.lexicon.hasOwnProperty(key)) {
 			return this.lexicon[key];
 		}
 		if (typeof alternative === "function") {
-			return alternative(key);
+			return (alternative as Function)(key);
 		}
-		return alternative == null ? key : alternative;
+		return alternative == null ? (key as Val) : alternative;
 	}
 
 	setLanguageData(data: Lexicon.Data) {

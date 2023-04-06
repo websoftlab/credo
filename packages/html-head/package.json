@@ -4,14 +4,10 @@
 	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"scripts": {
-		"build": "node ../../scripts/lib/build.js",
-		"prettier": "node ../../scripts/lib/build-prettier.js"
+		"build": "phragon-script build --cwd \"../../\" -P @phragon/html-head",
+		"prettier": "phragon-script prettier --cwd \"../../\" -P @phragon/html-head"
 	},
-	"dependencies": {},
-	"devDependencies": {},
-	"peerDependencies": {},
 	"exports": {
-		"./": "./build/",
 		".": {
 			"require": "./build/index.js"
 		}

@@ -2,7 +2,8 @@ import type BuilderStore from "../BuilderStore";
 import type { EStat, PhragonConfig, PhragonPlugin } from "../../types";
 import { readdir, stat } from "fs/promises";
 import { newError } from "@phragon/cli-color";
-import { asyncResult, isPlainObject } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
+import { isPlainObject } from "@phragon-util/plain-object";
 import { dirname, join, extname } from "path";
 import { copyTemplateIfEmpty, cwdSearchFile, existsStat } from "../../utils";
 import { debug } from "../../debug";
@@ -259,6 +260,13 @@ async function _phragonClusterList(
 		const bootstrap = await phragonImport(__plugin, "bootstrap", id);
 		if (bootstrap) {
 			pco.bootstrap = bootstrap.bootstrap;
+		}
+
+		if (__plugin.root) {
+			const route = await phragonImport(__plugin, "route", id);
+			if (route) {
+				pco.route = route.route;
+			}
 		}
 
 		clsCount += pco.count;
@@ -553,8 +561,9 @@ export async function phragonRender(
 		name = `${pref}${name}`;
 	}
 
-	debug("Check render driver dependency {yellow %s}", originDriverName);
-	await installDependencies({ [name]: version });
+	await installDependencies({ [name]: version }, {}, () => {
+		debug("Install render driver dependency {yellow %s}", originDriverName);
+	});
 
 	try {
 		driver = await import(`${name}/builder`);
@@ -567,7 +576,7 @@ export async function phragonRender(
 	}
 
 	if (typeof driver === "function") {
-		driver = await asyncResult(driver());
+		driver = await toAsync(driver());
 	}
 
 	if (!isPlainObject(driver)) {
@@ -793,7 +802,7 @@ async function phragonImport<Key extends string>(
 	key: Key,
 	cid?: string
 ): Promise<PhragonPlugin.ConfigType<Key, PhragonPlugin.Handler> | null> {
-	const prefix = plugin.root ? (key === "bootstrap" ? "./src-server/" : "./src-client/") : "./";
+	const prefix = plugin.root ? (key === "bootstrap" || key === "route" ? "./src-server/" : "./src-client/") : "./";
 
 	let find: EStat | null = null;
 	if (cid) {
@@ -946,10 +955,19 @@ async function _renderDriver(store: BuilderStore) {
 	};
 }
 
+async function _phragonRoute(root: PhragonPlugin.Plugin) {
+	const find = await phragonImport(root, "route");
+	if (find) {
+		return find.route;
+	}
+	return null;
+}
+
 export async function phragon(store: BuilderStore) {
 	const { root, ssr, renderDriver, renderOptions, renderPlugin } = await _renderDriver(store);
 	return {
 		cluster: await _phragonClusterList(store, renderDriver, renderPlugin, renderOptions, ssr),
+		route: await _phragonRoute(root),
 		cmd: await phragonCmd(store),
 		controller: await phragonController(store),
 		extraMiddleware: await phragonExtraMiddleware(store),

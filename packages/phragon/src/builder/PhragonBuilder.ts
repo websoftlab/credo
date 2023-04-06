@@ -1,7 +1,7 @@
 import type { PhragonConfig, PhragonPlugin } from "../types";
 import type { BuilderStoreI } from "./BuilderStore";
 import { DaemonSignKill } from "../types";
-import { isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
 
 const SET_ID = Symbol();
 
@@ -159,7 +159,7 @@ export default class PhragonBuilder implements PhragonBuilderI {
 		if (arguments.length < 1) {
 			return this;
 		}
-		if (isPlainObject(pid)) {
+		if (isPlainObject<PhragonPlugin.DaemonOptions>(pid)) {
 			set(this, "daemon", { ...(pid as PhragonPlugin.DaemonOptions) });
 		} else {
 			const opt: PhragonPlugin.DaemonOptions = {};

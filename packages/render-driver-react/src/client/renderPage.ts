@@ -2,14 +2,14 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { Api, Page, createHttpJsonService, PageStore } from "@phragon/app";
-import { asyncResult } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
 import App from "./App";
 import loadDocument from "./loadDocument";
 import { load, loaded, component } from "../loadable";
 import { AppStore } from "@phragon/app";
 import onHistoryScroll from "./onHistoryScroll";
 import { createEvent } from "../app/utils";
-import { __isDev__ } from "@phragon/utils";
+import { __isDev__ } from "@phragon-util/global-var";
 import { createNavigator, getHistory } from "./navigator";
 import type { ElementType } from "react";
 import type { OnAppRenderHook } from "../app";
@@ -67,7 +67,7 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 	await Promise.all(
 		bootloader.map(async (func) => {
 			try {
-				await asyncResult(func(api));
+				await toAsync(func(api));
 			} catch (err) {
 				if (__isDev__()) {
 					console.error("Bootstrap callback failure", err);

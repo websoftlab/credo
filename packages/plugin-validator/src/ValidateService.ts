@@ -1,7 +1,8 @@
 import type { Lexicon } from "@phragon/lexicon";
 import type { ValidateEntry, ValidateEntryType, ValidateOptions } from "./types";
 import type { TypeOfValidator } from "@phragon/validator";
-import { asyncResult, isPlainObject } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
+import { toAsync } from "@phragon-util/async";
 import { hasTypeOf, createTypeOf, createFormatter, createValidator, ValidateError } from "@phragon/validator";
 import ValidateDataError from "./ValidateDataError";
 
@@ -23,6 +24,20 @@ export interface ValidateConfig<Data extends {} = any> {
 
 const types: Record<string, TypeOfValidator> = {};
 
+function isNullValue(value: any, type: string, options: { isNull?: Function }) {
+	const { isNull } = options;
+	if (typeof isNull === "function") {
+		return isNull(value) === true;
+	}
+	if (typeof value === "string" && (type === "number" || type === "boolean")) {
+		const val = value.trim();
+		if (val.length === 0) {
+			return true;
+		}
+	}
+	return value == null;
+}
+
 async function validOnce(
 	body: any,
 	files: Record<string, File>,
@@ -32,7 +47,7 @@ async function validOnce(
 ): Promise<any> {
 	const { type, arrayEntryType = "text", arrayMin, arrayMax, ...rest } = entry;
 	const { name } = entry;
-	const field = prefix ? `${prefix}.${name}` : name;
+	const field = prefix ? prefix : name;
 
 	if (type === "array") {
 		let value = (arrayEntryType === "file" ? files : body)[name];
@@ -55,7 +70,7 @@ async function validOnce(
 
 		for (let index = 0; index < value.length; index++) {
 			const val = value[index];
-			const prf = `${field}[${index}]`;
+			const prf = `${field}.[${index}]`;
 			try {
 				const itm = await validOnce({ [name]: val }, files, innerEntry, addError, prf);
 				if (itm != null) {
@@ -93,13 +108,14 @@ async function validOnce(
 		}
 
 		for (const innerEntry of list) {
+			const prf = field ? `${field}.${innerEntry.name}` : innerEntry.name;
 			try {
-				const val = await validOnce(innerBody, files, innerEntry, addError, field);
+				const val = await validOnce(innerBody, files, innerEntry, addError, prf);
 				if (val !== undefined) {
 					data[innerEntry.name] = val;
 				}
 			} catch (err) {
-				addError(entry, `${field}.${innerEntry.name}`, err);
+				addError(entry, prf, err);
 			}
 		}
 
@@ -127,7 +143,7 @@ async function validOnce(
 
 		if (typeof validator === "function") {
 			try {
-				if (!(await asyncResult(validator(value, options)))) {
+				if (!(await toAsync(validator(value, options)))) {
 					return addError(entry, field, new ValidateError("", field));
 				}
 			} catch (err) {
@@ -149,7 +165,7 @@ async function validOnce(
 	}
 
 	value = body[name];
-	if (value == null && defaultValue !== undefined) {
+	if (isNullValue(value, type, options as { isNull?: Function }) && defaultValue !== undefined) {
 		value = isPlainObject(defaultValue) ? { ...defaultValue } : defaultValue;
 	}
 
@@ -158,9 +174,9 @@ async function validOnce(
 			const frm = createFormatter(format);
 			value = frm(value, field);
 		}
-		value = await asyncResult(test.format(value, options));
+		value = await toAsync(test.format(value, options));
 		if (typeof formatter === "function") {
-			value = await asyncResult(formatter(value, options));
+			value = await toAsync(formatter(value, options));
 		}
 		if (validate) {
 			const vld = createValidator(validate);
@@ -172,9 +188,9 @@ async function validOnce(
 				return addError(entry, field, error);
 			}
 		}
-		let valid = await asyncResult(test.validate(value, options));
+		let valid = await toAsync(test.validate(value, options));
 		if (valid && typeof validator === "function") {
-			valid = await asyncResult(validator(value, options));
+			valid = await toAsync(validator(value, options));
 		}
 		if (!valid) {
 			return addError(entry, field, new ValidateError("", field));
@@ -211,12 +227,15 @@ function createSchemaList(schema: Record<string, ValidateEntryType | ValidateEnt
 }
 
 function defaultTranslator(info: Lexicon.TranslateOptions) {
-	const { id, alternative, replacement } = info;
+	let { id, alternative, replacement } = info;
 	if (!alternative) {
 		return id;
 	}
+	if (typeof alternative === "function") {
+		alternative = alternative(id);
+	}
 	if (isPlainObject(replacement)) {
-		return alternative.replace(/\{(.+?)}/g, (_, name) => {
+		return String(alternative).replace(/\{(.+?)}/g, (_, name) => {
 			return replacement[name] == null ? "?" : replacement[name];
 		});
 	}

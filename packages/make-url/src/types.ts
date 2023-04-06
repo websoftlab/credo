@@ -1,10 +1,14 @@
-import type UrlPattern from "./UrlPattern";
+import type { UrlPattern } from "./UrlPattern";
 
 // URL
 export namespace URL {
-	export type QueryOptions = {
+	export interface QueryOptions {
 		nullable?: (value: any, name: string) => boolean;
-	};
+	}
+
+	export interface ParseQueryOptions {
+		maxKeys?: number;
+	}
 
 	export interface Options extends QueryOptions {
 		path?: string | string[];

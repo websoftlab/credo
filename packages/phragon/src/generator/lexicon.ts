@@ -408,7 +408,7 @@ export async function buildLexicon(factory: PhragonPlugin.Factory) {
 					sJs.append(`methods: [${t.esc(method)}],`);
 					sJs.append(`match(ctx) { return pattern.match(ctx.path); },`);
 					sJs.group("context:", ",", () => {
-						const asyncResult = sJs.imp("@phragon/utils", "asyncResult");
+						const toAsync = sJs.imp("@phragon-util/async", "toAsync");
 						sJs.append([
 							`name: "lexicon",`,
 							`controller: {`,
@@ -419,7 +419,7 @@ export async function buildLexicon(factory: PhragonPlugin.Factory) {
 							`\t\tconst id = pattern.keys.includes("id") ? match.id : query.id;`,
 							`\t\tconst packageName = pattern.keys.includes("package") ? match["package"] : query["package"];`,
 							`\t\tif(!languages.includes(id)) throw new Error("Language ID not specified or invalid.");`,
-							`\t\tconst data = await ${asyncResult}(${sJs.tool.keyVar(
+							`\t\tconst data = await ${toAsync}(${sJs.tool.keyVar(
 								"phragon.services",
 								service.split(".")
 							)}(id, packageName));`,
@@ -445,17 +445,17 @@ export async function buildLexicon(factory: PhragonPlugin.Factory) {
 			}
 
 			sJs.group("async function __id(id, data)", "", () => {
-				const asyncResult = sJs.imp("@phragon/utils", "asyncResult");
+				const toAsync = sJs.imp("@phragon-util/async", "toAsync");
 				sJs.append(
-					`const r = await ${asyncResult}(${sJs.tool.keyVar("phragon.services", service.split("."))}(id));`
+					`const r = await ${toAsync}(${sJs.tool.keyVar("phragon.services", service.split("."))}(id));`
 				);
 				sJs.append("return { id: data.id, lexicon: Object.assign({}, data.lexicon, r), lambda: data.lambda };");
 			});
 
 			sJs.group("async function __idPg(id, packageName, data)", "", () => {
-				const asyncResult = sJs.imp("@phragon/utils", "asyncResult");
+				const toAsync = sJs.imp("@phragon-util/async", "toAsync");
 				sJs.append(
-					`const r = await ${asyncResult}(${sJs.tool.keyVar(
+					`const r = await ${toAsync}(${sJs.tool.keyVar(
 						"phragon.services",
 						service.split(".")
 					)}(id, packageName));`

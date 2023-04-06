@@ -5,11 +5,55 @@
 			"output": "."
 		},
 		{
-			"target": "types",
-			"output": ".",
+			"target": "module",
+			"output": "./esm",
 			"package.json": {
-				"types": "./index.d.ts"
+				"exports": {
+					".": {
+						"require": "./index.js",
+						"import": "./esm/index.js"
+					},
+					"./app": {
+						"require": "./app/index.js",
+						"import": "./esm/app/index.js"
+					},
+					"./app/route": {
+						"require": "./app/route/index.js",
+						"import": "./esm/app/route/index.js"
+					},
+					"./builder": {
+						"require": "./builder/index.js",
+						"import": "./esm/builder/index.js"
+					},
+					"./client": {
+						"require": "./client/index.js",
+						"import": "./esm/client/index.js"
+					},
+					"./component": {
+						"require": "./component/index.js",
+						"import": "./esm/component/index.js"
+					},
+					"./head": {
+						"require": "./head/index.js",
+						"import": "./esm/head/index.js"
+					},
+					"./loadable": {
+						"require": "./loadable/index.js",
+						"import": "./esm/loadable/index.js"
+					},
+					"./server": {
+						"require": "./server/index.js",
+						"import": "./esm/server/index.js"
+					},
+					"./package.json": {
+						"require": "./package.json"
+					}
+				}
 			}
+		},
+		{
+			"target": "types",
+			"output": "."
 		}
 	],
 	"types": {

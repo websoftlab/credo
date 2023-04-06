@@ -4,8 +4,8 @@ import type { OnJSONResponseErrorHook, OnJSONResponseHook, ResponderJsonConfigOp
 import { RouteEntity } from "@phragon/server";
 import createHttpError from "http-errors";
 import HttpJSON from "./HttpJSON";
-import asyncResult from "@phragon/utils/asyncResult";
-import { isPlainObject } from "@phragon/utils";
+import { toAsync } from "@phragon-util/async";
+import { isPlainObject } from "@phragon-util/plain-object";
 
 type OriginOptions = {
 	origin: string;
@@ -33,7 +33,7 @@ export default (function responder(phragon: PhragonJS, name: string): Route.Resp
 	async function getOptionsMethods(ctx: Context, routes: RouteVariant[], methods: string[]): Promise<string[]> {
 		for (const route of routes) {
 			if (RouteEntity.isRouteGroup(route)) {
-				if (await asyncResult(route.match(ctx, false))) {
+				if (await toAsync(route.match(ctx, false))) {
 					await getOptionsMethods(ctx, route.routes, methods);
 				}
 				continue;
@@ -41,7 +41,7 @@ export default (function responder(phragon: PhragonJS, name: string): Route.Resp
 			if (
 				route.context.details?.cors === false ||
 				route.context.responder.name !== name ||
-				!(await asyncResult(route.match(ctx)))
+				!(await toAsync(route.match(ctx)))
 			) {
 				continue;
 			}
@@ -102,7 +102,7 @@ export default (function responder(phragon: PhragonJS, name: string): Route.Resp
 		}
 
 		if (typeof errorHandler === "function") {
-			return send(ctx, await asyncResult(errorHandler(error)));
+			return send(ctx, await toAsync(errorHandler(error)));
 		}
 
 		if (withOrigin) {
@@ -153,7 +153,7 @@ export default (function responder(phragon: PhragonJS, name: string): Route.Resp
 
 		let origin: string;
 		if (typeof cors.origin === "function") {
-			origin = await asyncResult(cors.origin(ctx));
+			origin = await toAsync(cors.origin(ctx));
 			if (!origin) {
 				return false;
 			}
@@ -163,7 +163,7 @@ export default (function responder(phragon: PhragonJS, name: string): Route.Resp
 
 		let credentials: boolean;
 		if (typeof cors.credentials === "function") {
-			credentials = await asyncResult<boolean>(cors.credentials(ctx));
+			credentials = await toAsync<boolean>(cors.credentials(ctx));
 		} else {
 			credentials = !!cors.credentials;
 		}
@@ -231,7 +231,7 @@ export default (function responder(phragon: PhragonJS, name: string): Route.Resp
 			}
 			if (typeof doneHandler === "function") {
 				try {
-					body = await asyncResult(doneHandler(body));
+					body = await toAsync(doneHandler(body));
 				} catch (err) {
 					return sendError(ctx, err as Error, false);
 				}

@@ -2,10 +2,6 @@ import type { BuildRule } from "../types";
 import type { BuildConfigure } from "../../types";
 import { createExtensions } from "./common";
 
-/**
- * Using file-loader for handling svg files
- * @see https://webpack.js.org/guides/asset-modules/
- */
 async function replaceRule(config: BuildConfigure): Promise<BuildRule> {
 	const {
 		mode,
@@ -25,7 +21,7 @@ async function replaceRule(config: BuildConfigure): Promise<BuildRule> {
 	return config.fireOnOptionsHook("module.rule.replace", {
 		test: createExtensions(["js", "ts"], render?.extensions?.typescript),
 		loader: "string-replace-loader",
-		exclude: /node_modules[\/\\]@phragon[\/\\]utils/,
+		exclude: /node_modules[\/\\](?:@phragon[\/\\]utils|@phragon-util[\/\\]global-var)/,
 		options: {
 			search: "__(\\w+)__\\s*\\(\\s*\\)",
 			flags: "g",

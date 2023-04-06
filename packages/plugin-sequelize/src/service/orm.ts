@@ -4,7 +4,8 @@ import type { Builder, Debug, LoadSchemaBuilder } from "../dynamic";
 import type { PhragonJSGlobal } from "@phragon/server";
 import { createBuilder, loadSchemaBuilder, BuildError, LoadSchemaBuilderOptions } from "../dynamic";
 import { Op, Sequelize } from "sequelize";
-import { asyncResult } from "@phragon/utils";
+import { isPlainObject } from "@phragon-util/plain-object";
+import { toAsync } from "@phragon-util/async";
 import { initMigration, getMigration } from "../model/Migration";
 import { initDynamicSequelize, getDynamicSequelize } from "../model/DynamicSequelize";
 import semver from "semver/preload";
@@ -21,6 +22,31 @@ function getVersion(version: string) {
 	} else {
 		return version;
 	}
+}
+
+function createLogger(phragon: PhragonJSGlobal) {
+	return function (message: string, timing?: number | object | undefined) {
+		let detail: any = {};
+		if (
+			isPlainObject<{
+				raw: boolean;
+				type: string;
+				plain: boolean;
+				name?: unknown;
+			}>(timing)
+		) {
+			const { raw, type, plain, name } = timing;
+			detail = {
+				raw,
+				type,
+				plain,
+				name,
+			};
+		} else if (typeof timing === "number") {
+			detail = { timing };
+		}
+		phragon.debug.orm(message, detail);
+	};
 }
 
 export default function createORMService(phragon: PhragonJSGlobal): ORMService {
@@ -129,9 +155,7 @@ export default function createORMService(phragon: PhragonJSGlobal): ORMService {
 	function createSequelize(): Sequelize {
 		// load config
 		const link = new Sequelize({
-			logging(message, timing) {
-				phragon.debug.orm(message, {timing});
-			},
+			logging: createLogger(phragon),
 			...dbConfig,
 		});
 
@@ -231,7 +255,9 @@ export default function createORMService(phragon: PhragonJSGlobal): ORMService {
 			const count1 = await getDynamicSequelize().count();
 			const count2 = await getDynamicSequelize().count({ where: { name: { [Op.in]: dynamicBuilderName } } });
 			if (count1 - count2 > 0 || count2 !== dynamicBuilderName.length) {
-				phragon.debug.orm("The number of registered dynamic ORM schemas does not match the number of schemas in the database");
+				phragon.debug.orm(
+					"The number of registered dynamic ORM schemas does not match the number of schemas in the database"
+				);
 			}
 		}
 
@@ -277,7 +303,7 @@ export default function createORMService(phragon: PhragonJSGlobal): ORMService {
 			for (const item of modelList) {
 				const { seeding } = item;
 				if (typeof seeding === "function") {
-					await asyncResult(seeding(conn));
+					await toAsync(seeding(conn));
 				}
 			}
 		}
@@ -297,7 +323,11 @@ export default function createORMService(phragon: PhragonJSGlobal): ORMService {
 			dynamic = d;
 			await reconnect();
 		}
-		return { ok: true, status: force && dynamicBuilderList.length !== 0 ? "rejected" : "modify", debug: dynamic ? dynamic.debug : [] };
+		return {
+			ok: true,
+			status: force && dynamicBuilderList.length !== 0 ? "rejected" : "modify",
+			debug: dynamic ? dynamic.debug : [],
+		};
 	}
 
 	class ORMServiceClass implements ORMService {
@@ -358,7 +388,7 @@ export default function createORMService(phragon: PhragonJSGlobal): ORMService {
 			if (index !== -1) {
 				dynamicBuilderName.splice(index, 1);
 			}
-			index = dynamicBuilderList.findIndex(item => item.name === name);
+			index = dynamicBuilderList.findIndex((item) => item.name === name);
 			if (index !== -1) {
 				dynamicBuilderList.splice(index, 1);
 			}
