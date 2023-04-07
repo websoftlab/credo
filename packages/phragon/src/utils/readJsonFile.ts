@@ -1,4 +1,4 @@
-import { readFile } from "fs/promises";
+import { readFile } from "node:fs/promises";
 import normalizeFilePath from "./normalizeFilePath";
 
 export default async function readJsonFile(file: string) {

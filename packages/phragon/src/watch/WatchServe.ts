@@ -6,9 +6,9 @@ import type { PhragonPlugin, Watch } from "../types";
 import type { CmdDebugWaiter } from "../debug";
 import isWindows from "is-windows";
 import { RollupBuild, RollupWatcherEvent } from "rollup";
-import { ChildProcessByStdio, fork } from "child_process";
+import { ChildProcessByStdio, fork } from "node:child_process";
 import { cwdPath } from "../utils";
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 import { debug } from "../debug";
 import { isPlainObject } from "@phragon-util/plain-object";
 

@@ -1,4 +1,4 @@
-import { join, relative } from "path";
+import { join, relative } from "node:path";
 
 export default function createRelativePath(file: string, base?: string, addExtensions: string[] = []) {
 	const extensions: string[] = ["js", "ts", "json"];

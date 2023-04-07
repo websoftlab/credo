@@ -2,7 +2,7 @@ import type BuilderStore from "../BuilderStore";
 import type Builder from "../Builder";
 import type { PhragonPlugin } from "../../types";
 import { newError } from "@phragon/cli-color";
-import { join } from "path";
+import { join } from "node:path";
 import { installDependencies, splitModule } from "../../dependencies";
 import { isList } from "./util";
 

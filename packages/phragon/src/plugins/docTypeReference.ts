@@ -1,5 +1,5 @@
 import { cwdPath, existsStat } from "../utils";
-import { readFile, writeFile } from "fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 
 function ref(name: string) {
 	const ended = name.startsWith("@") ? name.lastIndexOf("/") !== name.indexOf("/") : name.includes("/");

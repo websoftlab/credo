@@ -1,5 +1,5 @@
-import { copyFile, mkdir, readdir, stat } from "fs/promises";
-import { dirname, join } from "path";
+import { copyFile, mkdir, readdir, stat } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { debug } from "../debug";
 import exists from "./exists";
 import localPathName from "./localPathName";

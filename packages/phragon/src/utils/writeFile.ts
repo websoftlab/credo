@@ -1,7 +1,7 @@
-import type { WriteFileOptions } from "fs";
-import type { FileHandle } from "fs/promises";
-import { open, unlink, writeFile as fsWriteFile } from "fs/promises";
-import { constants } from "fs";
+import type { WriteFileOptions } from "node:fs";
+import type { FileHandle } from "node:fs/promises";
+import { open, unlink, writeFile as fsWriteFile } from "node:fs/promises";
+import { constants } from "node:fs";
 
 function wait() {
 	return new Promise<void>((resolve) => {

@@ -1,5 +1,5 @@
-import { access } from "fs/promises";
-import { constants } from "fs";
+import { access } from "node:fs/promises";
+import { constants } from "node:fs";
 import normalizeFilePath from "./normalizeFilePath";
 
 export default async function exists(file: string | string[]): Promise<boolean> {

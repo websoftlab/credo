@@ -1,7 +1,7 @@
 import type { InputOptions, OutputOptions } from "rollup";
 import type { Configuration } from "webpack";
 import type { RollupWatcher } from "rollup";
-import type { ChildProcessByStdio } from "child_process";
+import type { ChildProcessByStdio } from "node:child_process";
 import type Builder from "./builder/Builder";
 
 export interface InstallPhragonJSOptions {

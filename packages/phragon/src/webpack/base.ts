@@ -1,6 +1,6 @@
 import type { Configuration, RuleSetRule, Compiler, WebpackPluginInstance } from "webpack";
 import type { BuildConfigure } from "../types";
-import { join as joinPath, sep } from "path";
+import { join as joinPath, sep } from "node:path";
 import { externals } from "./config";
 import { alias } from "../config";
 import optimization from "./optimization";

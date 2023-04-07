@@ -1,6 +1,6 @@
 import type { BuildMode, PhragonPlugin } from "./types";
-import { lstat, readdir } from "fs/promises";
-import { join, extname } from "path";
+import { lstat, readdir } from "node:fs/promises";
+import { join, extname } from "node:path";
 import { createCwdDirectoryIfNotExists, cwdPath, exists, PackageJsonUtil, readJsonFile, writeJsonFile } from "./utils";
 import { installPluginProcess } from "./plugins/installer";
 import { buildClient, buildLexicon, buildServer, buildPages, buildServerDaemon } from "./generator";

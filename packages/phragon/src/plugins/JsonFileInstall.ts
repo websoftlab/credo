@@ -1,6 +1,8 @@
-import { cwdPath, exists, readJsonFile, writeJsonFile } from "../utils";
+import { cwdPath, exists } from "../utils";
 import { debug } from "../debug";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, openSync, unlinkSync, closeSync, constants } from "node:fs";
+import { writeFile, readFile } from "node:fs/promises";
+import { newError } from "@phragon/cli-color";
 
 interface JsonFileInstallData {
 	installed: boolean;
@@ -17,6 +19,38 @@ interface JsonFileInstallData {
 const jsonFileInstallPath = cwdPath("phragon.json.install");
 const FI_KEY = Symbol();
 const FI_TRANSACTION = Symbol();
+
+function wait(time: number) {
+	return new Promise<void>((resolve) => {
+		setTimeout(resolve, time);
+	});
+}
+
+async function lockFile(n: number = 0): Promise<Function | null> {
+	const lockPath = `${jsonFileInstallPath}.lock`;
+	const now = Date.now();
+	try {
+		const id = openSync(lockPath, constants.O_CREAT | constants.O_EXCL | constants.O_RDWR);
+		return () => {
+			closeSync(id);
+			try {
+				unlinkSync(lockPath);
+			} catch (err) {
+				debug.error("Can't remove temporary file {%s}", "./phragon.json.install.lock");
+			}
+		};
+	} catch (err) {
+		if (n === 10) {
+			return null;
+		}
+		if (n > 2) {
+			debug("Waiting for previous build to complete {cyan (%s)}...", n - 2);
+		}
+		const waitTime = (n === 0 ? 100 : n * 500) - (Date.now() - now);
+		await wait(waitTime > 50 ? waitTime : 50);
+		return lockFile(n + 1);
+	}
+}
 
 function defaultData(): JsonFileInstallData {
 	return {
@@ -121,9 +155,22 @@ export class JsonFileInstall {
 			return;
 		}
 		if (await exists(jsonFileInstallPath)) {
+			let n = 0;
+			let data: string;
+			while (true) {
+				data = (await readFile(jsonFileInstallPath)).toString();
+				if (!data) {
+					await wait(50);
+				} else {
+					break;
+				}
+				if (++n > 10) {
+					throw newError("Can't read file {cyan ./%s}", "./phragon.json.install");
+				}
+			}
 			this[FI_KEY] = {
 				...defaultData(),
-				...(await readJsonFile(jsonFileInstallPath)),
+				...JSON.parse(data),
 			};
 		}
 	}
@@ -147,53 +194,82 @@ export class JsonFileInstall {
 
 	async save() {
 		if (this.inTransaction) {
-			await writeJsonFile(jsonFileInstallPath, this[FI_KEY]);
+			await writeFile(jsonFileInstallPath, JSON.stringify(this[FI_KEY], null, 2));
 		}
 	}
 
-	async createTransaction() {
-		if (this[FI_KEY].lock) {
-			throw new Error("Installation transaction already open");
+	async tryWait() {
+		if (this.inTransaction) {
+			return false;
+		}
+		let count = 0;
+		function sleep() {
+			count++;
+			if (count > 2) {
+				debug("Waiting for previous build to complete {cyan (%s)}...", count - 2);
+			}
+			return wait(500 + count * 500);
+		}
+		while (count < 10) {
+			await sleep();
+			await this.load();
+			if (!this.lock) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	async createTransaction(isWait = false) {
+		const raw = () => this[FI_KEY];
+		if (raw().lock) {
+			throw new Error("Build transaction already open");
 		}
 
 		// reload all
 		await this.load();
 
-		const gen = this[FI_KEY];
-		if (gen.lock) {
-			throw new Error("Installation transaction already open");
+		if (raw().lock && (!isWait || !(await this.tryWait()))) {
+			throw new Error("Build transaction already open");
+		}
+
+		const closeHandler = await lockFile();
+		if (closeHandler == null) {
+			throw new Error("Build transaction already open");
 		}
 
 		let fatal = false;
 		this[FI_TRANSACTION] = true;
 
 		const update = async (time: number) => {
-			gen.time = time;
+			raw().time = time;
 			await this.save();
 		};
 
 		const start = Date.now();
 
-		gen.lock = true;
+		raw().lock = true;
 
 		await update(start);
 
 		const done = (err?: Error) => {
 			const time = Date.now();
-			gen.lock = false;
-			gen.lastDuration = time - start;
-			gen.lastError = err ? err.message || "Unknown error" : null;
+			raw().lock = false;
+			raw().lastDuration = time - start;
+			raw().lastError = err ? err.message || "Unknown error" : null;
 			process.off("exit", listener);
 
 			// write sync for fatal error
 			if (fatal) {
-				gen.time = time;
+				raw().time = time;
 				this[FI_TRANSACTION] = false;
-				writeFileSync(jsonFileInstallPath, JSON.stringify(gen, null, 2));
+				writeFileSync(jsonFileInstallPath, JSON.stringify(raw(), null, 2));
+				closeHandler();
 			} else {
 				return update(time)
 					.finally(() => {
 						this[FI_TRANSACTION] = false;
+						closeHandler();
 					})
 					.catch((err) => {
 						debug.error("{yellow %s} write failure", "./phragon.json.install", err);
@@ -202,7 +278,7 @@ export class JsonFileInstall {
 		};
 
 		const listener = (code: number) => {
-			if (gen.lock) {
+			if (raw().lock) {
 				fatal = true;
 				done(new Error("Process exit code " + code));
 			}

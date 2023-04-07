@@ -1,5 +1,5 @@
 import { EStat } from "../types";
-import { lstat, stat } from "fs/promises";
+import { lstat, stat } from "node:fs/promises";
 import normalizeFilePath from "./normalizeFilePath";
 import exists from "./exists";
 

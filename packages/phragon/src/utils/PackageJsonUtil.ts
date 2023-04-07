@@ -2,7 +2,7 @@ import { isPlainObject } from "@phragon-util/plain-object";
 import deepmerge from "deepmerge";
 import cwdPath from "./cwdPath";
 import exists from "./exists";
-import { basename } from "path";
+import { basename } from "node:path";
 import readJsonFile from "./readJsonFile";
 import writeJsonFile from "./writeJsonFile";
 import { debug } from "../debug";

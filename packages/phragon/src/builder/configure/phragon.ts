@@ -1,14 +1,14 @@
 import type BuilderStore from "../BuilderStore";
 import type { EStat, PhragonConfig, PhragonPlugin } from "../../types";
-import { readdir, stat } from "fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import { newError } from "@phragon/cli-color";
 import { toAsync } from "@phragon-util/async";
 import { isPlainObject } from "@phragon-util/plain-object";
-import { dirname, join, extname } from "path";
+import { dirname, join, extname } from "node:path";
 import { copyTemplateIfEmpty, cwdSearchFile, existsStat } from "../../utils";
 import { debug } from "../../debug";
 import { installDependencies, splitModule } from "../../dependencies";
-import { cpus } from "os";
+import { cpus } from "node:os";
 import { DaemonSignKill } from "../../types";
 import { isList } from "./util";
 

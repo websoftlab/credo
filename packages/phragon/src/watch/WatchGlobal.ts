@@ -1,6 +1,6 @@
-import type { Stats } from "fs";
-import { watch, watchFile, unwatchFile, existsSync, statSync, lstatSync, readdirSync, realpathSync } from "fs";
-import { join, resolve } from "path";
+import type { Stats } from "node:fs";
+import { watch, watchFile, unwatchFile, existsSync, statSync, lstatSync, readdirSync, realpathSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { newError } from "@phragon/cli-color";
 
 export type WatchAction = "change" | "delete" | "create";

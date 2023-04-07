@@ -1,5 +1,5 @@
 import { toAsync } from "@phragon-util/async";
-import { writeFile } from "fs/promises";
+import { writeFile } from "node:fs/promises";
 import { debug } from "../debug";
 import cwdPath from "./cwdPath";
 import exists from "./exists";

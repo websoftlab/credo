@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createCommander } from "@phragon/cli-commander";
-import { join } from "path";
+import { join } from "node:path";
 import build from "./build";
 import watch from "./watch";
 import { installPhragonJS } from "./plugins/installer";

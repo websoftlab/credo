@@ -1,5 +1,5 @@
-import { createHash } from "crypto";
-import { createReadStream } from "fs";
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 
 export default function fileHash(file: string): Promise<string> {
 	return new Promise((resolve, reject) => {

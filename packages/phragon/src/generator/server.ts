@@ -2,7 +2,7 @@ import { debug } from "../debug";
 import { CmpJS } from "@phragon/cli-cmp";
 import { buildPath, createCwdDirectoryIfNotExists, exists, writeBundleFile, writeJsonFile } from "../utils";
 import { PhragonPlugin } from "../types";
-import { writeFile } from "fs/promises";
+import { writeFile } from "node:fs/promises";
 import createRelativePath from "./createRelativePath";
 
 async function writeLoadable() {

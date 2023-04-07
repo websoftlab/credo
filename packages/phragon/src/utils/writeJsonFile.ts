@@ -1,4 +1,4 @@
-import { WriteFileOptions } from "fs";
+import { WriteFileOptions } from "node:fs";
 import writeFile from "./writeFile";
 import normalizeFilePath from "./normalizeFilePath";
 

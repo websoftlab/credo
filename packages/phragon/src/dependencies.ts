@@ -1,8 +1,8 @@
-import https from "https";
+import https from "node:https";
 import { satisfies } from "semver";
 import { newError } from "@phragon/cli-color";
 import { PackageJsonUtil } from "./utils";
-import { readFile } from "fs/promises";
+import { readFile } from "node:fs/promises";
 import { debug } from "./debug";
 import spawn from "cross-spawn";
 import { installJson } from "./plugins/JsonFileInstall";
@@ -275,7 +275,7 @@ export async function installDependencies(
 	// check package.json file
 	const pj = new PackageJsonUtil();
 	const fi = installJson();
-	const done = fi.inTransaction ? () => {} : await fi.createTransaction();
+	const done = fi.inTransaction ? () => {} : await fi.createTransaction(true);
 
 	dependencies = arrayToObject(dependencies);
 	devDependencies = arrayToObject(devDependencies);
@@ -326,6 +326,7 @@ export async function installDependencies(
 				updateDependencies = true;
 				updateInstallFile = true;
 			} else {
+				const fallbackVer = ver;
 				if (!isAny(dVer)) {
 					ver = await getPackageModuleVersion(module);
 					if (!ver) {
@@ -348,8 +349,9 @@ export async function installDependencies(
 						}
 					}
 				}
-				if (ver !== iVer) {
+				if (fallbackVer !== iVer) {
 					updateInstallFile = true;
+					ver = fallbackVer;
 				}
 			}
 

@@ -1,6 +1,6 @@
 import { PhragonPlugin } from "../types";
 import { copy, createCwdDirectoryIfNotExists, existsStat } from "./index";
-import { dirname, join } from "path";
+import { dirname, join } from "node:path";
 import { newError } from "@phragon/cli-color";
 import { debug } from "../debug";
 import isEmptyDir from "./isEmptyDir";

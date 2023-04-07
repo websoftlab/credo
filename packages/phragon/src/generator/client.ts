@@ -3,7 +3,7 @@ import { CmpJS } from "@phragon/cli-cmp";
 import { isPlainObject } from "@phragon-util/plain-object";
 import createRelativePath from "./createRelativePath";
 import { buildPath, createCwdDirectoryIfNotExists, exists, writeBundleFile } from "../utils";
-import { writeFile } from "fs/promises";
+import { writeFile } from "node:fs/promises";
 
 async function writeClientFailure() {
 	const file = buildPath("./client-failure.js");

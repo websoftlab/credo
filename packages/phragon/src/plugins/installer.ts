@@ -1,6 +1,6 @@
 import type { PhragonPlugin, InstallPhragonJSOptions } from "../types";
 import type { JsonFileInstall } from "./JsonFileInstall";
-import { readdir } from "fs/promises";
+import { readdir } from "node:fs/promises";
 import { format, newError } from "@phragon/cli-color";
 import {
 	cwdPath,
@@ -13,7 +13,7 @@ import {
 	PackageJsonUtil,
 } from "../utils";
 import { installJson } from "./JsonFileInstall";
-import { randomBytes } from "crypto";
+import { randomBytes } from "node:crypto";
 import { debug } from "../debug";
 import { installDependencies, uninstallDependencies } from "../dependencies";
 import docTypeReference from "./docTypeReference";
@@ -29,8 +29,8 @@ async function createJsonFileInstall() {
 	const fi = installJson();
 	await fi.load();
 
-	if (fi.lock) {
-		throw newError(`{red Failure.} Previous installation is incomplete!`);
+	if (fi.lock && !(await fi.tryWait())) {
+		throw newError(`{red Failure.} Previous build not completed!`);
 	}
 
 	return fi;

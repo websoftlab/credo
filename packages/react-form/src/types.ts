@@ -31,12 +31,16 @@ export interface FormStoreInterface<D = any> extends BaseFormStore<D> {
 
 export interface ArrayFormStoreInterface<D = any> extends BaseFormStore<D[]> {
 	has(id: IdType): boolean;
-	add(value: D, insertBeforeId?: IdType): IdType;
+	add(value: D, insertAfterId?: IdType): IdType;
 	del(id: IdType): void;
 	set(id: IdType, value: D): void;
 	get(id: IdType): { id: IdType; isNew: boolean; value: D } | undefined;
 	move(id: IdType, beforeId: IdType | null): void;
 	fill(data?: D[], reset?: boolean): void;
+
+	getIndexId(index: number): IdType | null;
+	forEach(callback: (item: D, id: IdType, index: number) => void): void;
+	map<Result = D>(callback: (item: D, id: IdType, index: number) => Result): Result[];
 }
 
 interface CreateOptions<Values> {
@@ -45,7 +49,7 @@ interface CreateOptions<Values> {
 	submit?(data: Values): void | Promise<void>;
 }
 
-export interface CreateArrayFormOptions<D = any> extends CreateOptions<D[]> {
+export interface CreateArrayFormOptions<D extends {} = any> extends CreateOptions<D[]> {
 	id?: keyof D;
 	min?: number;
 	max?: number;
@@ -54,7 +58,7 @@ export interface CreateArrayFormOptions<D = any> extends CreateOptions<D[]> {
 	validateArray?(items: D[]): string | null;
 }
 
-export interface CreateFormOptions<D = any> extends CreateOptions<D> {
+export interface CreateFormOptions<D extends {} = any> extends CreateOptions<D> {
 	formatters?: Formatter | Record<IdType | keyof D, Formatter>;
 	sanitizers?: Formatter | Record<IdType | keyof D, FormatterType | FormatterType[]>;
 }
@@ -82,4 +86,8 @@ export interface FormInputHook<Val = string, E extends HTMLInputElement = HTMLIn
 
 export interface ArrayFormInputHook<Val = string> extends FormHook<ArrayFormStoreInterface> {
 	setValues(values: Val[]): void;
+}
+
+export interface ActionHandler<Action extends { type: string }> {
+	(action: Action): void;
 }

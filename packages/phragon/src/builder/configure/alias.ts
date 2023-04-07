@@ -4,7 +4,7 @@ import { phragonRender } from "./phragon";
 import { cwdPath, existsStat, mergeExtensions, readJsonFile, writeJsonFile } from "../../utils";
 import { debug } from "../../debug";
 import { newError } from "@phragon/cli-color";
-import { join, extname, relative } from "path";
+import { join, extname, relative } from "node:path";
 import { isList } from "./util";
 
 type FindPath = { path: string; resolvePath: string; directory: boolean } | null;

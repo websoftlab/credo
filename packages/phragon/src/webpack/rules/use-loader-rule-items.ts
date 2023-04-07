@@ -1,4 +1,4 @@
-import { join as joinPath } from "path";
+import { join as joinPath } from "node:path";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import { babel, postcss } from "../config";
 import type { BuildLoaderRule } from "../types";

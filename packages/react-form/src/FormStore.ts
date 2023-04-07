@@ -13,7 +13,7 @@ type FormPrivate = {
 	init: any;
 };
 
-function updateParent(self: FormStore) {
+function updateParent<D extends {}>(self: FormStore<D>) {
 	if (self.parent) {
 		self.parent.fromChild((store) => {
 			store.set(self.name, self.form);
@@ -275,6 +275,8 @@ export default class FormStore<D extends {} = any> extends FStore<D> implements 
 		} else if (this._formatterGlobal) {
 			value = this._formatterGlobal(value, name as IdType);
 		}
+
+		value = this._emit({ type: "format", name, value }).value;
 
 		if (Object.is(prev, value)) {
 			return;

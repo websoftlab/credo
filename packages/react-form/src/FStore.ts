@@ -1,12 +1,29 @@
 import type { Validator, ValidatorType, IdType } from "@phragon/validator";
+import type { ActionHandler } from "./types";
 import { createValidator } from "@phragon/validator";
 import FormStore from "./FormStore";
 import ArrayFormStore from "./ArrayFormStore";
 import { clonePlainObject, isPlainObject, __isDev__, asyncResult } from "@phragon/utils";
+import { action } from "mobx";
 
 const FROM_CHILD_ID = Symbol();
 const SUBMIT_ID = Symbol();
 const STORE_ID = Symbol();
+
+const arrayIdTypeRegExp = /^\[(\d+)]$/;
+
+function getErrorIdType<R>(store: FStore<R>, name: string) {
+	if (FStore.isArrayFormStore(store)) {
+		const mt = name.match(arrayIdTypeRegExp);
+		if (mt) {
+			const id = store.getIndexId(parseInt(mt[1]));
+			if (id != null) {
+				return id;
+			}
+		}
+	}
+	return name;
+}
 
 export default abstract class FStore<R> {
 	[FROM_CHILD_ID]: boolean = false;
@@ -18,6 +35,8 @@ export default abstract class FStore<R> {
 	protected _children: Record<string, ArrayFormStore | FormStore> = {};
 	protected _requiredAll: boolean = false;
 	protected _required: Record<IdType, boolean | undefined> = {};
+	protected _actionList: ActionHandler<any>[] = [];
+	protected _setExpectant: (store: FStore<R>, value: boolean) => void;
 
 	errors: Record<string, string | string[]> = {};
 	submitError: string | null = null;
@@ -33,6 +52,9 @@ export default abstract class FStore<R> {
 		submit?: (data: R) => void | Promise<void>
 	) {
 		this[STORE_ID] = storeType;
+		this._setExpectant = action((store, value) => {
+			store.expectant = value;
+		});
 		if (validators) {
 			if (typeof validators === "function") {
 				const { required, callback } = createValidator(validators);
@@ -72,34 +94,46 @@ export default abstract class FStore<R> {
 		}
 	}
 
+	protected _emit<Action extends { type: string }>(action: Action): Action {
+		if (this._actionList.length > 0) {
+			for (const cb of this._actionList) {
+				cb(action);
+			}
+		}
+		return action;
+	}
+
 	protected _validNull(name: IdType) {
 		delete this.errors[name];
 		return null;
 	}
 
 	protected _valid<Val = string>(name: IdType, value: Val): null | string | string[] {
-		let validator: Validator;
+		let validator: Validator | null = null;
+		let error: string | string[] | null | undefined = null;
 
 		if (this._validators.hasOwnProperty(name)) {
 			validator = this._validators[name];
 		} else if (this._validatorGlobal) {
 			validator = this._validatorGlobal;
 		} else {
-			return this._validNull(name);
+			const event = this._emit({ type: "valid", name, value, error });
+			if (event.error != null) {
+				error = event.error;
+			} else {
+				return this._validNull(name);
+			}
 		}
 
-		let error: string | string[] | null | undefined;
-		try {
-			error = validator(value, name);
-		} catch (err) {
-			error = (err as Error).message || "Invalid value";
-		}
-
-		if (Array.isArray(error)) {
-			if (error.length === 0) {
-				error = null;
-			} else if (error.length === 1) {
-				error = error[0];
+		if (validator != null) {
+			try {
+				error = validator(value, name);
+			} catch (err) {
+				error = (err as Error).message || "Invalid value";
+			}
+			const event = this._emit({ type: "valid", name, value, error });
+			if (event.error != null) {
+				error = event.error;
 			}
 		}
 
@@ -107,11 +141,21 @@ export default abstract class FStore<R> {
 			return this._validNull(name);
 		}
 
-		this.errors[name] = error;
+		if (Array.isArray(error)) {
+			if (error.length === 0) {
+				return this._validNull(name);
+			}
+			if (error.length === 1) {
+				error = error[0];
+			}
+		}
+
+		this.errors[name] = this._emit({ type: "error", name, error }).error;
 		return error;
 	}
 
 	abstract has(name: IdType): boolean;
+
 	abstract validate(): boolean;
 
 	required(name: IdType) {
@@ -137,19 +181,31 @@ export default abstract class FStore<R> {
 			return;
 		}
 
-		this.expectant = true;
+		this._setExpectant(this, true);
 
 		const submit = this[SUBMIT_ID];
 		if (typeof submit !== "function") {
 			throw new Error("Submit function is not defined");
 		}
 
-		return asyncResult(submit(this.toJSON()))
+		return asyncResult(submit(this._emit({ type: "submit", value: this.toJSON() }).value))
 			.finally(() => {
-				this.expectant = false;
+				this._setExpectant(this, false);
 			})
 			.catch((err) => {
-				this.submitError = (err as Error).message || "Unknown error";
+				let message: string | null = null;
+				if (err instanceof Error) {
+					message = err.message;
+				} else if (typeof err === "string") {
+					message = err;
+				} else if (err != null) {
+					if (typeof err.message === "string") {
+						message = err.message;
+					} else if (typeof err.toString === "function") {
+						message = String(err);
+					}
+				}
+				this.setSubmitError(message || "Unknown error");
 			});
 	}
 
@@ -158,10 +214,21 @@ export default abstract class FStore<R> {
 		if (typeof name === "string") {
 			const index = name.indexOf("."); // name.error
 			if (index !== -1) {
-				const child = this.getChild(name.substring(0, index));
+				const child = this.getChild(getErrorIdType(this, name.substring(0, index)));
 				if (child) {
 					return child.setError(name.substring(index + 1), value);
 				}
+			}
+			name = getErrorIdType(this, name);
+		}
+
+		if (FStore.isArrayFormStore(this)) {
+			const child = this.getChild(name);
+			value = Array.isArray(value) ? value[0] : value;
+			if (child) {
+				return child.setSubmitError(value);
+			} else {
+				return this.setSubmitError(value);
 			}
 		}
 
@@ -169,7 +236,7 @@ export default abstract class FStore<R> {
 		if (value == null || (Array.isArray(value) && value.length === 0)) {
 			delete this.errors[name];
 		} else {
-			this.errors[name] = value;
+			this.errors[name] = this._emit({ type: "error", name, error: value }).error;
 		}
 	}
 
@@ -178,7 +245,17 @@ export default abstract class FStore<R> {
 	}
 
 	setSubmitError(value?: string | undefined | null) {
-		this.submitError = typeof value === "string" && value.length > 0 ? value : null;
+		if (this.parent) {
+			if (FStore.isArrayFormStore(this.parent)) {
+				this.parent.setSubmitError(value);
+			} else {
+				this.parent.setError(this.name, value);
+			}
+		} else if (typeof value === "string" && value.length > 0) {
+			this.submitError = this._emit({ type: "failure", message: value }).message;
+		} else {
+			this.submitError = null;
+		}
 	}
 
 	fromChild(callback: (store: this) => void) {
@@ -210,7 +287,19 @@ export default abstract class FStore<R> {
 	}
 
 	toJSON(): R {
-		return clonePlainObject<R>(this.form);
+		return clonePlainObject<R>(this._emit({ type: "json", data: this.form }).data);
+	}
+
+	subscribe<Action extends { type: string }>(action: ActionHandler<Action>) {
+		if (typeof action === "function" && !this._actionList.includes(action)) {
+			this._actionList.push(action);
+		}
+		return () => {
+			const index = this._actionList.indexOf(action);
+			if (index !== -1) {
+				this._actionList.splice(index, 1);
+			}
+		};
 	}
 
 	static isStore(store: any): store is FormStore | ArrayFormStore {

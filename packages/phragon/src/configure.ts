@@ -1,5 +1,5 @@
 import type { BuildConfigure, BuildConfigureOptions, BuilderType, BuildMode, PhragonPlugin } from "./types";
-import { join } from "path";
+import { join } from "node:path";
 import { debug } from "./debug";
 
 function getMode(value?: string) {

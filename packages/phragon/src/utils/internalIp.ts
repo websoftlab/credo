@@ -1,4 +1,4 @@
-import { networkInterfaces } from "os";
+import { networkInterfaces } from "node:os";
 import defaultGateway from "default-gateway";
 import ip from "ipaddr.js";
 

@@ -23,7 +23,7 @@ function createAutoId() {
 	};
 }
 
-function getId<D>(store: ArrayFormStore<D>, value: D) {
+function getId<D extends {}>(store: ArrayFormStore<D>, value: D) {
 	const tool = store[FORM_ID];
 	const id = tool.id;
 	if (id) {
@@ -43,20 +43,34 @@ function findIndex(id: IdType, store: ArrayFormStore) {
 	return store[FORM_ID].items.findIndex((item) => item.id === id);
 }
 
-function refill(store: ArrayFormStore) {
-	store.form = store[FORM_ID].items.map((item) => item.value);
-	if (store.parent) {
-		store.parent.fromChild((store) => {
-			store.set(store.name, store.form);
+function refill<D extends {}>(self: ArrayFormStore<D>) {
+	self.idList = [];
+	self.form = [];
+	self[FORM_ID].items.forEach(({ id, value }) => {
+		self.idList.push(id);
+		self.form.push(value);
+	});
+	if (self.parent) {
+		self.parent.fromChild((store) => {
+			store.set(self.name, self.form);
 		});
 	}
 }
 
-export default class ArrayFormStore<D = any> extends FStore<D[]> implements ArrayFormStoreInterface<D> {
+export default class ArrayFormStore<D extends {} = any> extends FStore<D[]> implements ArrayFormStoreInterface<D> {
 	private readonly _validateArray: Function | undefined = undefined;
 	[FORM_ID]: FormPrivate<D>;
 
 	form: D[] = [];
+	idList: IdType[] = [];
+
+	get length() {
+		return this.form.length;
+	}
+
+	get idHash() {
+		return this.idList.reduce((a: string, b) => `${a}::${b}`, "");
+	}
 
 	constructor(name: string, options: CreateArrayFormOptions<D> = {}, parent?: FormStore | ArrayFormStore) {
 		super("array-form", name, parent, options.validators, options.submit);
@@ -82,8 +96,10 @@ export default class ArrayFormStore<D = any> extends FStore<D[]> implements Arra
 		if (Array.isArray(initValues)) {
 			this.form = initValues;
 			tool.items = this.form.map((value) => {
+				const id = getId(this, value);
+				this.idList.push(id);
 				return {
-					id: getId(this, value),
+					id,
 					isNew: false,
 					value,
 				};
@@ -100,7 +116,9 @@ export default class ArrayFormStore<D = any> extends FStore<D[]> implements Arra
 			errors: observable,
 			submitError: observable,
 			expectant: observable,
+			idList: observable,
 			wait: computed,
+			idHash: computed,
 			fill: action,
 			empty: action,
 			add: action,
@@ -118,11 +136,23 @@ export default class ArrayFormStore<D = any> extends FStore<D[]> implements Arra
 		return findIndex(id, this) !== -1;
 	}
 
+	getIndexId(index: number): IdType | null {
+		const { items } = this[FORM_ID];
+		if (index >= 0 && index < items.length) {
+			return items[index].id;
+		}
+		return null;
+	}
+
 	validate() {
 		const { items, min, max } = this[FORM_ID];
 		const vKeys: IdType[] = Object.keys(this._validators);
 		const err = (error: string) => {
-			this.submitError = error;
+			if (this.parent) {
+				this.parent.setError(this.name, error);
+			} else {
+				this.setSubmitError(error);
+			}
 			return false;
 		};
 
@@ -228,22 +258,24 @@ export default class ArrayFormStore<D = any> extends FStore<D[]> implements Arra
 		refill(this);
 	}
 
-	add(value: D, insertBeforeId?: IdType): IdType {
+	add(value: D, insertAfterId?: IdType): IdType {
 		const id = getId(this, value);
 		const item: FormValue = {
 			id,
 			isNew: true,
 			value,
 		};
-		if (insertBeforeId != null) {
-			const index = findIndex(insertBeforeId, this);
-			if (index !== -1) {
-				this[FORM_ID].items.splice(index, 0, item);
-				refill(this);
-				return id;
+		const { items } = this[FORM_ID];
+		if (insertAfterId != null) {
+			let index = findIndex(insertAfterId, this);
+			if (index === -1 || ++index === items.length) {
+				items.push(item);
+			} else {
+				items.splice(index, 0, item);
 			}
+		} else {
+			items.unshift(item);
 		}
-		this[FORM_ID].items.push(item);
 		refill(this);
 		return id;
 	}
@@ -263,7 +295,7 @@ export default class ArrayFormStore<D = any> extends FStore<D[]> implements Arra
 			return;
 		}
 		const { items } = this[FORM_ID];
-		if (beforeId) {
+		if (beforeId != null) {
 			let beforeIndex = findIndex(beforeId, this);
 			if (beforeIndex === -1 || beforeIndex === index) {
 				return;
@@ -298,11 +330,7 @@ export default class ArrayFormStore<D = any> extends FStore<D[]> implements Arra
 		}
 
 		// update parent
-		if (this.parent) {
-			this.parent.fromChild((store) => {
-				store.set(store.name, this.form);
-			});
-		}
+		refill(this);
 	}
 
 	get(id: IdType): FormValue<D> | undefined {
@@ -312,5 +340,13 @@ export default class ArrayFormStore<D = any> extends FStore<D[]> implements Arra
 				...val,
 			};
 		}
+	}
+
+	forEach<Result = D>(callback: (item: D, id: IdType, index: number) => Result): void {
+		this[FORM_ID].items.forEach(({ value, id }, index) => callback(value, id, index));
+	}
+
+	map<Result = D>(callback: (item: D, id: IdType, index: number) => Result): Result[] {
+		return this[FORM_ID].items.map(({ value, id }, index) => callback(value, id, index));
 	}
 }

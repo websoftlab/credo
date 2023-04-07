@@ -1,6 +1,6 @@
 import { newError } from "@phragon/cli-color";
 import { transformFileAsync } from "@babel/core";
-import { basename, dirname } from "path";
+import { basename, dirname } from "node:path";
 import { cwdSearchFile, exists, writeBundleFile, cwdPath, createCwdDirectoryIfNotExists, fileHash } from "../utils";
 import { installJson } from "../plugins/JsonFileInstall";
 
@@ -38,8 +38,8 @@ export async function prebuild(): Promise<() => void> {
 	const fi = installJson();
 	await fi.load();
 
-	if (fi.lock) {
-		throw newError(`{red Failure.} Previous installation is incomplete!`);
+	if (fi.lock && !(await fi.tryWait())) {
+		throw newError(`{red Failure.} Previous build not completed!`);
 	}
 
 	const configFile = cwdPath(".phragon/config.js");

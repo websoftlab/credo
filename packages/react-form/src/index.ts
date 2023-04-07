@@ -28,4 +28,5 @@ export type {
 	FormStoreInterface,
 	ArrayFormInputHook,
 	FormInputHook,
+	ActionHandler,
 } from "./types";

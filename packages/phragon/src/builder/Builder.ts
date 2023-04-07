@@ -10,7 +10,7 @@ import { toAsync } from "@phragon-util/async";
 import { getLatestModuleVersion, installDependencies } from "../dependencies";
 import { newError } from "@phragon/cli-color";
 import { requireConfig } from "./prebuild";
-import { dirname, join } from "path";
+import { dirname, join } from "node:path";
 import { debug } from "../debug";
 
 type PlainType = boolean | number | string | null | undefined;

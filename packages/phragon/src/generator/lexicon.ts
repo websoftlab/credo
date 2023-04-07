@@ -1,7 +1,7 @@
 import type { PhragonPlugin } from "../types";
 import { exists, existsStat, readJsonFile, createCwdDirectoryIfNotExists, writeBundleFile, buildPath } from "../utils";
-import { join } from "path";
-import { readdir } from "fs/promises";
+import { join } from "node:path";
+import { readdir } from "node:fs/promises";
 import { CmpJS } from "@phragon/cli-cmp";
 import createRelativePath from "./createRelativePath";
 

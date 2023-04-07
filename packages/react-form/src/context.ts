@@ -9,16 +9,16 @@ export const FormContext = createContext<FormStore | null>(null);
 
 export const ArrayFormContext = createContext<ArrayFormStore | null>(null);
 
-export function useFormStore(): FormStore {
-	const store = useContext(FormContext);
+export function useFormStore<D extends {} = any>(): FormStore<D> {
+	const store = useContext<FormStore<D> | null>(FormContext);
 	if (!store) {
 		throw new Error("Form context not defined in parent tree");
 	}
 	return store;
 }
 
-export function useArrayFormStore(): ArrayFormStore {
-	const store = useContext(ArrayFormContext);
+export function useArrayFormStore<D extends {} = any>(): ArrayFormStore<D> {
+	const store = useContext<ArrayFormStore<D> | null>(ArrayFormContext);
 	if (!store) {
 		throw new Error("Form array context not defined in parent tree");
 	}
@@ -47,6 +47,29 @@ export function useStore() {
 		return parent(store2);
 	}
 	throw new Error("Form context not defined in parent tree");
+}
+
+export function useParentStore() {
+	const store1 = useContext(FormContext);
+	const store2 = useContext(ArrayFormContext);
+	if (store1) {
+		if (store2) {
+			let parent: FormStore | ArrayFormStore | undefined = store2;
+			while (parent) {
+				parent = parent.parent;
+				if (!parent) {
+					break;
+				}
+				if (parent === store1) {
+					return store2;
+				}
+			}
+		}
+		return store1;
+	}
+	if (store2) {
+		return store2;
+	}
 }
 
 export function useSubmitWait() {
@@ -232,32 +255,47 @@ export function useArrayFormHook<Val = string>(): ArrayFormInputHook<Val> {
 	};
 }
 
-export function useCreateForm(
-	name: string,
-	options?: CreateFormOptions,
-	parent?: FormStore | ArrayFormStore
-): FormStore {
-	return useMemo(() => new FormStore(name, options, parent), [name]);
+function useParent(ctx: FormStore | ArrayFormStore, name: string, parent?: FormStore | ArrayFormStore) {
+	useEffect(() => {
+		if (parent) {
+			if (!parent.has(name)) {
+				parent.set(name, ctx.form);
+			}
+			parent.setChild(name, ctx);
+			return () => {
+				parent.delChild(name);
+			};
+		}
+	}, [name, parent || null]);
 }
 
-export function useCreateArrayForm(
-	name: string,
-	options?: CreateArrayFormOptions,
-	parent?: FormStore | ArrayFormStore
-): ArrayFormStore {
-	return useMemo(() => new ArrayFormStore(name, options, parent), [name]);
+export function useCreateForm<D extends {} = any>(name: string, options?: CreateFormOptions): FormStore<D> {
+	const parent = useParentStore();
+	const ctx = useMemo(() => new FormStore<D>(name, options, parent), [name]);
+	useParent(ctx, name, parent);
+	return ctx;
 }
 
-export interface FormProps extends FormHTMLAttributes<HTMLFormElement> {
-	provider: CreateFormOptions;
+export function useCreateArrayForm<D extends {} = any>(
+	name: string,
+	options?: CreateArrayFormOptions
+): ArrayFormStore<D> {
+	const parent = useParentStore();
+	const ctx = useMemo(() => new ArrayFormStore<D>(name, options, parent), [name]);
+	useParent(ctx, name, parent);
+	return ctx;
+}
+
+export interface FormProps<D extends {} = any> extends FormHTMLAttributes<HTMLFormElement> {
+	provider: CreateFormOptions<D>;
 	name: string;
 	children: ReactNode | ReactNode[];
 }
 
-export function Form(props: FormProps) {
+export function Form<D extends {} = any>(props: FormProps<D>) {
 	const { name, provider, children, ...form } = props;
 	const { onSubmit } = form;
-	const store = useCreateForm(name, provider);
+	const store = useCreateForm<D>(name, provider);
 	form.onSubmit = useCallback(
 		(async (event) => {
 			if (typeof onSubmit === "function") {
@@ -278,22 +316,21 @@ export function Form(props: FormProps) {
 
 type ProviderProps<Store> = {
 	name: string;
-	parent: FormStore | ArrayFormStore;
 	children: ReactNode | ReactNode[];
 } & Store;
 
-export type FormProviderProps = ProviderProps<CreateFormOptions>;
+export type FormProviderProps<D extends {} = any> = ProviderProps<CreateFormOptions<D>>;
 
-export type ArrayFormProviderProps = ProviderProps<CreateArrayFormOptions>;
+export type ArrayFormProviderProps<D extends {} = any> = ProviderProps<CreateArrayFormOptions<D>>;
 
-export function FormProvider(props: FormProviderProps) {
-	const { name, parent, children, ...options } = props;
-	const store = useCreateForm(name, options, parent);
+export function FormProvider<D extends {} = any>(props: FormProviderProps<D>) {
+	const { name, children, ...options } = props;
+	const store = useCreateForm<D>(name, options);
 	return createElement(FormContext.Provider, { value: store }, children);
 }
 
-export function ArrayFormProvider(props: ArrayFormProviderProps) {
-	const { name, parent, children, ...options } = props;
-	const store = useCreateArrayForm(name, options, parent);
+export function ArrayFormProvider<D extends {} = any>(props: ArrayFormProviderProps<D>) {
+	const { name, children, ...options } = props;
+	const store = useCreateArrayForm<D>(name, options);
 	return createElement(ArrayFormContext.Provider, { value: store }, children);
 }
