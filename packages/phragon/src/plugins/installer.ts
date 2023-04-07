@@ -329,7 +329,6 @@ const router = createRootRouter();
 	// package.json dependencies
 
 	const dependencies: Record<string, string> = {
-		phragon: "latest",
 		"@phragon/cli-debug": "latest",
 		"@phragon-util/global-var": "latest",
 		"@phragon-util/async": "latest",
@@ -345,6 +344,7 @@ const router = createRootRouter();
 	}
 
 	await installDependencies(dependencies, {
+		phragon: "latest",
 		"@phragon/types": "latest",
 		"@types/node": "^14.14.31",
 	});
