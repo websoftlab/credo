@@ -1,6 +1,6 @@
 export { default as ValidateError } from "./ValidateError";
-export { createValidator, validatorErrors, validInvalidArguments, defineValidator } from "./validator";
-export { formatterInvalidArguments, createFormatter, defineFormatter } from "./formatter";
+export { createValidator, validatorErrors, createInvalidArgumentsValidator, defineValidator } from "./validator";
+export { createInvalidArgumentsFormatter, createFormatter, defineFormatter } from "./formatter";
 export {
 	TypeOfBoolean,
 	TypeOfString,

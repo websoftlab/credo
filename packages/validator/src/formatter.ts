@@ -123,8 +123,18 @@ function formatterUnEscape(value: string) {
 		.replace(/&amp;/g, "&"); // &amp; replacement has to be the last one to prevent
 }
 
-export const formatterInvalidArguments: Formatter = function validInvalidArguments() {
-	throw new Error("Invalid arguments for formatter entry");
+export const createInvalidArgumentsFormatter: (name: string) => Formatter = (name) => {
+	let isThrow = false;
+	return function validInvalidArguments(value) {
+		if (!isThrow) {
+			try {
+				throw new Error(`Invalid arguments for "${name}" formatter entry`);
+			} finally {
+				isThrow = true;
+			}
+		}
+		return value;
+	};
 };
 
 function formatter(variant: string | FormatterOptionType): Formatter {
@@ -141,14 +151,14 @@ function formatter(variant: string | FormatterOptionType): Formatter {
 	name = name.toLowerCase();
 	if (formatters.hasOwnProperty(name)) {
 		const formatter = formatters[name];
-		if (name != null) {
+		if (option != null) {
 			return (value, name) => {
 				return formatter(value, name, option);
 			};
 		}
 		return formatter;
 	}
-	return formatterInvalidArguments;
+	return createInvalidArgumentsFormatter(name);
 }
 
 function createFormatterOne(formatterType: FormatterType) {

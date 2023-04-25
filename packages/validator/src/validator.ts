@@ -219,7 +219,7 @@ function createValidOnce<Val = any>(valid: ValidatorType): { valid: Validator<Va
 			message = valid.message;
 		}
 	} else {
-		return { valid: validInvalidArguments };
+		return { valid: createInvalidArgumentsValidator("undefined") };
 	}
 
 	if (validatorAlias.hasOwnProperty(name)) {
@@ -235,7 +235,7 @@ function createValidOnce<Val = any>(valid: ValidatorType): { valid: Validator<Va
 	}
 
 	if (typeof func !== "function") {
-		return { valid: validInvalidArguments };
+		return { valid: createInvalidArgumentsValidator(name) };
 	}
 
 	if (!message) {
@@ -304,8 +304,14 @@ function isFalse() {
 	return false;
 }
 
-export const validInvalidArguments: Validator = function validInvalidArguments() {
-	throw new Error("Invalid arguments for validator entry");
+export const createInvalidArgumentsValidator: (name: string) => Validator = (name) => {
+	return function validInvalidArguments() {
+		try {
+			throw new Error(`Invalid arguments for "${name}" validator entry`);
+		} catch (err) {
+			return (err as Error).message;
+		}
+	};
 };
 
 export function defineValidator(name: string, callback: Function) {
