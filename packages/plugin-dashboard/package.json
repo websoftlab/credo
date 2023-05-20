@@ -12,7 +12,7 @@
 		"@phragon/responder-page": "*",
 		"@phragon/responder-json": "*",
 		"@phragon/path-to-pattern": "*",
-		"@phragon-util/plain-object": "^0.0.3",
+		"@phragon-util/plain-object": "^0.0.4",
 		"@phragon-util/global-var": "^0.0.2",
 		"@phragon-util/async": "^0.0.2",
 		"http-errors": "^1.7.3"

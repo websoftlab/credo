@@ -12,7 +12,7 @@
 		"@phragon/cli-debug": "*",
 		"@phragon/cli-cmp": "*",
 		"@phragon/cli-commander": "*",
-		"@phragon-util/plain-object": "^0.0.3",
+		"@phragon-util/plain-object": "^0.0.4",
 		"@phragon-util/async": "^0.0.2",
 		"debug": "^4.3.2",
 		"is-windows": "^1.0.2",

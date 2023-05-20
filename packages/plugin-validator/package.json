@@ -9,7 +9,7 @@
 	},
 	"dependencies": {
 		"@phragon/validator": "*",
-		"@phragon-util/plain-object": "^0.0.3",
+		"@phragon-util/plain-object": "^0.0.4",
 		"@phragon-util/async": "^0.0.2"
 	},
 	"devDependencies": {

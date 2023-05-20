@@ -274,7 +274,13 @@ export function createDashboardPanel(phragon: PhragonJS) {
 					message: createHttpError.isHttpError(err) ? err.message : "Query error",
 				});
 			} else if (typeof errorPageController === "function") {
-				ctx.bodyEnd(errorPageController(ctx, err as Error), 500);
+				ctx.status = 500;
+				const page = phragon.responders.page;
+				if (typeof page?.responder !== "function") {
+					throw err;
+				}
+				const body = await toAsync(errorPageController(ctx, err as Error));
+				await page.responder(ctx, body);
 			} else {
 				throw err;
 			}

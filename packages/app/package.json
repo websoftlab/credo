@@ -10,9 +10,9 @@
 	"dependencies": {
 		"@phragon/lexicon": "*",
 		"@phragon/make-url": "*",
-		"@phragon-util/plain-object": "^0.0.3",
+		"@phragon-util/plain-object": "^0.0.4",
 		"@phragon-util/async": "^0.0.2",
-		"@phragon-util/event-map": "^0.0.2",
+		"@phragon-util/event-map": "^0.0.3",
 		"mobx": "^6.4.0",
 		"axios": "^1.3.4"
 	},
