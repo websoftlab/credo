@@ -7,7 +7,7 @@ import PhragonBuilder from "./PhragonBuilder";
 import RollupBuilder from "./RollupBuilder";
 import WebpackBuilder from "./WebpackBuilder";
 import { toAsync } from "@phragon-util/async";
-import { getLatestModuleVersion, installDependencies } from "../dependencies";
+import { getLatestModuleVersion, getPackageModuleVersion, installDependencies } from "../dependencies";
 import { newError } from "@phragon/cli-color";
 import { requireConfig } from "./prebuild";
 import { dirname, join } from "node:path";
@@ -143,9 +143,12 @@ export default class Builder implements BuilderI {
 		}
 
 		if (!version) {
-			const ver = await getLatestModuleVersion(name);
+			let ver = await getPackageModuleVersion(name);
 			if (!ver) {
-				throw newError("Can't load module {yellow %s} version", name);
+				ver = await getLatestModuleVersion(name);
+				if (!ver) {
+					throw newError("Can't load module {yellow %s} version", name);
+				}
 			}
 			version = `^${ver}`;
 		}
