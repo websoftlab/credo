@@ -4,16 +4,14 @@ import type { Context, Next } from "koa";
 import type { Dashboard, DashboardPanel, DashboardStoreState } from "./types";
 import type { OnJSONResponseErrorHook } from "@phragon/responder-json";
 import { HttpJSON } from "@phragon/responder-json";
-import type { ValidateService } from "@phragon/plugin-validator";
 import { compilePath } from "@phragon/path-to-pattern";
 import { apiGetState } from "./api";
 import { homePageController } from "./web";
 import createHttpError from "http-errors";
-import { __isDev__ } from "@phragon-util/global-var";
 import { isPlainObject } from "@phragon-util/plain-object";
 import { toAsync } from "@phragon-util/async";
 import { HttpPage } from "@phragon/responder-page";
-import { DisplayError, ConfirmationError } from "./error";
+import { ctxGetError, ctxLoadLanguagePackage } from "./util";
 
 function createDashboardPath(path?: string) {
 	let pref = String(typeof path === "string" ? path : "/dashboard").trim();
@@ -55,110 +53,32 @@ export function createOnAppStateHook(phragon: PhragonJS) {
 
 export function createOnResponseHook() {
 	return async function onResponseHook(event: OnResponseHook) {
-		const { ctx } = event;
-		if (!ctx.store.packages.includes("dashboard")) {
-			await ctx.store.loadLanguage(ctx.store.language, "dashboard");
-		}
+		await ctxLoadLanguagePackage(event.ctx, "dashboard");
 	};
 }
 
 export function createOnLoadHook(phragon: PhragonJS) {
 	return async function onLoadHook() {
-		const validator: ValidateService | undefined = phragon.services.validator;
-		phragon.hooks.subscribe<OnJSONResponseErrorHook>("onJSONResponseError", (event) => {
+		phragon.hooks.subscribe<OnJSONResponseErrorHook>("onJSONResponseError", async (event) => {
 			if (event.overwritten) {
 				return;
 			}
 
 			const { ctx, error } = event;
-			const prefix = ctx.dashboardPlugin ? "dashboard:" : "validate:";
+			const { message, codeName, code, payload } = await ctxGetError(ctx, error);
+			const response = {
+				ok: false,
+				message,
+			} as Dashboard.APIResponse;
 
-			function codeNameMessage(message: string, codeName: string | null, slug: string) {
-				if (codeName == null) {
-					codeName = `${prefix}message.${message}`;
-				} else if (!codeName.includes(":")) {
-					codeName = `${prefix}${slug}.${codeName}`;
-				}
-				return ctx.store.translate(codeName, message);
+			if (codeName != null) {
+				response.codeName = codeName;
+			}
+			if (payload != null) {
+				response.payload = payload;
 			}
 
-			if (DisplayError.isError(error)) {
-				const { message, codeName } = error;
-				return event.json(
-					{
-						ok: false,
-						codeName: "displayError",
-						message: codeNameMessage(message, codeName, "display"),
-					} as Dashboard.APIResponse,
-					500
-				);
-			}
-
-			if (ConfirmationError.isError(error)) {
-				const { message, codeName, data } = error;
-				return event.json(
-					{
-						ok: false,
-						codeName: "confirmationError",
-						message:
-							error.message ||
-							ctx.store.translate(`${prefix}confirmationRequired`, "Confirmation required"),
-						payload: {
-							message: codeNameMessage(message, codeName, "confirmation"),
-							data,
-						},
-					} as Dashboard.APIResponse,
-					400
-				);
-			}
-
-			if (validator) {
-				if (validator.isValidateDataError(error)) {
-					return event.json(
-						{
-							ok: false,
-							codeName: "validateError",
-							message: error.message || ctx.store.translate(`${prefix}dataError`, "Data error"),
-							payload: {
-								errors: error.errors,
-							},
-						} as Dashboard.APIResponse,
-						400
-					);
-				}
-				if (validator.isValidateError(error)) {
-					return event.json(
-						{
-							ok: false,
-							codeName: "validateError",
-							message: ctx.store.translate(`${prefix}dataError`, "Data error"),
-							payload: {
-								errors: {
-									[error.field]: error.message,
-								},
-							},
-						} as Dashboard.APIResponse,
-						400
-					);
-				}
-			}
-
-			const code = createHttpError.isHttpError(error) ? error.statusCode : 500;
-			let message = "Query error";
-			if (__isDev__() || createHttpError.isHttpError(error)) {
-				const text = (error as Error).message;
-				if (text) {
-					message = text;
-				}
-			}
-
-			event.json(
-				{
-					ok: false,
-					message: ctx.store.translate(`${prefix}message.${message}`, message),
-				} as Dashboard.APIResponse,
-				code
-			);
+			event.json(response, code);
 		});
 	};
 }
@@ -465,7 +385,7 @@ export function createDashboardPanel(phragon: PhragonJS) {
 		phragon.route.addRoute(
 			new RoutePattern({
 				pattern,
-				methods: method,
+				methods: method.map((m) => String(m).toUpperCase().trim()),
 				match(ctx) {
 					return pattern.match(ctx.path);
 				},

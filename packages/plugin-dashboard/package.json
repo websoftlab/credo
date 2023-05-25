@@ -20,6 +20,7 @@
 	"devDependencies": {
 		"@types/koa": "^2.13.4",
 		"@types/http-errors": "^1.6.3",
+		"@phragon-util/action-service": "^0.0.4",
 		"@phragon/lexicon": "*"
 	},
 	"peerDependencies": {

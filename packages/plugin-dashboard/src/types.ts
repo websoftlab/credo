@@ -1,25 +1,20 @@
 import type { Context, Next } from "koa";
 import type { PatternInterface } from "@phragon/path-to-pattern";
 import type { HttpPage } from "@phragon/responder-page";
+import type { ActionNS } from "@phragon-util/action-service";
 
 export namespace Dashboard {
 	export type BadgeType = number | string | [string, string] | [number, string] | undefined;
 
 	export type ButtonVariantType<Type extends string = string> = Type;
 
-	export type Action<Name extends string = string, Props = any> =
-		| Name
-		| [Name, Props]
-		| {
-				name: Name;
-				props: Props;
-		  };
+	export type Action<Name extends string = string, Props extends {} = any> = Name | ActionNS.ActionType<Props>;
 
 	export interface LinkAction {
 		id: string;
 		name: string;
 		to?: string;
-		action?: Action;
+		action?: ActionNS.ActionType;
 	}
 
 	export interface MenuAction extends LinkAction {
@@ -96,7 +91,7 @@ export namespace Dashboard {
 		codeName?: string;
 		message?: string;
 		payload?: Payload;
-		actions?: Action[];
+		actions?: ActionNS.ActionType[];
 	}
 
 	export interface WebResponseData<Ctx extends {} = {}> {
