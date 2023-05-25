@@ -1,4 +1,5 @@
 import React from "react";
+import { StrictMode } from "react";
 import { reaction } from "mobx";
 import { Head } from "../head";
 import { ApiContext, Loader, Router } from "../app";
@@ -14,6 +15,7 @@ import type {
 	OnPageErrorHook,
 	OnPageTitleHook,
 } from "../app";
+import { __isDev__ } from "@phragon-util/global-var";
 
 const initialId: symbol = Symbol();
 
@@ -93,7 +95,7 @@ export default function App(props: { api: API.ApiInterface<ElementType>; navigat
 		};
 	}, [navigator, api, app, page]);
 
-	return (
+	let web = (
 		<ApiContext.Provider value={api}>
 			<Router location={state.location} navigationType={state.action} navigator={navigator}>
 				<Head>
@@ -102,4 +104,10 @@ export default function App(props: { api: API.ApiInterface<ElementType>; navigat
 			</Router>
 		</ApiContext.Provider>
 	);
+
+	if (__isDev__()) {
+		web = <StrictMode>{web}</StrictMode>;
+	}
+
+	return web;
 }
