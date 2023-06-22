@@ -20,6 +20,7 @@ export type {
 	BuildType,
 	BuildConfigureOptions,
 	BuilderType,
+	BuildExtenderResult,
 	ErrorContext,
 	RollupConfigure,
 	WebpackConfigure,
@@ -28,3 +29,4 @@ export type {
 } from "./types";
 
 export type { BuilderI, WebpackBuilderI, RollupBuilderI, PhragonBuilderI } from "./builder";
+export type { BuildRule as WebpackBuildRule, BuildLoaderRule as WebpackBuildLoaderRule } from "./webpack/types";

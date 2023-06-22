@@ -13,9 +13,5 @@
 			"target": "types",
 			"output": "."
 		}
-	],
-	"types": {
-		"target": "copy",
-		"output": "."
-	}
+	]
 }

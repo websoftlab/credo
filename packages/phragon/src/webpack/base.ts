@@ -103,11 +103,6 @@ export default async function base(config: BuildConfigure): Promise<Configuratio
 		await rules.javascriptRule(config),
 		await rules.typescriptRule(config),
 		await rules.replaceRule(config),
-		await rules.imagesRule(config),
-		await rules.fontsRule(config),
-		await rules.cssRule(config),
-		...(await rules.sassRules(config)),
-		await rules.svgRule(config),
 	];
 
 	const pluginList: (((this: Compiler, compiler: Compiler) => void) | WebpackPluginInstance)[] = [

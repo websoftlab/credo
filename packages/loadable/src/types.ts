@@ -33,6 +33,10 @@ export interface CreateLoadableOptions<Type, Element, FallbackProps> {
 	observer(options: ObserverOptions<Element, FallbackProps>): Type;
 }
 
+export interface LoadableListener<Result = unknown> {
+	(name: string, result: Result): void | Promise<void>;
+}
+
 export interface Loadable<Type, Element, FallbackProps> {
 	load(name: string | string[]): Promise<void>;
 	loadAll(depth?: number): Promise<void>;
@@ -44,4 +48,5 @@ export interface Loadable<Type, Element, FallbackProps> {
 	loadable(options: Options<Element, FallbackProps>): Type;
 	reset(name: string | string[]): number;
 	resetAll(): number;
+	subscribe(fn: LoadableListener): () => void;
 }

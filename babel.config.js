@@ -38,6 +38,7 @@ module.exports = function getBabelConfig(api) {
 				allowDeclareFields: true,
 			},
 		],
+		["@babel/plugin-transform-class-properties", { loose: true }],
 	];
 
 	if (!api.env("module")) {

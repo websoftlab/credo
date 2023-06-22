@@ -1,5 +1,5 @@
 import type { Configuration } from "webpack";
-import { cleanWebpackPlugin, miniCssExtractPlugin } from "./plugins";
+import { cleanWebpackPlugin } from "./plugins";
 import type { BuildConfigure } from "../types";
 
 export default function (config: BuildConfigure): Configuration {
@@ -14,6 +14,6 @@ export default function (config: BuildConfigure): Configuration {
 			maxEntrypointSize: 512000,
 			maxAssetSize: 512000,
 		},
-		plugins: [cleanWebpackPlugin(config), miniCssExtractPlugin(config) as any],
+		plugins: [cleanWebpackPlugin(config)],
 	};
 }

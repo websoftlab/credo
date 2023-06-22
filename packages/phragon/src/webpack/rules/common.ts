@@ -61,30 +61,4 @@ async function javascriptRule(config: BuildConfigure): Promise<BuildRule> {
 	});
 }
 
-/**
- * @see https://webpack.js.org/guides/asset-modules/
- */
-async function imagesRule(config: BuildConfigure): Promise<BuildRule> {
-	return config.fireOnOptionsHook("module.rule.images", {
-		test: /\.(?:ico|gif|png|jpg|jpeg)$/i,
-		type: "asset/resource",
-		generator: {
-			filename: "images/[name].[hash][ext]",
-		},
-	});
-}
-
-/**
- * @see https://webpack.js.org/guides/asset-modules/
- */
-async function fontsRule(config: BuildConfigure): Promise<BuildRule> {
-	return config.fireOnOptionsHook("module.rule.fonts", {
-		test: /\.(woff(2)?|eot|ttf|otf)$/,
-		type: "asset/resource",
-		generator: {
-			filename: "fonts/[name].[hash][ext]",
-		},
-	});
-}
-
-export { typescriptRule, javascriptRule, imagesRule, fontsRule };
+export { typescriptRule, javascriptRule };

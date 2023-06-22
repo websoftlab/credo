@@ -82,10 +82,6 @@ interface NavigationContextObject {
 
 export const NavigationContext = createContext<NavigationContextObject>(null!);
 
-if (__isDev__()) {
-	NavigationContext.displayName = "Navigation";
-}
-
 interface LocationContextObject {
 	location: Location;
 	navigationType: NavigationType;
@@ -94,5 +90,6 @@ interface LocationContextObject {
 export const LocationContext = createContext<LocationContextObject>(null!);
 
 if (__isDev__()) {
+	NavigationContext.displayName = "Navigation";
 	LocationContext.displayName = "Location";
 }

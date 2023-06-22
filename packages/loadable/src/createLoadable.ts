@@ -6,6 +6,7 @@ import type {
 	Options,
 	RenderHandler,
 	FallbackHandler,
+	LoadableListener,
 } from "./types";
 import { isPlainObject } from "@phragon-util/plain-object";
 
@@ -14,6 +15,10 @@ function delFrom<T>(all: T[], item: T) {
 	if (index !== -1) {
 		all.splice(index, 1);
 	}
+}
+
+async function toAsync<T>(result: T): Promise<T> {
+	return result;
 }
 
 export default function createLoadable<Type, Element, FallbackProps>(
@@ -25,6 +30,7 @@ export default function createLoadable<Type, Element, FallbackProps>(
 	const namedInitializers: Record<string, Initializer> = {};
 	const loadedNames: string[] = [];
 	const { render, observer, fallback } = options;
+	const listeners: Set<LoadableListener> = new Set();
 
 	let lastId = 1;
 
@@ -118,6 +124,16 @@ export default function createLoadable<Type, Element, FallbackProps>(
 			if (!promise) {
 				loading = true;
 				promise = loaderFn()
+					.then(
+						listeners.size === 0
+							? (result) => result
+							: async (result) => {
+									for (const fn of listeners.values()) {
+										await toAsync(fn(name, result));
+									}
+									return result;
+							  }
+					)
 					.then((result) => {
 						done = true;
 						loading = false;
@@ -278,6 +294,15 @@ export default function createLoadable<Type, Element, FallbackProps>(
 		return reset(Object.keys(named));
 	}
 
+	function subscribe(fn: LoadableListener) {
+		if (typeof fn === "function" && listeners.has(fn)) {
+			listeners.add(fn);
+		}
+		return () => {
+			listeners.delete(fn);
+		};
+	}
+
 	return {
 		load,
 		loadAll,
@@ -289,5 +314,6 @@ export default function createLoadable<Type, Element, FallbackProps>(
 		loadable,
 		reset,
 		resetAll,
+		subscribe,
 	};
 }

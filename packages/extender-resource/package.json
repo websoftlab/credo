@@ -1,0 +1,26 @@
+{
+	"name": "@phragon/extender-resource",
+	"version": "0.1.0-beta",
+	"author": "phragon@websoftlab.com",
+	"license": "MIT",
+	"scripts": {
+		"build": "phragon-script build --cwd \"../../\" -P @phragon/extender-resource",
+		"prettier": "phragon-script prettier --cwd \"../../\" -P @phragon/extender-resource"
+	},
+	"dependencies": {},
+	"peerDependencies": {
+		"phragon": "*"
+	},
+	"exports": {
+		".": {
+			"require": "./build/index.js"
+		}
+	},
+	"types": "build/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"build/index.d.ts": ["src/index.ts"],
+			"*": ["src/*"]
+		}
+	}
+}

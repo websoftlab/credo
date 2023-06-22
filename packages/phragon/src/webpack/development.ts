@@ -1,7 +1,7 @@
 import type { BuildConfigure } from "../types";
 import type { Configuration } from "webpack";
 import { devServer } from "./config";
-import { cleanWebpackPlugin, miniCssExtractPlugin } from "./plugins";
+import { cleanWebpackPlugin } from "./plugins";
 
 export default function (config: BuildConfigure): Configuration & { devServer?: any } {
 	const { isDevServer } = config;
@@ -10,7 +10,7 @@ export default function (config: BuildConfigure): Configuration & { devServer?: 
 			output: {
 				publicPath: "/",
 			},
-			plugins: [cleanWebpackPlugin(config), miniCssExtractPlugin(config) as any],
+			plugins: [cleanWebpackPlugin(config)],
 		};
 	}
 	const dev = devServer(config);

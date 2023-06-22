@@ -13,7 +13,7 @@
 		"@phragon-util/async": "^0.0.2"
 	},
 	"devDependencies": {
-		"@types/koa": "^2.13.3",
+		"@types/koa": "^2.13.4",
 		"@types/http-errors": "^1.6.3",
 		"@phragon/server": "*"
 	},

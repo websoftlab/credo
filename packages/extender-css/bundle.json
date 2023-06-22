@@ -1,0 +1,16 @@
+{
+	"src": [
+		{
+			"target": "node",
+			"output": "."
+		},
+		{
+			"target": "types",
+			"output": "."
+		}
+	],
+	"types": {
+		"target": "copy",
+		"output": "."
+	}
+}

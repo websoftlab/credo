@@ -82,8 +82,8 @@ function observer(options: ObserverOptions<JSX.Element, ReactFallbackProps>) {
 
 				init()
 					.then(() => {
+						clear();
 						if (mount) {
-							clear();
 							setState((old) => ({
 								...old,
 								error: old.error instanceof TimeoutError ? old.error : false,
@@ -92,8 +92,8 @@ function observer(options: ObserverOptions<JSX.Element, ReactFallbackProps>) {
 						}
 					})
 					.catch((err) => {
+						clear();
 						if (mount) {
-							clear();
 							setState((old) => ({
 								...old,
 								error: old.error || err,
@@ -142,7 +142,30 @@ export const loader = createLoadable({
 	observer,
 });
 
-const { load, loadAll, defined, loaded, definedComponents, loadedComponents, component, loadable, reset, resetAll } =
-	loader;
+const {
+	load,
+	loadAll,
+	defined,
+	loaded,
+	definedComponents,
+	loadedComponents,
+	component,
+	loadable,
+	reset,
+	resetAll,
+	subscribe,
+} = loader;
 
-export { load, loadAll, defined, loaded, definedComponents, loadedComponents, component, loadable, reset, resetAll };
+export {
+	load,
+	loadAll,
+	defined,
+	loaded,
+	definedComponents,
+	loadedComponents,
+	component,
+	loadable,
+	reset,
+	resetAll,
+	subscribe,
+};

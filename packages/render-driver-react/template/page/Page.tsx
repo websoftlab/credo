@@ -1,5 +1,4 @@
-import { PageProps } from "@phragon/render-driver-react/app";
-import styles from "./Page.module.scss";
+import { PageProps } from "@phragon/render-driver-react";
 
 export interface Props {
 	title: string;
@@ -8,9 +7,9 @@ export interface Props {
 
 export default function Page({ pageData: { title, text } }: PageProps<Props>) {
 	return (
-		<div className={styles.root}>
+		<>
 			<h1>{title}</h1>
 			<p>{text}</p>
-		</div>
+		</>
 	);
 }

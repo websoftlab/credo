@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosHeaders } from "axios";
 import { computed, action, makeObservable, observable } from "mobx";
 import { isPlainObject } from "@phragon-util/plain-object";
 import { toAsync } from "@phragon-util/async";
@@ -61,6 +61,12 @@ type ResponseFound = { ok: true; code: number; response: Page.Response };
 type ResponseNotFound = { ok: false; code: number; message: string };
 type ResponseRedirect = { redirect: { location: string; back?: boolean } };
 
+const reloadId = Symbol("reload.id");
+
+function isReload(data: unknown) {
+	return isPlainObject(data) && data[reloadId] === true;
+}
+
 function isOk(data: any): data is ResponseFound {
 	return isPlainObject(data) && data.ok === true && "response" in data;
 }
@@ -70,6 +76,8 @@ function isRedirect(data: any): data is ResponseRedirect {
 }
 
 type PrivateOptions<ComponentType> = {
+	buildId: string | null;
+	buildVersion: string;
 	events: Function[];
 	getQueryId: string;
 	queryId?: symbol;
@@ -83,6 +91,13 @@ const PRIVATE_ID = Symbol();
 
 function opt<ComponentType>(store: PageStore<ComponentType>) {
 	return store[PRIVATE_ID];
+}
+
+function onTime(fn: Function) {
+	if (typeof window !== "undefined") {
+		window.setTimeout(fn, 0);
+	}
+	return null;
 }
 
 export default class PageStore<ComponentType> implements Page.StoreInterface<ComponentType> {
@@ -118,7 +133,7 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 			title: computed,
 		});
 
-		const { http, loader, getQueryId } = options;
+		const { http, loader, buildId = null, buildVersion, getQueryId } = options;
 		Object.defineProperty(this, "http", {
 			configurable: false,
 			get() {
@@ -129,6 +144,8 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 		this[PRIVATE_ID] = {
 			events: [],
 			getQueryId: getQueryId || "query",
+			buildId,
+			buildVersion,
 			http,
 			loader,
 			preload: (url: string, key?: string) => {
@@ -235,15 +252,33 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 			}
 		};
 
+		const buildId = prv.buildId;
+		const buildVersion = prv.buildVersion;
+		function isOld(version: string | null | undefined, id: string | null | undefined) {
+			if (version && buildVersion && version !== buildVersion) {
+				return true;
+			}
+			if (id && buildId && id !== buildId) {
+				return true;
+			}
+			return false;
+		}
+
 		const queryId = `${prv.getQueryId}-${Date.now()}`;
+		const headers: AxiosHeaders = new AxiosHeaders({
+			"Content-Type": "application/json",
+			Accept: "application/json",
+			"X-Build-Version": buildVersion,
+		});
+		if (buildId) {
+			headers.set("X-Build-Id", buildId);
+		}
+
 		const requestConfig: AxiosRequestConfig = {
 			url,
 			method: "get",
 			cancelToken: cancelTokenSource.token,
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "application/json",
-			},
+			headers,
 		};
 
 		if (postData != null) {
@@ -261,7 +296,10 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 
 		prv.http(requestConfig)
 			.then((response) => {
-				const { data, status } = response;
+				const { data, status, headers } = response;
+				if (isOld(headers["x-build-version"], headers["x-build-id"])) {
+					return { [reloadId]: true };
+				}
 				if (isObj(data)) {
 					if (typeof data.code === "undefined") {
 						data.code = status;
@@ -277,15 +315,19 @@ export default class PageStore<ComponentType> implements Page.StoreInterface<Com
 						.then(() => emit(prv.events, result.response))
 						.then(() => result);
 				}
+				if (isReload(result)) {
+					return onTime(() => {
+						window.location.reload();
+					});
+				}
 				if (isRedirect(result)) {
 					const { back = false, location } = result.redirect;
 					if (back) {
 						history.back();
 					}
-					setTimeout(() => {
+					return onTime(() => {
 						window.location.assign(location);
-					}, 0);
-					return null;
+					});
 				}
 				return result;
 			})

@@ -14,9 +14,8 @@
 		"@phragon-util/html-escape": "^0.0.2"
 	},
 	"devDependencies": {
-		"@types/axios": "^0.14.0",
 		"@types/http-errors": "^1.6.3",
-		"@types/koa": "^2.13.3",
+		"@types/koa": "^2.13.4",
 		"@types/node": "^14.14.31",
 		"@phragon/server": "*"
 	},

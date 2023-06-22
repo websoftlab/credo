@@ -263,6 +263,8 @@ export namespace Server {
 		workerData?: Worker.Data;
 		renderHTMLDriver?: string | null;
 		ssr?: boolean;
+		buildId?: string | null;
+		buildVersion?: string;
 	}
 }
 

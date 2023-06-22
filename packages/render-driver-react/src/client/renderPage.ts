@@ -14,12 +14,12 @@ import { createNavigator, getHistory } from "./navigator";
 import type { ElementType } from "react";
 import type { OnAppRenderHook } from "../app";
 
-const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolean }> = async function renderPage(
-	node: HTMLElement,
-	options = {}
-) {
+const renderPage: Page.ClientRenderHandler<
+	ElementType,
+	{ historyScroll?: boolean; appProps?: { strictMode?: boolean } }
+> = async function renderPage(node: HTMLElement, options = {}) {
 	const data: Page.DocumentAppOptions = loadDocument("app-page");
-	const { historyScroll = true, bootloader = [] } = options;
+	const { historyScroll = true, appProps = {}, bootloader = [] } = options;
 	const {
 		ssr = false,
 		getQueryId,
@@ -40,9 +40,18 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 		host,
 	});
 
+	if (typeof state.buildVersion !== "string") {
+		state.buildVersion = "1.0.0";
+	}
+	if (typeof state.buildId !== "string") {
+		state.buildId = null;
+	}
+
 	const app = new AppStore(state);
 	const page = new PageStore({
 		getQueryId,
+		buildId: app.build,
+		buildVersion: app.version,
 		http,
 		loader: { load, loaded, component },
 	});
@@ -97,6 +106,7 @@ const renderPage: Page.ClientRenderHandler<ElementType, { historyScroll?: boolea
 			ref: node,
 			App,
 			props: {
+				...appProps,
 				api,
 				navigator,
 			},

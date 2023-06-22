@@ -1,15 +1,14 @@
 import type BuilderStore from "../BuilderStore";
-import type Builder from "../Builder";
-import type { PhragonPlugin } from "../../types";
+import type { PhragonPlugin, BuildExtenderResult } from "../../types";
 import { newError } from "@phragon/cli-color";
 import { join } from "node:path";
 import { installDependencies, splitModule } from "../../dependencies";
 import { isList } from "./util";
 
-type ExtenderCallback = (builder: Builder) => void | Promise<void>;
+type ExtenderCallback = () => BuildExtenderResult | Promise<BuildExtenderResult>;
 
-const extenderAlias: Record<string, string> = { sass: "scss" };
-const extenderLink: string[] = ["css", "scss", "react-svg", "prettier"];
+const extenderAlias: Record<string, string> = { scss: "sass" };
+const extenderLink: string[] = ["resource", "css", "sass", "prettier"];
 
 export default async function extender(store: BuilderStore) {
 	const list: PhragonPlugin.ConfigType<"name", string, { config: any }>[] | undefined = store.store.extender;
@@ -46,6 +45,8 @@ export default async function extender(store: BuilderStore) {
 		}
 		if (closure.__esModule && closure.default) {
 			closure = closure.default;
+		} else if (typeof closure.extender === "function") {
+			closure = closure.extender;
 		}
 		if (typeof closure !== "function") {
 			throw newError("Extender module {yellow %s} default callback is not defined", name);
@@ -53,7 +54,7 @@ export default async function extender(store: BuilderStore) {
 		if (config == null) {
 			extenderList.push(closure);
 		} else {
-			extenderList.push((builder: Builder) => closure(builder, config));
+			extenderList.push(() => closure(config));
 		}
 	}
 	return extenderList;

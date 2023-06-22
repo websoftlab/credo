@@ -56,6 +56,8 @@ export namespace App {
 
 	export interface StoreInterface<State = any> extends Lexicon.LanguageStoreInterface {
 		readonly state: State;
+		readonly version: string;
+		readonly build: string | null;
 		update(state: any): void;
 		reload(state: any, init?: boolean): void;
 	}
@@ -97,6 +99,8 @@ export namespace Page {
 
 	export interface StoreCtorOptions<ComponentType> {
 		getQueryId?: string;
+		buildId?: string | null;
+		buildVersion: string;
 		http: AxiosInstance;
 		loader: Loader<ComponentType>;
 	}

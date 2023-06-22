@@ -77,6 +77,13 @@ export interface BuildConfigure extends Configure, Omit<BuildOptions, "mode"> {
 	fireOnOptionsHook<T>(name: string, option: T): Promise<T>;
 }
 
+export interface BuildExtenderResult {
+	docTypeReference?: string | string[];
+	onWebpackConfigure?(event: { webpack: WebpackConfigure; config: BuildConfigure }): void | Promise<void>;
+	onRollupConfigure?(event: { rollup: RollupConfigure; config: BuildConfigure }): void | Promise<void>;
+	onOptions?<T = any>(event: { name: string; option: T; config: BuildConfigure }): void | Promise<void>;
+}
+
 export interface ErrorContext extends Error {
 	context?: string[];
 }
@@ -270,7 +277,7 @@ export declare namespace PhragonPlugin {
 		on(name: "onInstall", listener: (options: Factory) => void | Promise<void>): void;
 		on(
 			name: "onWebpackConfigure",
-			listener: (event: { rollup: RollupConfigure; config: BuildConfigure }) => void | Promise<void>
+			listener: (event: { webpack: WebpackConfigure; config: BuildConfigure }) => void | Promise<void>
 		): void;
 		on(
 			name: "onRollupConfigure",

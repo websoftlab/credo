@@ -28,7 +28,7 @@ export default async function server(options: Server.Options = {}) {
 		daemon().init();
 	}
 
-	const { registrar: registrarOption, publicPath = [] } = options;
+	const { registrar: registrarOption, buildId, buildVersion = "1.0.0", publicPath = [] } = options;
 
 	const registrar = registrarOption || new BootManager();
 	const app = new Koa();
@@ -81,6 +81,10 @@ export default async function server(options: Server.Options = {}) {
 			);
 			return ctx.throw(400, "Bad Request");
 		}
+		ctx.set("X-Build-Version", buildVersion);
+		if (buildId) {
+			ctx.set("X-Build-Id", buildId);
+		}
 		try {
 			await next();
 		} finally {
@@ -97,6 +101,12 @@ export default async function server(options: Server.Options = {}) {
 
 	const conf = phragon.config("config");
 	const { store = {} } = conf;
+
+	// add version
+	store.buildVersion = buildVersion;
+	if (buildId) {
+		store.buildId = buildId;
+	}
 
 	bodyParserMiddleware(phragon);
 	sessionMiddleware(phragon);

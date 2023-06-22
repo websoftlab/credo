@@ -4,24 +4,11 @@ import type { BuildConfigure } from "../types";
 // @ts-ignore
 import TerserJSPlugin from "terser-webpack-plugin";
 
-const cacheGroupsStyles: any = {
-	name: "styles",
-	type: "css/mini-extract",
-	chunks: "all",
-	enforce: true,
-	minSize: 0,
-};
-
 export default async function optimization(config: BuildConfigure): Promise<Configuration["optimization"]> {
 	const { isServer, isProd } = config;
 	if (isServer) {
 		return {
 			minimize: false,
-			splitChunks: {
-				cacheGroups: {
-					styles: cacheGroupsStyles,
-				},
-			},
 		};
 	}
 
@@ -50,7 +37,6 @@ export default async function optimization(config: BuildConfigure): Promise<Conf
 				})
 			),
 		];
-		(optimization.splitChunks as any).cacheGroups.styles = cacheGroupsStyles;
 	}
 
 	return optimization;

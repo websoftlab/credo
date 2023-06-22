@@ -31,7 +31,7 @@ export interface BuilderI {
 	on(eventName: string, callback: Function): this;
 	once(eventName: string, callback: Function): this;
 	off(eventName: string, callback: Function): this;
-	extender(name: string, config?: any): this; // css | scss | less | etc. ...
+	extender(name: string, config?: any): this; // css | sass | less | etc. ...
 	docTypeReference(name?: string | string[]): this;
 }
 

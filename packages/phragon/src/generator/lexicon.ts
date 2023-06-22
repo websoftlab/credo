@@ -460,7 +460,9 @@ export async function buildLexicon(factory: PhragonPlugin.Factory) {
 						service.split(".")
 					)}(id, packageName));`
 				);
-				sJs.append(`return ${sJs.imp("./lang/packagePrefix")}(packageName, r, Object.assign({}, data));`);
+				sJs.append(
+					`return { default: ${sJs.imp("./lang/packagePrefix")}(packageName, r, Object.assign({}, data)) };`
+				);
 			});
 		});
 

@@ -14,7 +14,7 @@
 	"devDependencies": {
 		"@types/http-errors": "^1.6.3",
 		"@types/resolve-path": "^1.4.0",
-		"@types/koa": "^2.13.3",
+		"@types/koa": "^2.13.4",
 		"@phragon/server": "*"
 	},
 	"peerDependencies": {

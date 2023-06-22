@@ -118,6 +118,14 @@ export async function reload(id: string): Promise<Lexicon.Data> {
 	return data;
 }
 
+export async function reloadAll(): Promise<Record<string, Lexicon.Data>> {
+	const data: Record<string, Lexicon.Data> = {};
+	for (const id of Object.keys(lexiconData)) {
+		data[id] = await reload(id);
+	}
+	return data;
+}
+
 export async function loadLambda(id: string) {
 	return (await load(id)).lambda;
 }

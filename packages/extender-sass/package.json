@@ -1,0 +1,34 @@
+{
+	"name": "@phragon/extender-sass",
+	"version": "0.1.0-beta",
+	"author": "phragon@websoftlab.com",
+	"license": "MIT",
+	"scripts": {
+		"build": "phragon-script build --cwd \"../../\" -P @phragon/extender-sass",
+		"prettier": "phragon-script prettier --cwd \"../../\" -P @phragon/extender-sass"
+	},
+	"dependencies": {
+		"sass": "^1.63.3",
+		"sass-loader": "^13.3.2",
+		"loader-utils": "^2.0.2"
+	},
+	"devDependencies": {
+		"@phragon/extender-css": "*"
+	},
+	"peerDependencies": {
+		"phragon": "*",
+		"@phragon/extender-css": "*"
+	},
+	"exports": {
+		".": {
+			"require": "./build/index.js"
+		}
+	},
+	"types": "build/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"build/index.d.ts": ["src/index.ts"],
+			"*": ["src/*"]
+		}
+	}
+}

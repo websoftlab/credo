@@ -34,8 +34,8 @@ function hookPageTitle(api: API.ApiInterface<ElementType>, pid: MutableRefObject
 	}
 }
 
-export default function App(props: { api: API.ApiInterface<ElementType>; navigator: Navigator }) {
-	const { api, navigator } = props;
+export default function App(props: { api: API.ApiInterface<ElementType>; navigator: Navigator; strictMode?: boolean }) {
+	const { api, navigator, strictMode = true } = props;
 	const { app, page } = api;
 	const pid = React.useRef<symbol>(initialId);
 	const pgt = React.useRef<string>("");
@@ -105,7 +105,7 @@ export default function App(props: { api: API.ApiInterface<ElementType>; navigat
 		</ApiContext.Provider>
 	);
 
-	if (__isDev__()) {
+	if (strictMode && __isDev__()) {
 		web = <StrictMode>{web}</StrictMode>;
 	}
 

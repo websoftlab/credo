@@ -1,4 +1,14 @@
-export { loadLambda, loadLexicon, reload, register, loaded, load, setDefaultLanguageId, subscribe } from "./lexicon";
+export {
+	loadLambda,
+	loadLexicon,
+	reload,
+	reloadAll,
+	register,
+	loaded,
+	load,
+	setDefaultLanguageId,
+	subscribe,
+} from "./lexicon";
 export { default as createTranslator } from "./createTranslator";
 export { default as LanguageStore } from "./LanguageStore";
 export { default as plurals } from "./plurals";

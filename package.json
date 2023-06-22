@@ -22,7 +22,8 @@
 	"author": "phragon@websoftlab.com",
 	"license": "MIT",
 	"dependencies": {
-		"@phragon-util/script": "^0.0.7"
+		"@phragon-util/script": "^0.0.7",
+		"@babel/plugin-transform-class-properties": "^7.22.5"
 	},
 	"devDependencies": {
 		"@types/node": "^14.14.31"

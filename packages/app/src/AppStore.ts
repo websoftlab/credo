@@ -34,6 +34,8 @@ function lexicon(store: AppStore, key: string) {
 
 export default class AppStore<State = any> extends LanguageStore implements App.StoreInterface<State> {
 	public state: any;
+	public readonly version: string = "1.0.0";
+	public readonly build: string | null = null;
 	private readonly _initialState: any;
 	private readonly _additionalState: any;
 
@@ -42,6 +44,13 @@ export default class AppStore<State = any> extends LanguageStore implements App.
 
 		if (!state) {
 			state = {};
+		} else {
+			if (typeof state.buildVersion === "string") {
+				this.version = state.buildVersion;
+			}
+			if (typeof state.buildId === "string") {
+				this.build = state.buildId;
+			}
 		}
 
 		this.state = state;

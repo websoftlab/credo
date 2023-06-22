@@ -2,7 +2,6 @@ import type { RollupTypescriptOptions } from "@rollup/plugin-typescript";
 import type { InputOptions, OutputOptions, InputPluginOption } from "rollup";
 import type { BuildConfigureOptions, BuildConfigure } from "../types";
 import typescript from "@rollup/plugin-typescript";
-//import externals from "rollup-plugin-node-externals";
 import resolvePlugin from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import json from "@rollup/plugin-json";

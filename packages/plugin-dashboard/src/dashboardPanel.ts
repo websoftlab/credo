@@ -13,6 +13,8 @@ import { toAsync } from "@phragon-util/async";
 import { HttpPage } from "@phragon/responder-page";
 import { ctxGetError, ctxLoadLanguagePackage } from "./util";
 
+type ApiModeType = "api" | "web" | "raw";
+
 function createDashboardPath(path?: string) {
 	let pref = String(typeof path === "string" ? path : "/dashboard").trim();
 	if (pref.endsWith("/")) {
@@ -22,6 +24,25 @@ function createDashboardPath(path?: string) {
 		pref = `/${pref}`;
 	}
 	return pref;
+}
+
+function ctxError500(ctx: Context) {
+	if (ctx.status == 200 || !ctx.status) {
+		ctx.status = 500;
+	}
+}
+
+function createError(error: unknown) {
+	if (error instanceof Error) {
+		return error;
+	}
+	if (typeof error === "string") {
+		return new Error(error);
+	}
+	if (error != null && typeof error === "object" && "message" in error) {
+		return new Error(String(error.message));
+	}
+	return new Error("Unknown error");
 }
 
 export function createOnAppStateHook(phragon: PhragonJS) {
@@ -120,7 +141,7 @@ export function createDashboardPanel(phragon: PhragonJS) {
 	let homeController: Dashboard.PluginWebController | undefined = undefined;
 	let errorPageController: Dashboard.PluginWebErrorController | undefined = undefined;
 
-	const priority = [2001, 1001, 3000];
+	const priority = { api: 2001, web: 1001, raw: 3000 };
 	const details: Record<string, any> = {};
 	const middlewareList: Dashboard.PluginMiddleware[] = [];
 	const requestList: Record<string, Dashboard.PluginOnRequestCallback> = {};
@@ -164,17 +185,10 @@ export function createDashboardPanel(phragon: PhragonJS) {
 
 		await phragon.hooks.emit("onDashboardPage", event);
 
-		// resort menu
-		if (data.page === "dashboard" && Array.isArray(event.data.menu)) {
-			event.data.menu = event.data.menu.sort((l: { depth?: number }, r: { depth?: number }) => {
-				return (l.depth || 0) - (r.depth || 0);
-			});
-		}
-
 		return data;
 	}
 
-	async function _middleware(ctx: Context) {
+	async function _middleware(ctx: Context): Promise<{ ok: false; error: Error } | { ok: true; ended: boolean }> {
 		let wait = true;
 		const next = async (i: number) => {
 			if (i < middlewareList.length) {
@@ -188,25 +202,16 @@ export function createDashboardPanel(phragon: PhragonJS) {
 		try {
 			await next(0);
 		} catch (err) {
-			if (ctx.dashboardPlugin?.mode === "api") {
-				ctx.bodyEnd({
-					ok: false,
-					message: createHttpError.isHttpError(err) ? err.message : "Query error",
-				});
-			} else if (typeof errorPageController === "function") {
-				ctx.status = 500;
-				const page = phragon.responders.page;
-				if (typeof page?.responder !== "function") {
-					throw err;
-				}
-				const body = await toAsync(errorPageController(ctx, err as Error));
-				await page.responder(ctx, body);
-			} else {
-				throw err;
-			}
+			ctxError500(ctx);
+			return { ok: false, error: createError(err) };
 		}
 
-		return !(wait || ctx.isBodyEnded);
+		if (wait) {
+			ctxError500(ctx);
+			return { ok: false, error: new Error("System error, some middleware was not completed") };
+		}
+
+		return { ok: true, ended: ctx.isBodyEnded };
 	}
 
 	function _tree(ctx: Context) {
@@ -217,7 +222,11 @@ export function createDashboardPanel(phragon: PhragonJS) {
 		return match["*"].slice();
 	}
 
-	async function _ctx(ctx: Context, name: string, mode: "api" | "web" | "raw") {
+	async function _ctx(
+		ctx: Context,
+		name: string,
+		mode: ApiModeType
+	): Promise<{ ok: true } | { ok: false; error: Error }> {
 		Object.defineProperty(ctx, "dashboardPlugin", {
 			value: Object.freeze(<Dashboard.PluginContext>{
 				name,
@@ -228,8 +237,14 @@ export function createDashboardPanel(phragon: PhragonJS) {
 		});
 		// request
 		if (requestList.hasOwnProperty(name)) {
-			await toAsync(requestList[name](ctx));
+			try {
+				await toAsync(requestList[name](ctx));
+			} catch (err) {
+				ctxError500(ctx);
+				return { ok: false, error: createError(err) };
+			}
 		}
+		return { ok: true };
 	}
 
 	async function _web(ctx: Context) {
@@ -237,24 +252,32 @@ export function createDashboardPanel(phragon: PhragonJS) {
 
 		// home page
 		if (tree.length === 0) {
-			await _ctx(ctx, "_:web", "web");
-			if (!(await _middleware(ctx))) {
+			const rq = await _ctx(ctx, "_:web", "web");
+			if (!rq.ok) {
+				return _pageError(ctx, rq.error);
+			}
+			const mw = await _middleware(ctx);
+			if (!mw.ok) {
+				return _pageError(ctx, mw.error);
+			}
+			if (mw.ended) {
 				return;
 			}
-			return _tryCatch(ctx, "dashboard:web", false, homeController || homePageController);
+			return _tryCatch(ctx, "dashboard:web", "web", homeController || homePageController);
 		}
 
-		await _ctx(ctx, "_:error", "web");
-		if (!(await _middleware(ctx))) {
+		const rq = await _ctx(ctx, "_:error", "web");
+		if (!rq.ok) {
+			return _pageError(ctx, rq.error);
+		}
+		const mw = await _middleware(ctx);
+		if (!mw.ok) {
+			return _pageError(ctx, mw.error);
+		}
+		if (mw.ended) {
 			return;
 		}
-
-		const error = new createHttpError.NotFound();
-		if (typeof errorPageController === "function") {
-			return errorPageController(ctx, error);
-		} else {
-			throw error;
-		}
+		return _pageError(ctx, new createHttpError.NotFound());
 	}
 
 	async function _api(ctx: Context) {
@@ -262,11 +285,18 @@ export function createDashboardPanel(phragon: PhragonJS) {
 		const pref = ctx.method + ":/" + tree.join("/");
 
 		if (systemApi.hasOwnProperty(pref)) {
-			await _ctx(ctx, "_:api", "api");
-			if (!(await _middleware(ctx))) {
+			const rq = await _ctx(ctx, "_:api", "api");
+			if (!rq.ok) {
+				throw rq.error;
+			}
+			const mw = await _middleware(ctx);
+			if (!mw.ok) {
+				throw mw.error;
+			}
+			if (mw.ended) {
 				return;
 			}
-			return _tryCatch(ctx, "dashboard:api", true, systemApi[pref]);
+			return _tryCatch(ctx, "dashboard:api", "api", systemApi[pref]);
 		}
 
 		return new HttpJSON(
@@ -278,31 +308,46 @@ export function createDashboardPanel(phragon: PhragonJS) {
 		);
 	}
 
+	async function _pageError(ctx: Context, err: Error) {
+		if (typeof errorPageController !== "function") {
+			return err;
+		}
+		try {
+			return await toAsync(errorPageController(ctx, err));
+		} catch (err) {
+			return createError(err);
+		}
+	}
+
 	async function _tryCatch(
 		ctx: Context,
 		routeName: string,
-		isApi: boolean,
+		mode: ApiModeType,
 		controller: (ctx: Context) => any | Promise<any>
 	) {
 		try {
 			const data = await toAsync(controller(ctx));
-			if (!isApi) {
+			if (mode === "web") {
 				return await _webFormat(ctx, data);
+			} else if (mode === "raw" && data == null) {
+				if (!ctx.isBodyEnded) {
+					ctx.bodyEnd();
+				}
+				return void 0;
 			}
 			return data;
 		} catch (err) {
-			phragon.debug.error(`Dashboard plugin controller "%s" failure`, routeName, err);
-			if (!isApi && typeof errorPageController === "function") {
-				return errorPageController(ctx, err as Error);
-			} else {
-				throw err;
+			phragon.debug.error(`Dashboard plugin %s controller "%s" failure`, mode, routeName, err);
+			if (mode === "web") {
+				return _pageError(ctx, createError(err));
 			}
+			throw err;
 		}
 	}
 
 	function _getPath(name: string, path?: string) {
 		if (!path) {
-			path = typeof path === "string" ? "" : name;
+			path = typeof path === "string" || name === "@" ? "" : name;
 		} else {
 			path = String(path).trim().replace(/^\/+/, "").replace(/\/+$/, "");
 		}
@@ -312,73 +357,27 @@ export function createDashboardPanel(phragon: PhragonJS) {
 		return path;
 	}
 
-	function _routeRaw(pluginName: string, rule: Dashboard.PluginControllerRule<Dashboard.PluginController<void>>) {
-		let { name = pluginName, controller, path, method } = rule;
-		path = _getPath(name, path);
-
-		if (!method) {
-			method = ["GET"];
-		} else if (typeof method === "string") {
-			method = [method];
-		}
-
-		const routeName = `dashboard:raw.${pluginName}${name === "@" ? "" : `.${name}`}`;
-		const routePath = RawPath + pluginName + path;
-		const pattern = compilePath(routePath);
-		patterns[routeName] = routePath;
-
-		phragon.route.addRoute(
-			new RoutePattern({
-				pattern,
-				methods: method,
-				match(ctx) {
-					return pattern.match(ctx.path);
-				},
-				context: {
-					name: routeName,
-					responder: { name: "text" },
-					controller: {
-						name: Symbol(),
-						handler: async (ctx: Context) => {
-							await _ctx(ctx, pluginName, "raw");
-							if (!(await _middleware(ctx))) {
-								return;
-							}
-							try {
-								await toAsync(controller(ctx));
-							} catch (err) {
-								phragon.debug.error(`Dashboard plugin controller "%s" failure`, routeName, err);
-								return err;
-							}
-							if (!ctx.isBodyEnded) {
-								ctx.bodyEnd();
-							}
-						},
-					},
-				},
-			}),
-			priority[2]++
-		);
-	}
-
 	function _route(
+		mode: ApiModeType,
 		pluginName: string,
-		isApi: boolean,
 		rule: Dashboard.PluginControllerRule<Dashboard.PluginController>
 	) {
-		let { name = pluginName, controller, path, method } = rule;
+		let { name = "@", controller, path, method } = rule;
 		path = _getPath(name, path);
 
-		if (!isApi) {
+		const isWeb = mode === "web";
+		const isApi = mode === "api";
+
+		if (isWeb) {
 			method = ["GET"];
 		} else if (!method) {
-			method = ApiMethod;
+			method = isApi ? ApiMethod : ["GET"];
 		} else if (typeof method === "string") {
 			method = [method];
 		}
 
-		const routeName = `dashboard:${isApi ? "api." : "web."}${pluginName}${name === "@" ? "" : `.${name}`}`;
-		const routePath = (isApi ? ApiPath : WebPath) + pluginName + path;
+		const routeName = `dashboard:${mode}.${pluginName}${name === "@" ? "" : `.${name}`}`;
+		const routePath = (isWeb ? WebPath : isApi ? ApiPath : RawPath) + pluginName + path;
 		const pattern = compilePath(routePath);
 		patterns[routeName] = routePath;
 
@@ -391,21 +390,47 @@ export function createDashboardPanel(phragon: PhragonJS) {
 				},
 				context: {
 					name: routeName,
-					responder: { name: isApi ? "json" : "page" },
+					responder: { name: isWeb ? "page" : isApi ? "json" : "text" },
 					controller: {
 						name: Symbol(),
 						handler: async (ctx: Context) => {
-							await _ctx(ctx, pluginName, isApi ? "api" : "web");
-							if (!(await _middleware(ctx))) {
+							const rq = await _ctx(ctx, pluginName, mode);
+							if (!rq.ok) {
+								if (isWeb) {
+									return _pageError(ctx, rq.error);
+								}
+								throw rq.error;
+							}
+							const mw = await _middleware(ctx);
+							if (!mw.ok) {
+								if (isWeb) {
+									return _pageError(ctx, mw.error);
+								}
+								throw mw.error;
+							}
+							if (mw.ended) {
 								return;
 							}
-							return _tryCatch(ctx, routeName, isApi, controller);
+							return _tryCatch(ctx, routeName, mode, controller);
 						},
 					},
 				},
 			}),
-			priority[isApi ? 0 : 1]++
+			priority[mode]++
 		);
+	}
+
+	function _isWeb(path: string) {
+		if (path === WebPath) {
+			return true;
+		}
+		for (const name of plugins) {
+			const start = WebPath + name;
+			if (start === path || path.startsWith(start + "/")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	phragon.route
@@ -432,7 +457,7 @@ export function createDashboardPanel(phragon: PhragonJS) {
 				pattern: web,
 				methods: ["GET"],
 				match(ctx) {
-					return web.match(ctx.path);
+					return "/" !== WebPath || _isWeb(ctx.path) ? web.match(ctx.path) : false;
 				},
 				context: {
 					name: "dashboard:web",
@@ -489,28 +514,36 @@ export function createDashboardPanel(phragon: PhragonJS) {
 			if (Array.isArray(api)) {
 				api.forEach((rule) => {
 					const { controller, ...rest } = rule;
-					_route(name, true, { ...rest, controller: (ctx: Context) => controller.call(plugin, ctx) });
+					_route("api", name, { ...rest, controller: (ctx: Context) => controller.call(plugin, ctx) });
 				});
 			} else if (typeof api === "function") {
-				_route(name, true, { name: "home", path: "/*", controller: (ctx: Context) => api.call(plugin, ctx) });
+				_route("api", name, {
+					name: "home",
+					path: "/*",
+					controller: (ctx: Context) => api.call(plugin, ctx),
+				});
 			}
 
 			if (Array.isArray(web)) {
 				web.forEach((rule) => {
 					const { controller, ...rest } = rule;
-					_route(name, false, { ...rest, controller: (ctx: Context) => controller.call(plugin, ctx) });
+					_route("web", name, { ...rest, controller: (ctx: Context) => controller.call(plugin, ctx) });
 				});
 			} else if (typeof web === "function") {
-				_route(name, false, { name: "home", path: "/*", controller: (ctx: Context) => web.call(plugin, ctx) });
+				_route("web", name, {
+					name: "home",
+					path: "/*",
+					controller: (ctx: Context) => web.call(plugin, ctx),
+				});
 			}
 
 			if (Array.isArray(raw)) {
 				raw.forEach((rule) => {
 					const { controller, ...rest } = rule;
-					_routeRaw(name, { ...rest, controller: (ctx: Context) => controller.call(plugin, ctx) });
+					_route("raw", name, { ...rest, controller: (ctx: Context) => controller.call(plugin, ctx) });
 				});
 			} else if (typeof raw === "function") {
-				_routeRaw(name, { name: "home", path: "/*", controller: (ctx: Context) => raw.call(plugin, ctx) });
+				_route("raw", name, { name: "home", path: "/*", controller: (ctx: Context) => raw.call(plugin, ctx) });
 			}
 
 			if (Array.isArray(middleware)) {
@@ -534,7 +567,7 @@ export function createDashboardPanel(phragon: PhragonJS) {
 				homeController = controller;
 			}
 		},
-		defineErrorController(controller: Dashboard.PluginWebErrorController) {
+		defineErrorPageController(controller: Dashboard.PluginWebErrorController) {
 			_loaded();
 			if (typeof controller === "function") {
 				if (errorPageController) {

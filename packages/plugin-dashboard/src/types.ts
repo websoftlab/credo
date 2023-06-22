@@ -8,6 +8,9 @@ export namespace Dashboard {
 
 	export type ButtonVariantType<Type extends string = string> = Type;
 
+	/**
+	 * @deprecated Delete type in the future
+	 */
 	export type Action<Name extends string = string, Props extends {} = any> = Name | ActionNS.ActionType<Props>;
 
 	export interface LinkAction {
@@ -135,7 +138,7 @@ export interface DashboardPanel {
 	pluginDetail<T extends {} = {}>(name: string): T;
 	definePlugin(name: string, plugin: Dashboard.Plugin, options?: any): void;
 	defineHomePageController(controller: Dashboard.PluginWebController): void;
-	defineErrorController(controller: Dashboard.PluginWebErrorController): void;
+	defineErrorPageController(controller: Dashboard.PluginWebErrorController): void;
 }
 
 export interface DashboardStoreState<UserDetail = {}, Ext extends {} = {}> {
@@ -157,5 +160,5 @@ export interface DashboardPanel {
 	pluginDetail<T extends {} = {}>(name: string): T;
 	definePlugin(name: string, plugin: Dashboard.Plugin, options?: any): void;
 	defineHomePageController(controller: Dashboard.PluginWebController): void;
-	defineErrorController(controller: Dashboard.PluginWebErrorController): void;
+	defineErrorPageController(controller: Dashboard.PluginWebErrorController): void;
 }

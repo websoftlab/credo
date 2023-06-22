@@ -1,4 +1,4 @@
-import type { PhragonPlugin } from "../types";
+import type { BuildExtenderResult, PhragonPlugin } from "../types";
 import type { Builder } from "../builder";
 import { existsStat, readJsonFile } from "../utils";
 import { phragon } from "../builder/configure";
@@ -35,31 +35,55 @@ export default async function createPluginFactory(
 		}
 	}
 
+	// add extenders and docTypes
+	const extenderList = await extender(builder.getStore());
+	const extenderDocTypes: string[] = [];
+
+	function addDocType(type: string) {
+		if (!extenderDocTypes.includes(type)) {
+			extenderDocTypes.push(type);
+		}
+	}
+
+	for (const fn of extenderList) {
+		const result = await toAsync(fn());
+		if (typeof result === "object") {
+			const { docTypeReference } = result;
+			if (typeof docTypeReference === "string") {
+				addDocType(docTypeReference);
+			} else if (Array.isArray(docTypeReference)) {
+				docTypeReference.forEach((type) => addDocType(type));
+			}
+			const keyOf: (keyof BuildExtenderResult)[] = ["onWebpackConfigure", "onRollupConfigure", "onOptions"];
+			for (const key of keyOf) {
+				const fn = result[key];
+				if (typeof fn === "function") {
+					builder.on(key, fn);
+				}
+			}
+		}
+	}
+
 	// add docTypes
 	const docTypes: { reference: string; __plugin: PhragonPlugin.Plugin }[] = builder.getStore().store.docTypeReference;
 	if (Array.isArray(docTypes) && docTypes.length > 0) {
-		await docTypeReference(
-			docTypes.map((type) => {
-				let reference = type.reference;
-				if (reference.startsWith("./")) {
-					reference = reference.substring(2);
-				} else if (reference.startsWith("/")) {
-					reference = reference.substring(1);
-				}
-				return `${type.__plugin.name}/${reference}`;
-			})
-		);
+		docTypes.forEach((type) => {
+			let reference = type.reference;
+			if (reference.startsWith("./")) {
+				reference = reference.substring(2);
+			} else if (reference.startsWith("/")) {
+				reference = reference.substring(1);
+			}
+			addDocType(`${type.__plugin.name}/${reference}`);
+		});
 	}
 
-	// add extenders
-	const extenderList = await extender(builder.getStore());
-	for (const callback of extenderList) {
-		await toAsync(callback(builder));
+	if (extenderDocTypes.length > 0) {
+		await docTypeReference(extenderDocTypes);
 	}
 
 	// check page responder
 	if (data.render) {
-		await docTypeReference("@phragon/types/global-render");
 		if (!data.responder.some((config) => config.responder.hasOwnProperty("page"))) {
 			await installDependencies(["@phragon/responder-page"]);
 		}

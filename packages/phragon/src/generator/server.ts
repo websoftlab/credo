@@ -4,6 +4,7 @@ import { buildPath, createCwdDirectoryIfNotExists, exists, writeBundleFile, writ
 import { PhragonPlugin } from "../types";
 import { writeFile } from "node:fs/promises";
 import createRelativePath from "./createRelativePath";
+import { randomBytes } from "node:crypto";
 
 async function writeLoadable() {
 	const file = buildPath("./loadable.js");
@@ -115,6 +116,8 @@ export async function buildServer(factory: PhragonPlugin.Factory) {
 
 	const cJs = new CmpJS();
 	const srv = cJs.imp("@phragon/server", "*");
+	const buildId = randomBytes(32).toString("hex");
+	const buildVersion = factory.root.version;
 
 	cJs.set("worker_threads", "isMainThread");
 	cJs.set("worker_threads", "workerData");
@@ -319,6 +322,8 @@ export async function buildServer(factory: PhragonPlugin.Factory) {
 			cJs.append([
 				"mode: __ENV__,",
 				"registrar,",
+				`buildId: __DEV__ ? null : ${t.esc(buildId)},`,
+				`buildVersion: ${t.esc(buildVersion)},`,
 				`renderHTMLDriver: ${renderHTMLDriver === null ? "null" : t.esc(renderHTMLDriver)},`,
 				`publicPath: ${t.esc(publicPath)},`,
 			]);

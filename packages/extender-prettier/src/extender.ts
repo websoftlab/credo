@@ -1,4 +1,3 @@
-import type { BuilderI } from "phragon";
 import type { ExtenderPrettierOptions } from "./types";
 import { existsStat, readJsonFile, writeJsonFile, cwdPath, PackageJsonUtil } from "phragon/utils/index";
 import { installDependencies } from "phragon/dependencies";
@@ -40,19 +39,21 @@ async function createOrUpdateJson(file: string, data: any) {
 	}
 }
 
-export default async function extender(_: BuilderI, config: ExtenderPrettierOptions = {}) {
+export default async function extender(config: ExtenderPrettierOptions = {}) {
 	const { scriptName = "prettier", version = "latest", options = {}, ...rest } = config;
 	const prettierOptions = { ...prettierrc, ...options };
 
 	await createOrUpdateJson("./.prettierrc.json", prettierOptions);
 	await createOrUpdateJson("./.phragon/prettier.json", rest);
 
-	await installDependencies(
-		{},
-		{
-			prettier: version,
-		}
-	);
+	if (version !== "global") {
+		await installDependencies(
+			{},
+			{
+				prettier: version,
+			}
+		);
+	}
 
 	if (scriptName) {
 		const pg = new PackageJsonUtil();

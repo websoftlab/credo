@@ -169,7 +169,8 @@ export default class HtmlDocument {
 			protocol: ctx.secure ? "https" : "http",
 		});
 
-		const page = new PageStore({ http, loader: driver.loader });
+		const app = ctx.store;
+		const page = new PageStore({ http, loader: driver.loader, buildId: app.build, buildVersion: app.version });
 		await emit({ type: "server:page", page });
 
 		const api = new Api<any>("server", ctx.store, page);
